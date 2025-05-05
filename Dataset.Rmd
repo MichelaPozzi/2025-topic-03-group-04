@@ -29,13 +29,21 @@ plot(pressure)
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r}
+#load dataset
 MS_Table <- read.table("~/downloads/RDeeP_A549_NS.csv", header=TRUE, row.names=1, sep = ";")
 # For example: 
 # MS_Table <- read.table("~/Desktop/2024_Data_Analysis_Proteom/RDeeP_HeLa_NS.csv", header=TRUE, row.names=1, sep = ";")
 ```
 
 ```{r}
-MS_Table
+##data cleanup
+
+#get a general of the datset
+View(MS_Table)
+
 ```
 
+```{r}
+
+```
 
