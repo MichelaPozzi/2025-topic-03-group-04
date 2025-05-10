@@ -30,16 +30,33 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ```{r}
 #load dataset
-MS_Table <- read.table("~/downloads/RDeeP_A549_NS.csv", header=TRUE, row.names=1, sep = ";")
-# For example: 
-# MS_Table <- read.table("~/Desktop/2024_Data_Analysis_Proteom/RDeeP_HeLa_NS.csv", header=TRUE, row.names=1, sep = ";")
+url <- "https://hub.dkfz.de/s/QT3BfRperQqMxPF/download/RDeeP_A549_NS.csv.zip"
+
+
+#Create a temporary file and download the ZIP
+temp_file <- tempfile()
+download.file(url, temp_file)
+zip_contents <- unzip(temp_file, list = TRUE)
+print(zip_contents)
+
+csv_file <- unzip(temp_file, files = zip_contents$Name[1], exdir = tempdir())
+A549_NS <- read.csv(csv_file, sep = ";")
+View(A549_NS)
 ```
 
 ```{r}
-##data cleanup
+#data exploration
+View(A549_NS)
 
-#get a general of the datset
-View(MS_Table)
+#number of rows and columns
+nrow(A549_NS)
+ncol(A549_NS)
+
+#type of data
+sum(sapply(A549_NS, is.numeric))
+
+#finding NAs
+sum(is.na(A549_NS))
 
 ```
 
