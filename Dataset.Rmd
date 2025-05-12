@@ -52,7 +52,7 @@ View(A549_NS)
 nrow(A549_NS)
 ncol(A549_NS)
 
-#type of data
+#type of data (überprüft die class der Spalten)
 sum(sapply(A549_NS, is.numeric))
 
 #finding NAs
