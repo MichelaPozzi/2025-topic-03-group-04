@@ -61,6 +61,64 @@ sum(is.na(A549_NS))
 ```
 
 ```{r}
+n_fractions <- 25
+n_replicates <- 6
 
+# treatment: variating CTRL and RNAse, 75 pairs -> 150 columns 
+treatment <- factor(rep(c("CTRL", "RNASE"), times = n_fractions * n_replicates/2))
+# replicates: 6 replicates per fraction
+replicates <- factor(c("ctrl1","rnase1","ctrl2","rnase2","ctrl3","rnase3"))
+replicates <- factor(rep(replicates, each = n_fractions))
+# fraction: each fraction has 6 values
+fraction <- factor(rep(paste0("fraction",1:n_fractions),each = n_replicates)) 
+```
+
+
+
+```{r}
+#Dataframe definition
+data <- data.frame(
+  treatment = treatment,
+  replicates= replicates,
+  fraction= fraction,
+  row.names = colnames(A549_NS),
+)
+
+```
+```{r}
+data <- data.frame(row.names = colnames(A549_NS), treatment = treatment, replicates = replicates, fraction = fraction)
+```
+
+
+
+```{r}
+#sorting loop
+tables_by_fractions <- lapply(fraction, function(fx) {
+  table[, data$fraction == fx]
+})
+```
+
+
+```{r}
+#normalisation
+
+
+```
+
+
+
+```{r}
+#cleanup loop (deletion of 0-rows)
+i <- 1
+while (i <- ncol(A549_NS)) {
+  if (sum(A549_NS[[i]]) == 0) {
+    A549_NS <- A549_NS[ , -i, drop = FALSE]  # Spalte entfernen, Index bleibt gleich
+  } else {
+    i <- i + 1  
+  }
+}
+```
+```{r}
+View(A549_NS)
 ```
 
