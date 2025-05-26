@@ -99,6 +99,8 @@ View(df)
 
 ```{r}
 #sorting loop
+# define fraction names
+fraction_names <- levels(fraction)
 # create subtables
 tables_by_fraction <- lapply(fraction_names, function(fx) {
   # select all colnames in A549_NS, which belong to a certain fraction
