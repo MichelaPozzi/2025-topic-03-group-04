@@ -79,12 +79,13 @@ fraction <- factor(rep(paste0("fraction",1:n_fractions),each = n_replicates))
 
 
 ```{r}
-#Dataframe definition -> funktioniert nicht
+#Dataframe definition
 data <- data.frame(
   treatment = treatment,
   replicates= replicates,
   fraction= fraction,
   row.names = colnames(A549_NS),
+  length(colnames(A549_NS)) == length(treatment)
 )
 
 ```
@@ -101,7 +102,7 @@ View(df)
 ```
 
 ```{r}
-#sorting loop
+#sorting loop -> Problem mit Spaltennamen
 # define fraction names
 fraction_names <- levels(fraction)
 # create subtables
@@ -123,6 +124,11 @@ tables_by_fraction <- lapply(fraction_names, function(fx) {
 names(tables_by_fraction) <- fraction_names
 
 View(tables_by_fraction$fraction1)
+```
+# Problem: "Protein_Name" is not in table
+# find out which column is really ment, and then insert the right name in code
+```{r}
+"Protein_Name" %in% colnames(A549_NS)
 ```
 
 
