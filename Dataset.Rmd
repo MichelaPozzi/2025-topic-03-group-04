@@ -40,7 +40,7 @@ zip_contents <- unzip(temp_file, list = TRUE)
 print(zip_contents)
 
 csv_file <- unzip(temp_file, files = zip_contents$Name[1], exdir = tempdir())
-A549_NS <- read.csv(csv_file, sep = ";")
+A549_NS <- read.csv(csv_file, sep = ";", header = TRUE, row.names = 1)
 View(A549_NS)
 ```
 
@@ -58,6 +58,9 @@ sum(sapply(A549_NS, is.numeric))
 #finding NAs
 sum(is.na(A549_NS))
 
+```
+```{r}
+dim(A549_NS)
 ```
 
 ```{r}
