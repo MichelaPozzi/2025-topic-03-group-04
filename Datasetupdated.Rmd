@@ -96,22 +96,81 @@ fraction_names <- levels(fraction)
 tables_by_fraction <- lapply(fraction_names, function(fx) {
   # select all colnames in A549_NS, which belong to a certain fraction
   cols <- rownames(df)[df$fraction == fx]
-  
+
   #separate control and RNase sample within the subtable (grep-function searches for the word "Ctrl" or "RNase among the columnnames -> generally searches for textpatterns in vectors)
   ctrl_cols <- grep("Ctrl",cols, value = TRUE)
   RNase_cols <- grep("RNase",cols, value = TRUE)
   
   ordered_cols <- c(ctrl_cols, RNase_cols)
+
   
   # extract the said columns + Protein_Name
-  A549_NS[, c("Protein_Name", ordered_cols)]
+  subdf <- A549_NS[, c("Protein_Name", ordered_cols)]
+  
+  #add fraction column
+  subdf$fraction <- fx
+  
+  return(subdf)
 })
 
 # assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
 names(tables_by_fraction) <- fraction_names
 
+fulldf <- do.call(rbind, tables_by_fraction)
 
-View(tables_by_fraction$fraction2)
+
+View(fulldf)
+class(fulldf)
+
+```
+
+```{r}
+# Gemeinsame Namen festlegen (Protein_Name + standardisierte 6 Werte-Spalten)
+standard_cols <- c("Protein_Name", paste0("rep", 1:6))
+
+# Liste neu aufbauen – mit gleichen Spaltennamen
+tables_by_fraction <- lapply(fraction_names, function(fx) {
+  cols <- rownames(df)[df$fraction == fx]
+  ctrl_cols <- grep("Ctrl", cols, value = TRUE, ignore.case = TRUE)
+  rnase_cols <- grep("RNase", cols, value = TRUE, ignore.case = TRUE)
+  ordered_cols <- c(ctrl_cols, rnase_cols)
+  
+  subdf <- A549_NS[, c("Protein_Name", ordered_cols)]
+  
+  # Spalten vereinheitlichen
+  colnames(subdf) <- c("Protein_Name", paste0("rep", 1:6))
+  
+  subdf <- as.data.frame(lapply(subdf, function(x) {
+    if (is.character(x)) as.numeric(as.character(x)) else x
+  }))
+  
+  subdf$fraction <- fx
+  return(subdf)
+})
+
+# assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
+names(tables_by_fraction) <- fraction_names
+
+fulldf <- do.call(rbind, tables_by_fraction)
+
+
+View(fulldf)
+class(fulldf)
+
+
+```
+
+
+```{r}
+# Alle Spaltennamen annehmen (z. B. aus erstem Dataframe)
+columns <- colnames(tables_by_fraction[[1]])
+
+# Erzeuge Sublisten
+sublisten <- lapply(columns, function(columns) {
+  lapply(liste, function(df) df[[spalte]])
+})
+names(sublisten) <- spalten
+
 ```
 
 
