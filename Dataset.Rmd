@@ -144,6 +144,25 @@ tables_by_fractions <- lapply(fraction, function(fx) {
 #normalisation
 
 
+# Liste vorbereiten
+mittelwert_liste <- list()
+
+for (r in 1:25){
+  df <- tab_fraction[[paste0("$fraction", r)]]
+  
+  group_size <- 3
+  group_indices <- seq(2, ncol(df), by = group_size)
+  
+  average_values <- sapply(group_indices, function(j){
+    rowMeans(df[, j:(j + group_size - 1)])
+  })
+  
+  averaged_df <- as.data.frame(average_values)
+  colnames(averaged_df) <- paste0(c("Mean Ctrl", "Mean RNase"), seq_along(group_indices))
+  
+  mittelwert_liste[[paste0("df", r)]] <- averaged_df
+} 
+
 ```
 
 
