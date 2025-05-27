@@ -110,7 +110,7 @@ tables_by_fraction <- lapply(fraction_names, function(fx) {
 # assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
 names(tables_by_fraction) <- fraction_names
 
-View(tables_by_fraction$fraction1)
+View(tables_by_fraction$fraction2)
 ```
 
 
