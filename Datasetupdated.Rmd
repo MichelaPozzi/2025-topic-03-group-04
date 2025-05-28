@@ -172,4 +172,45 @@ class(averages_list[[1]])
 
 ```
 
+```{r}
+# determine the mean of the two closest replicate means
 
+# function: mean of the two closest means (of 3 means per treatment)
+mean_of_closest_pair <- function(x) {
+  combs <- combn(x, 2)
+  diffs <- abs(combs[1, ] - combs[2, ])
+  min_idx <- which.min(diffs)
+  mean(combs[, min_idx])
+}
+
+# initialize result vectors
+final_means_control <- numeric(length(averages_list))
+final_means_rnase <- numeric(length(averages_list))
+
+# loop over all 25 fractions
+for (r in seq_along(averages_list)) {
+  avg_df <- averages_list[[r]]
+  
+  # ensure that only one row is selected
+  avg_vector <- as.numeric(avg_df[1, , drop = FALSE])
+  
+  # divide averages_lists in control and RNase
+  control_values <- avg_vector[1:3]
+  rnase_values   <- avg_vector[4:6]
+  
+  # compution of the final means
+  final_means_control[r] <- mean_of_closest_pair(control_values)
+  final_means_rnase[r]   <- mean_of_closest_pair(rnase_values)
+}
+# generate a dataframe with both treatment means per fraction
+  final_means_df <- data.frame(
+  fraction = 1:length(final_means_control),
+  control_mean = final_means_control,
+  rnase_mean = final_means_rnase)
+
+# depict results/dataframe
+View(final_means_control)
+View(final_means_rnase)
+View(final_means_df)
+
+```
