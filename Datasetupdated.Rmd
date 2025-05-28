@@ -53,7 +53,7 @@ View(A549_NS)
 nrow(A549_NS)
 ncol(A549_NS)
 
-#type of data (überprüft die class der Spalten)
+#type of data (überprüft die class der Spalten -> alle Eintrage haben zwangsweise dieselbe class)
 sum(sapply(A549_NS, is.numeric))
 
 #finding NAs
@@ -85,13 +85,15 @@ df <- data.frame(
   replicates = replicates, 
   fraction = fraction)
 
+#general overview of result
 View(df)
 ```
 
 ```{r}
-#sorting loop -> Problem mit Spaltennamen
+#sorting loop 
 # define fraction names
 fraction_names <- levels(fraction)
+
 # create subtables
 tables_by_fraction <- lapply(fraction_names, function(fx) {
   # select all colnames in A549_NS, which belong to a certain fraction
@@ -107,93 +109,73 @@ tables_by_fraction <- lapply(fraction_names, function(fx) {
   # extract the said columns + Protein_Name
   subdf <- A549_NS[, c("Protein_Name", ordered_cols)]
   
-  #add fraction column
-  subdf$fraction <- fx
-  
-  return(subdf)
 })
 
 # assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
 names(tables_by_fraction) <- fraction_names
 
-fulldf <- do.call(rbind, tables_by_fraction)
-
-
-View(fulldf)
-class(fulldf)
+#general overview of result
+View(tables_by_fraction$fraction1)
+class(tables_by_fraction$fraction1)
 
 ```
 
 ```{r}
-# Gemeinsame Namen festlegen (Protein_Name + standardisierte 6 Werte-Spalten)
-standard_cols <- c("Protein_Name", paste0("rep", 1:6))
+#create list containing dataframes for each fraction + facilitates access to different fractions
+df_list <- list()
 
-# Liste neu aufbauen – mit gleichen Spaltennamen
-tables_by_fraction <- lapply(fraction_names, function(fx) {
-  cols <- rownames(df)[df$fraction == fx]
-  ctrl_cols <- grep("Ctrl", cols, value = TRUE, ignore.case = TRUE)
-  rnase_cols <- grep("RNase", cols, value = TRUE, ignore.case = TRUE)
-  ordered_cols <- c(ctrl_cols, rnase_cols)
-  
-  subdf <- A549_NS[, c("Protein_Name", ordered_cols)]
-  
-  # Spalten vereinheitlichen
-  colnames(subdf) <- c("Protein_Name", paste0("rep", 1:6))
-  
-  subdf <- as.data.frame(lapply(subdf, function(x) {
-    if (is.character(x)) as.numeric(as.character(x)) else x
-  }))
-  
-  subdf$fraction <- fx
-  return(subdf)
-})
+for (a in 1:25) {
+  df_list[[a]] <- as.data.frame(tables_by_fraction[[paste0("fraction", a)]])
+}
 
-# assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
-names(tables_by_fraction) <- fraction_names
-
-fulldf <- do.call(rbind, tables_by_fraction)
-
-
-View(fulldf)
-class(fulldf)
-
-
-```
-
-
-```{r}
-# Alle Spaltennamen annehmen (z. B. aus erstem Dataframe)
-columns <- colnames(tables_by_fraction[[1]])
-
-# Erzeuge Sublisten
-sublisten <- lapply(columns, function(columns) {
-  lapply(liste, function(df) df[[spalte]])
-})
-names(sublisten) <- spalten
+#general overview of result
+View(df_list[[1]])
+class(df_list[[1]])
 
 ```
 
 
 
-```{r}
-# Liste vorbereiten
-mittelwert_liste <- list()
 
-for (r in 1:25){
-  df <- tab_fraction[[paste0("$fraction", r)]]
+```{r}
+#compute averages per fraction (separatly for Ctrl and RNAse)
+
+#create list which will contain subdataframes for each fraction
+averages_list <- list()
+
+for (r in 1:25) {
   
-  group_size <- 3
-  group_indices <- seq(2, ncol(df), by = group_size)
+  #accesses the different fractions 
+  df <- df_list[[r]]
   
-  average_values <- sapply(group_indices, function(j){
-    rowMeans(df[, j:(j + group_size - 1)])
+  
+  number_replicates <- 3
+  #defines which columns are relevant (starting with the second column; column 1 consists of protein names -> irrelevant for average)
+  replicates_indices <- seq(2, ncol(df), by = group_size) 
+  
+  average_values <- sapply(replicates_indices, function(j) {
+    #mean of rows is computed starting in column j ending in column (j + number_replicates -1)
+    #combined with replicates_indices the averages are computed for columns 2-4 and 5-7
+    rowMeans(df[, j:(j + number_replicates - 1)])
   })
   
+  #creates general makeup of dataframe containg averages
   averaged_df <- as.data.frame(average_values)
-  colnames(averaged_df) <- paste0(c("Mean Ctrl", "Mean RNase"), seq_along(group_indices))
+  colnames(averaged_df) <- c("Mean_CTRL", "Mean_RNASE")
+  averaged_df$Protein_Name <- df$Protein_Name
+  averaged_df$fraction <- paste0("fraction", r)
   
-  mittelwert_liste[[paste0("df", r)]] <- averaged_df
-} 
+  #for each fraction the respective subdataframe is put into averages_list
+  averages_list[[r]] <- averaged_df
+}
+
+# list with means for all proteins across all fractions (column 4 containes fractionnames)
+final_df <- do.call(rbind, averages_list)
+
+#general overview of result
+View(averages_list[[1]])
+class(averages_list[[1]])
+
 ```
 
 
