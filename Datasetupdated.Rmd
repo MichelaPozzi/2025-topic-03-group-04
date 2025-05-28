@@ -153,8 +153,7 @@ for (r in 1:25) {
   
   # computes averages by. column
   avg_vector <- colMeans(numeric_df)
-  
-  View(avg_vector)
+
   
   # transform result to dataframe
   avg_df <- as.data.frame(t(avg_vector))
@@ -163,7 +162,6 @@ for (r in 1:25) {
   averages_list[[r]] <- avg_df
   
 }
-
 
 
 #general overview of result
