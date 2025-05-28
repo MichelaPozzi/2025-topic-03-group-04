@@ -138,39 +138,33 @@ class(df_list[[1]])
 
 
 ```{r}
-#compute averages per fraction (separatly for Ctrl and RNAse)
+#compute averages of column per fraction
 
 #create list which will contain subdataframes for each fraction
 averages_list <- list()
 
 for (r in 1:25) {
   
-  #accesses the different fractions 
-  df <- df_list[[r]]
+  #accesses the different fractions
+  df <- df_list[[r]]  
   
+  # Entferne ggf. die erste Spalte (z. B. Protein_Name), falls nicht numerisch
+  numeric_df <- df[, sapply(df, is.numeric)]  # Nur numerische Spalten auswählen
   
-  number_replicates <- 3
-  #defines which columns are relevant (starting with the second column; column 1 consists of protein names -> irrelevant for average)
-  replicates_indices <- seq(2, ncol(df), by = group_size) 
+  # computes averages by. column
+  avg_vector <- colMeans(numeric_df)
   
-  average_values <- sapply(replicates_indices, function(j) {
-    #mean of rows is computed starting in column j ending in column (j + number_replicates -1)
-    #combined with replicates_indices the averages are computed for columns 2-4 and 5-7
-    rowMeans(df[, j:(j + number_replicates - 1)])
-  })
+  View(avg_vector)
   
-  #creates general makeup of dataframe containg averages
-  averaged_df <- as.data.frame(average_values)
-  colnames(averaged_df) <- c("Mean_CTRL", "Mean_RNASE")
-  averaged_df$Protein_Name <- df$Protein_Name
-  averaged_df$fraction <- paste0("fraction", r)
+  # transform result to dataframe
+  avg_df <- as.data.frame(t(avg_vector))
   
-  #for each fraction the respective subdataframe is put into averages_list
-  averages_list[[r]] <- averaged_df
+  # save resulte in the list created (subdataframes for each fraction)
+  averages_list[[r]] <- avg_df
+  
 }
 
-# list with means for all proteins across all fractions (column 4 containes fractionnames)
-final_df <- do.call(rbind, averages_list)
+
 
 #general overview of result
 View(averages_list[[1]])
