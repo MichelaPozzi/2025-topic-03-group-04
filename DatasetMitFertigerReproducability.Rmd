@@ -1,7 +1,8 @@
 ---
-title: "Untitled"
+title: "DatasetMitReproducability"
+author: "Nora Otic"
+date: "2025-05-27"
 output: html_document
-date: "2025-05-26"
 ---
 
 ```{r setup, include=FALSE}
@@ -28,7 +29,6 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-
 ```{r}
 #load dataset
 url <- "https://hub.dkfz.de/s/QT3BfRperQqMxPF/download/RDeeP_A549_NS.csv.zip"
@@ -53,7 +53,7 @@ View(A549_NS)
 nrow(A549_NS)
 ncol(A549_NS)
 
-#type of data (überprüft die class der Spalten -> alle Eintrage haben zwangsweise dieselbe class)
+#type of data (überprüft die class der Spalten)
 sum(sapply(A549_NS, is.numeric))
 
 #finding NAs
@@ -85,9 +85,9 @@ df <- data.frame(
   replicates = replicates, 
   fraction = fraction)
 
-#general overview of result
 View(df)
 ```
+
 
 ```{r}
 #sorting loop 
@@ -148,82 +148,25 @@ for (r in 1:25) {
   #accesses the different fractions
   df <- df_list[[r]]  
   
-  # Entferne ggf. die erste Spalte (z.B. Protein_Name), falls nicht numerisch
+  # Entferne ggf. die erste Spalte (z. B. Protein_Name), falls nicht numerisch
   numeric_df <- df[, sapply(df, is.numeric)]  # Nur numerische Spalten auswählen
   
   # computes averages by. column
   avg_vector <- colMeans(numeric_df)
   
-  
+
   # transform result to dataframe
   avg_df <- as.data.frame(t(avg_vector))
   
-  #adds column with respective fraction name
-  avg_df$fraction <- paste0("fraction", r)
-  #names columns
-  colnames(avg_df) <- c("Mean_CTRL1", "Mean_CTRL2", "Mean_CTRL3", "Mean_RNASE1","Mean_RNASE2", "Mean_RNASE3")
-  
-  
-  # save results in the list created (subdataframes for each fraction)
+  # save resulte in the list created (subdataframes for each fraction)
   averages_list[[r]] <- avg_df
   
 }
 
-#general overview of result
-View(averages_list[[1]])
-class(averages_list[[1]])
 
-#dataframe which contains column averages for all conditions across all fractions
-combined_df <- do.call(rbind, averages_list)
-View(combined_df)
+
 
 ```
-
-```{r}
-#create separate sublists for Ctrl and RNase per Fraction -> dieser Chunk und der davor sind quasi dasselbe nur mit unterschiedlichem outcome (hier: eine Tabelle für RNase und eine für Ctrl; oben drüber: beides in einer Tabelle) -> ein Chunk ist redundant
-ctrl_list <- list()
-rnase_list <- list()
-
-for (r in 1:25) {
-  
-  #accesses the different fractions
-  df <- df_list[[r]]  
-  # Entferne ggf. die erste Spalte (z.B. Protein_Name), falls nicht numerisch
-  numeric_df <- df[, sapply(df, is.numeric)] # Nur numerische Spalten auswählen
-  # computes averages by. column
-  avg_vector <- colMeans(numeric_df)
-  # transform result to dataframe
-  avg_df <- as.data.frame(t(avg_vector))
-  
-  # adds column with fraction name
-  fraction_label <- paste0("fraction", r)
-  
-  # creates separate dataframes for Ctrl and RNase per Fraktion
-  ctrl_df <- avg_df[, 1:3]  # Crtl replicates make up the first three columns of avg_df
-  ctrl_df$fraction <- fraction_label
-  
-  rnase_df <- avg_df[, 4:6]  # RNase makes up columns 4 to 6
-  rnase_df$fraction <- fraction_label
-  
-  # rename columns
-  colnames(ctrl_df) <- c("Mean_CTRL1", "Mean_CTRL2", "Mean_CTRL3", "fraction")
-  colnames(rnase_df) <- c("Mean_RNASE1", "Mean_RNASE2", "Mean_RNASE3", "fraction")
-  
-  # save columns in respective lists
-  ctrl_list[[r]] <- ctrl_df
-  rnase_list[[r]] <- rnase_df
-}
-
-# create to dataframes which contain the averages for all fractions
-ctrl_combined <- do.call(rbind, ctrl_list)
-rnase_combined <- do.call(rbind, rnase_list)
-
-# general overview of result
-View(ctrl_combined)
-View(rnase_combined)
-
-```
-
 
 ```{r}
 # determine the mean of the two closest replicate means
@@ -267,6 +210,7 @@ View(final_means_rnase)
 View(final_means_df)
 
 ```
+
 
 ```{r}
 #reproducability 
@@ -316,6 +260,7 @@ View(ctrl_correlations)
 plot(ctrl_correlations) ####Richtig so????
 ```
 
+
 ```{r}
 ##nochmal mit RNase Korrelation
 
@@ -344,3 +289,19 @@ for (i in 0:24) {
 
 View(rnase_correlations)
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
