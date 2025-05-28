@@ -148,7 +148,7 @@ for (r in 1:25) {
   #accesses the different fractions
   df <- df_list[[r]]  
   
-  # Entferne ggf. die erste Spalte (z. B. Protein_Name), falls nicht numerisch
+  # Entferne ggf. die erste Spalte (z.B. Protein_Name), falls nicht numerisch
   numeric_df <- df[, sapply(df, is.numeric)]  # Nur numerische Spalten auswählen
   
   # computes averages by. column
@@ -186,9 +186,13 @@ rnase_list <- list()
 
 for (r in 1:25) {
   
+  #accesses the different fractions
   df <- df_list[[r]]  
-  numeric_df <- df[, sapply(df, is.numeric)]
+  # Entferne ggf. die erste Spalte (z.B. Protein_Name), falls nicht numerisch
+  numeric_df <- df[, sapply(df, is.numeric)] # Nur numerische Spalten auswählen
+  # computes averages by. column
   avg_vector <- colMeans(numeric_df)
+  # transform result to dataframe
   avg_df <- as.data.frame(t(avg_vector))
   
   # adds column with fraction name
