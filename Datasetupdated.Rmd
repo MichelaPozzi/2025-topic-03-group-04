@@ -28,7 +28,6 @@ plot(pressure)
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-
 ```{r}
 #load dataset
 url <- "https://hub.dkfz.de/s/QT3BfRperQqMxPF/download/RDeeP_A549_NS.csv.zip"
@@ -60,8 +59,6 @@ sum(sapply(A549_NS, is.numeric))
 sum(is.na(A549_NS))
 ```
 
-
-
 ```{r}
 n_fractions <- 25
 n_replicates <- 6
@@ -75,7 +72,6 @@ replicates <- factor(rep(replicates, times = n_fractions))
 fraction <- factor(rep(paste0("fraction",1:n_fractions),each = n_replicates)) 
 
 ```
-
 
 ```{r}
 #dataframe definition
@@ -133,9 +129,6 @@ View(df_list[[1]])
 class(df_list[[1]])
 
 ```
-
-
-
 
 ```{r}
 #compute averages of column per fraction
@@ -224,7 +217,6 @@ View(rnase_combined)
 
 ```
 
-
 ```{r}
 # determine the mean of the two closest replicate means
 
@@ -237,19 +229,15 @@ mean_of_closest_pair <- function(x) {
 }
 
 # initialize result vectors
-final_means_control <- numeric(length(averages_list))
-final_means_rnase <- numeric(length(averages_list))
+final_means_control <- numeric(n_fractions)
+final_means_rnase <- numeric(n_fractions)
 
 # loop over all 25 fractions
-for (r in seq_along(averages_list)) {
-  avg_df <- averages_list[[r]]
+for (r in 1:n_fractions) {
   
-  # ensure that only one row is selected
-  avg_vector <- as.numeric(avg_df[1, , drop = FALSE])
-  
-  # divide averages_lists in control and RNase
-  control_values <- avg_vector[1:3]
-  rnase_values   <- avg_vector[4:6]
+  # access replicate means of control and RNase
+  control_values <- as.numeric(ctrl_combined[r, 1:3])
+  rnase_values   <- as.numeric(rnase_combined[r, 1:3])
   
   # compution of the final means
   final_means_control[r] <- mean_of_closest_pair(control_values)
@@ -267,6 +255,93 @@ View(final_means_rnase)
 View(final_means_df)
 
 ```
+
+```{r}
+# compute normalization vectors for each replicate
+
+# number of fractions and replicates
+n_fractions <- 25
+n_replicates <- 3
+
+# initialize matrizes for saving the normalizationfacotrs 
+norm_ctrl_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
+norm_rnase_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
+
+# loop over all fractions
+for (r in 1:n_fractions) {
+  # extract values of the replicates
+  control_values <- as.numeric(ctrl_combined[r, 1:3])
+  rnase_values   <- as.numeric(rnase_combined[r, 1:3])
+  
+  # define final_means of the treatments
+  mean_control <- final_means_control[r]
+  mean_rnase   <- final_means_rnase[r]
+  
+  # compute normalization factors
+  norm_ctrl_mat[r, ] <- control_values / mean_control
+  norm_rnase_mat[r, ] <- rnase_values / mean_rnase
+}
+
+# create vectors for each replicate
+norm.ctrl1 <- norm_ctrl_mat[, 1]
+norm.ctrl2 <- norm_ctrl_mat[, 2]
+norm.ctrl3 <- norm_ctrl_mat[, 3]
+
+norm.rnase1 <- norm_rnase_mat[, 1]
+norm.rnase2 <- norm_rnase_mat[, 2]
+norm.rnase3 <- norm_rnase_mat[, 3]
+
+```
+
+```{r}
+# depict results
+View(norm.ctrl1)
+View(norm.ctrl2)
+View(norm.ctrl3)
+View(norm.rnase1)
+View(norm.rnase2)
+View(norm.rnase3)
+```
+
+
+```{r}
+# normalization of the data per replicate & fraction
+
+# initialize empty lists for the normalized tables
+norm_ctrl_list <- list()
+norm_rnase_list <- list()
+
+# loop over all fractions
+for (r in 1:n_fractions) {
+  
+  # use only the first three columns of the dataframes (the last   column containsa rownames)
+  ctrl_df <- ctrl_combined[r, 1:3]
+  rnase_df <- rnase_combined[r, 1:3]
+  
+  # get the corresponding normalization factors for each fraction
+  norm_factors_ctrl <- norm_ctrl_mat[r, ]
+  norm_factors_rnase <- norm_rnase_mat[r, ]
+  
+  # apply normalization
+  norm_ctrl <- as.data.frame(mapply(`*`, ctrl_df, norm_factors_ctrl, SIMPLIFY = FALSE))
+  norm_rnase <- as.data.frame(mapply(`*`, rnase_df, norm_factors_rnase, SIMPLIFY = FALSE))
+  
+  # save in lists
+  norm_ctrl_list[[r]] <- norm_ctrl
+  norm_rnase_list[[r]] <- norm_rnase
+}
+
+# optional: combine to one df per treatment
+norm_ctrl_combined <- do.call(rbind, norm_ctrl_list)
+norm_rnase_combined <- do.call(rbind, norm_rnase_list)
+
+# Ergebnis anzeigen
+View(norm_ctrl_combined)
+View(norm_rnase_combined)
+
+```
+
+
 
 ```{r}
 #reproducability 
