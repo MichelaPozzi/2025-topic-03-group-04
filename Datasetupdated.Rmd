@@ -106,6 +106,8 @@ class(tables_by_fraction$fraction1)
 
 ```
 
+###Nooorrii hier würde die reproduzierbarkeit gut hinpassen
+
 ```{r}
 #facilitates access to different fractions
 df_list <- list()
