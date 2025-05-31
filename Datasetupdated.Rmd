@@ -14,19 +14,7 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
-```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
 ```{r}
 #load dataset
@@ -59,7 +47,9 @@ sum(sapply(A549_NS, is.numeric))
 sum(is.na(A549_NS))
 ```
 
+##Data cleanup##
 ```{r}
+#definition of general parameters
 n_fractions <- 25
 n_replicates <- 6
 
@@ -81,12 +71,12 @@ df <- data.frame(
   replicates = replicates, 
   fraction = fraction)
 
-#general overview of result
-View(df)
+#depict result
+head(df)
 ```
 
 ```{r}
-#sorting loop 
+#sorting loop by fraction
 # define fraction names
 fraction_names <- levels(fraction)
 
@@ -110,79 +100,58 @@ tables_by_fraction <- lapply(fraction_names, function(fx) {
 # assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
 names(tables_by_fraction) <- fraction_names
 
-#general overview of result
-View(tables_by_fraction$fraction1)
+#depict result
+head(tables_by_fraction$fraction1)
 class(tables_by_fraction$fraction1)
 
 ```
 
 ```{r}
-#create list containing dataframes for each fraction + facilitates access to different fractions
+#facilitates access to different fractions
 df_list <- list()
 
 for (a in 1:25) {
   df_list[[a]] <- as.data.frame(tables_by_fraction[[paste0("fraction", a)]])
 }
 
-#general overview of result
-View(df_list[[1]])
+#depict result
+head(df_list[[1]])
 class(df_list[[1]])
 
 ```
 
 ```{r}
-#compute averages of column per fraction
+#sorting loop by condition
 
-#create list which will contain subdataframes for each fraction
-averages_list <- list()
+#define all column names
+col_names <- colnames(A549_NS)
 
-for (r in 1:25) {
-  
-  #accesses the different fractions
-  df <- df_list[[r]]  
-  
-  # Entferne ggf. die erste Spalte (z.B. Protein_Name), falls nicht numerisch
-  numeric_df <- df[, sapply(df, is.numeric)]  # Nur numerische Spalten auswählen
-  
-  # computes averages by. column
-  avg_vector <- colMeans(numeric_df)
-  
-  
-  # transform result to dataframe
-  avg_df <- as.data.frame(t(avg_vector))
-  
-  #adds column with respective fraction name
-  avg_df$fraction <- paste0("fraction", r)
-  #names columns
-  colnames(avg_df) <- c("Mean_CTRL1", "Mean_CTRL2", "Mean_CTRL3", "Mean_RNASE1","Mean_RNASE2", "Mean_RNASE3")
-  
-  
-  # save results in the list created (subdataframes for each fraction)
-  averages_list[[r]] <- avg_df
-  
-}
+#select all columns that contain "Ctrl"
+ctrl_cols <- grep("Ctrl", col_names, value = TRUE)
+df_ctrl <- A549_NS[, c("Protein_Name", ctrl_cols), drop = FALSE]
 
-#general overview of result
-View(averages_list[[1]])
-class(averages_list[[1]])
+#select all columns that contain "RNase"
+rnase_cols <- grep("RNase", col_names, value = TRUE)
+df_rnase <- A549_NS[, c("Protein_Name", rnase_cols), drop = FALSE]
 
-#dataframe which contains column averages for all conditions across all fractions
-combined_df <- do.call(rbind, averages_list)
-View(combined_df)
-
+#depict results
+head(df_ctrl)
+head(df_rnase)
 ```
 
+
 ```{r}
-#create separate sublists for Ctrl and RNase per Fraction -> dieser Chunk und der davor sind quasi dasselbe nur mit unterschiedlichem outcome (hier: eine Tabelle für RNase und eine für Ctrl; oben drüber: beides in einer Tabelle) -> ein Chunk ist redundant
+#create separate sublists for Ctrl and RNase per fraction and computes columnwise means
+
 ctrl_list <- list()
 rnase_list <- list()
 
 for (r in 1:25) {
   
-  #accesses the different fractions
+  # defines access to the different fractions 
   df <- df_list[[r]]  
-  # Entferne ggf. die erste Spalte (z.B. Protein_Name), falls nicht numerisch
-  numeric_df <- df[, sapply(df, is.numeric)] # Nur numerische Spalten auswählen
+  # only takes numeric columns into account
+  numeric_df <- df[, sapply(df, is.numeric)] 
   # computes averages by. column
   avg_vector <- colMeans(numeric_df)
   # transform result to dataframe
@@ -211,9 +180,9 @@ for (r in 1:25) {
 ctrl_combined <- do.call(rbind, ctrl_list)
 rnase_combined <- do.call(rbind, rnase_list)
 
-# general overview of result
-View(ctrl_combined)
-View(rnase_combined)
+# depict result
+head(ctrl_combined)
+head(rnase_combined)
 
 ```
 
@@ -249,10 +218,10 @@ for (r in 1:n_fractions) {
   control_mean = final_means_control,
   rnase_mean = final_means_rnase)
 
-# depict results/dataframe
-View(final_means_control)
-View(final_means_rnase)
-View(final_means_df)
+# depict results/dataframe 
+head(final_means_control)
+head(final_means_rnase)
+head(final_means_df)
 
 ```
 
@@ -295,12 +264,14 @@ norm.rnase3 <- norm_rnase_mat[, 3]
 
 ```{r}
 # depict results
-View(norm.ctrl1)
-View(norm.ctrl2)
-View(norm.ctrl3)
-View(norm.rnase1)
-View(norm.rnase2)
-View(norm.rnase3)
+head(norm.ctrl1)
+head(norm.ctrl2)
+head(norm.ctrl3)
+head(norm.rnase1)
+head(norm.rnase2)
+head(norm.rnase3)
+
+length(norm.ctrl1)
 ```
 
 
@@ -314,8 +285,8 @@ norm_rnase_list <- list()
 # loop over all fractions
 for (r in 1:n_fractions) {
   
-  # use only the first three columns of the dataframes (the last   column containsa rownames)
-  ctrl_df <- ctrl_combined[r, 1:3]
+  # use only the first three columns of the dataframes (the last   column contains rownames)
+  ctrl_df <- ctrl_combined[r, 1:3] ####müssten Originaldaten sein!!!!!!!
   rnase_df <- rnase_combined[r, 1:3]
   
   # get the corresponding normalization factors for each fraction
@@ -335,12 +306,135 @@ for (r in 1:n_fractions) {
 norm_ctrl_combined <- do.call(rbind, norm_ctrl_list)
 norm_rnase_combined <- do.call(rbind, norm_rnase_list)
 
-# Ergebnis anzeigen
-View(norm_ctrl_combined)
-View(norm_rnase_combined)
+# depict result
+head(norm_ctrl_combined)
+head(norm_rnase_combined)
 
 ```
 
+```{r}
+#meanfilter 
+
+#define function to compute meanfilter
+mean_filter <- function(x) {
+  n <- nrow(norm_ctrl_combined)
+  y <- numeric(n)
+  y[1] <- x[1] #value for fraction1 will not be changed
+  y[n] <- x[n] #value for fraction25 will not be changed
+  
+  for (i in 2:(n - 1)) {
+    y[i] <- mean(x[(i - 1):(i + 1)]) 
+  }
+  return(y)
+}
+
+#apply to normalized dataframes
+# transposes dataframes as meanfilter works on columns not on rows
+t_norm_ctrl <- t(norm_ctrl_combined)
+t_norm_rnase <- t(norm_rnase_combined)
+
+#execute meanfilter
+ctrl_filtered <- as.data.frame(apply(t_norm_ctrl, 1, mean_filter))
+rnase_filtered <- as.data.frame(apply(t_norm_rnase, 1, mean_filter))
+
+# restores column and row names
+colnames(ctrl_filtered) <- colnames(norm_ctrl_combined)
+colnames(rnase_filtered) <- colnames(norm_rnase_combined)
+rownames(ctrl_filtered) <- rownames(norm_ctrl_combined)
+rownames(rnase_filtered) <- rownames(norm_rnase_combined)
+
+#depict result
+head(ctrl_filtered)
+head(rnase_filtered)
+
+```
+
+```{r}
+#normalize total amount per replicate to 100%
+normalized_cols <- function(df) {
+  df_norm <- df  # creates copy
+
+  # selects all cols 
+  col_range <- 1:length(ctrl_filtered)
+
+  # set amount to sum = 100% for each column
+  for (j in col_range) {
+    col_sum <- sum(df[[j]])
+    if (col_sum != 0) {
+      df_norm[[j]] <- (df[[j]] / col_sum * 100)
+    } else {
+      df_norm[[j]] <- 0  # oder NA
+    }
+  }
+  return(df_norm)
+}
+
+# apply to filtered dataframes
+ctrl_norm_percent <- normalized_cols(ctrl_filtered)
+rnase_norm_percent <- normalized_cols(rnase_filtered)
+
+#depict result
+head(ctrl_norm_percent)
+head(rnase_norm_percent)
+
+#check if sums equal 100
+colSums(ctrl_norm_percent)  
+colSums(rnase_norm_percent)
+
+
+```
+
+```{r}
+#compute average of replicates per fraction
+
+ctrl_avg <- rowMeans(ctrl_norm_percent)
+rnase_avg <- rowMeans(rnase_norm_percent)
+
+#combine Ctrl and RNase result
+avg_fractions <- cbind(ctrl_avg, rnase_avg)
+avg_fractions_df <- as.data.frame(avg_fractions)
+
+#rename rows and columns
+colnames(avg_fractions_df) <- c("Average Ctrl", "Average Rnase")
+rownames(avg_fractions_df) <- fraction_names
+
+#depict result
+View(avg_fractions_df)
+```
+
+```{r}
+#normalize total amount per condition to 100%
+normalized_cols <- function(df) {
+  df_norm <- df  # creates copy
+
+  # selects all cols 
+  col_range <- 1:length(ctrl_filtered)
+
+  # set amount to sum = 100% for each column
+  for (j in col_range) {
+    col_sum <- sum(df[[j]])
+    if (col_sum != 0) {
+      df_norm[[j]] <- (df[[j]] / col_sum * 100)
+    } else {
+      df_norm[[j]] <- 0  # oder NA
+    }
+  }
+  return(df_norm)
+}
+
+# apply to filtered dataframes
+ctrl_norm_percent <- normalized_cols(ctrl_filtered)
+rnase_norm_percent <- normalized_cols(rnase_filtered)
+
+#depict result
+head(ctrl_norm_percent)
+head(rnase_norm_percent)
+
+#check if sums equal 100
+colSums(ctrl_norm_percent)  
+colSums(rnase_norm_percent)
+
+```
 
 
 ```{r}
