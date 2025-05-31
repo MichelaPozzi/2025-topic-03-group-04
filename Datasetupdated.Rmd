@@ -121,27 +121,39 @@ class(df_list[[1]])
 ```
 
 ```{r}
-#sorting loop by condition
+# Function to extract and sort columns by condition and replicate
+get_ordered_columns <- function(df, condition, replicates) {
+  col_names <- colnames(df)
+  condition_cols <- grep(condition, col_names, value = TRUE)
+  
+  # Sort by replicate order
+  sorted_cols <- unlist(lapply(replicates, function(rep) {
+    grep(rep, condition_cols, value = TRUE)
+  }))
+  
+  return(sorted_cols)
+}
 
-#define all column names
-col_names <- colnames(A549_NS)
+# Define replicates
+replicates <- c("Rep1", "Rep2", "Rep3")
 
-#select all columns that contain "Ctrl"
-ctrl_cols <- grep("Ctrl", col_names, value = TRUE)
-df_ctrl <- A549_NS[, c("Protein_Name", ctrl_cols), drop = FALSE]
+# Get ordered columns
+ctrl_ordered_cols <- get_ordered_columns(A549_NS, "Ctrl", replicates)
+rnase_ordered_cols <- get_ordered_columns(A549_NS, "RNase", replicates)
 
-#select all columns that contain "RNase"
-rnase_cols <- grep("RNase", col_names, value = TRUE)
-df_rnase <- A549_NS[, c("Protein_Name", rnase_cols), drop = FALSE]
+# Subset and include "Protein_Name"
+df_ctrl <- A549_NS[, c("Protein_Name", ctrl_ordered_cols), drop = FALSE]
+df_rnase <- A549_NS[, c("Protein_Name", rnase_ordered_cols), drop = FALSE]
 
-#depict results
+# Preview results
 head(df_ctrl)
 head(df_rnase)
+
 ```
 
 
 ```{r}
-#create separate sublists for Ctrl and RNase per fraction and computes columnwise means
+#create separate sublists for Ctrl and RNase per fraction and computes column-wise means
 
 ctrl_list <- list()
 rnase_list <- list()
@@ -271,12 +283,11 @@ head(norm.rnase1)
 head(norm.rnase2)
 head(norm.rnase3)
 
-length(norm.ctrl1)
 ```
 
 
 ```{r}
-# normalization of the data per replicate & fraction
+# normalization of the data per replicate & fraction -> stimmt so nicht, glaube ich !!!!!!!!
 
 # initialize empty lists for the normalized tables
 norm_ctrl_list <- list()
@@ -313,126 +324,218 @@ head(norm_rnase_combined)
 ```
 
 ```{r}
-#meanfilter 
+#normalization of the data per replicate & fraction for Ctrl
 
-#define function to compute meanfilter
-mean_filter <- function(x) {
-  n <- nrow(norm_ctrl_combined)
-  y <- numeric(n)
-  y[1] <- x[1] #value for fraction1 will not be changed
-  y[n] <- x[n] #value for fraction25 will not be changed
+#Orignal dataframe that is ordered by condition and replicates is used
+
+# results should have same dimensions as df_ctrl
+df_new_ctrl <- df_ctrl  
+
+# for each column of the normalization factor matrix
+for (i in 1:3) {
+  # matching column range in original data frame
+  col_idx <- ((i - 1) * 25 + 1):(i * 25)
   
-  for (i in 2:(n - 1)) {
-    y[i] <- mean(x[(i - 1):(i + 1)]) 
+  # factor vector: creates vector for each column
+  factors <- norm_ctrl_combined[, i]
+  
+  # multiply column with its factor
+  for (j in 2:25) {
+    df_new_ctrl[, col_idx[j]] <- df_ctrl[, col_idx[j]] * factors[j]
   }
+}
+
+#depict result
+head(df_new_ctrl)
+```
+
+```{r}
+#normalization of the data per replicate & fraction for Ctrl
+
+#Orignal dataframe that is ordered by condition and replicates is used
+
+# results should have same dimensions as df_ctrl
+df_new_rnase <- df_rnase  
+
+# for each column of the normalization factor matrix
+for (i in 1:3) {
+  # matching column range in original data frame
+  col_idx <- ((i - 1) * 25 + 1):(i * 25)
+  
+  # factor vector: creates vector for each column
+  factors <- norm_rnase_combined[, i]
+  
+  # multiply column with its factor
+  for (j in 2:25) {
+    df_new_rnase[, col_idx[j]] <- df_rnase[, col_idx[j]] * factors[j]
+  }
+}
+
+#depict result
+head(df_new_rnase)
+```
+
+
+```{r}
+# Mean filter function for a row (preserving first and last value)
+mean_filter <- function(x) {
+  n <- length(x)
+  y <- numeric(n)
+  y[1] <- x[1] #first value will not be changed (e.g. Fraction1_Rep1)
+  y[n] <- x[n] #last value will not be changed (e.g. Fraction25_Rep1)
+  y[2:(n-1)] <- sapply(2:(n - 1), function(i) mean(x[(i - 1):(i + 1)])) #creates filter masks 
   return(y)
 }
 
-#apply to normalized dataframes
-# transposes dataframes as meanfilter works on columns not on rows
-t_norm_ctrl <- t(norm_ctrl_combined)
-t_norm_rnase <- t(norm_rnase_combined)
+# Function to apply the filter block-wise
+apply_mean_filter_blocks <- function(df, starts, block_size = 25) {
+  df_filtered <- df
+  for (start_col in starts) {
+    cols <- start_col:(start_col + block_size - 1)
+    df_filtered[, cols] <- t(apply(df[, cols], 1, mean_filter))
+  }
+  return(df_filtered)
+}
 
-#execute meanfilter
-ctrl_filtered <- as.data.frame(apply(t_norm_ctrl, 1, mean_filter))
-rnase_filtered <- as.data.frame(apply(t_norm_rnase, 1, mean_filter))
+# Define block starts
+starts <- c(2, 27, 52)
 
-# restores column and row names
-colnames(ctrl_filtered) <- colnames(norm_ctrl_combined)
-colnames(rnase_filtered) <- colnames(norm_rnase_combined)
-rownames(ctrl_filtered) <- rownames(norm_ctrl_combined)
-rownames(rnase_filtered) <- rownames(norm_rnase_combined)
+# Apply to both datasets
+ctrl_filtered  <- apply_mean_filter_blocks(df_new_ctrl,   starts)
+rnase_filtered <- apply_mean_filter_blocks(df_new_rnase,  starts)
 
-#depict result
+# Show results
 head(ctrl_filtered)
 head(rnase_filtered)
+
 
 ```
 
 ```{r}
 #normalize total amount per replicate to 100%
-normalized_cols <- function(df) {
-  df_norm <- df  # creates copy
 
-  # selects all cols 
-  col_range <- 1:length(ctrl_filtered)
-
-  # set amount to sum = 100% for each column
-  for (j in col_range) {
-    col_sum <- sum(df[[j]])
-    if (col_sum != 0) {
-      df_norm[[j]] <- (df[[j]] / col_sum * 100)
-    } else {
-      df_norm[[j]] <- 0  # oder NA
-    }
+# Function to normalize rows to 100% within column blocks 
+normalize_blocks <- function(df, starts, block_size = 25) {
+  df_norm <- df  # create a copy of the dataframe
+  
+  for (start_col in starts) {
+    end_col <- start_col + block_size - 1 #(e.g. 1 + 25 - 1 = 25 )
+    cols <- start_col:end_col
+    
+    block <- df[, cols]  # extract block of columns
+    block_norm <- block * 100 / rowSums(block, na.rm = TRUE)  # normalize row sums to 100%
+    df_norm[, cols] <- block_norm  # replace original block with normalized block
   }
+  
   return(df_norm)
 }
 
-# apply to filtered dataframes
-ctrl_norm_percent <- normalized_cols(ctrl_filtered)
-rnase_norm_percent <- normalized_cols(rnase_filtered)
+# Define starting points of each replicate block
+starts <- c(2, 27, 52)
 
-#depict result
+# Apply the function to both datasets
+ctrl_norm_percent  <- normalize_blocks(ctrl_filtered,  starts)
+rnase_norm_percent <- normalize_blocks(rnase_filtered, starts)
+
+
+# depict result
 head(ctrl_norm_percent)
 head(rnase_norm_percent)
 
-#check if sums equal 100
-colSums(ctrl_norm_percent)  
-colSums(rnase_norm_percent)
-
+# check if row sums per block are ~100
+summary(rowSums(ctrl_norm_percent[, 2:26]))
+summary(rowSums(rnase_norm_percent[, 2:26]))
+  
 
 ```
+
+```{r}
+#sorts normalized dataframes by fraction 
+
+# define columnnames
+col_names_ctrl <- colnames(ctrl_norm_percent)
+col_names_rnase <- colnames(rnase_norm_percent)
+
+# 1. save proteinnames column separately
+protein_col_ctrl <- ctrl_norm_percent[, 1, drop = FALSE]
+protein_col_rnase <- rnase_norm_percent[, 1, drop = FALSE]
+
+# 2. define columnnames without the first column
+cols_to_sort_ctrl <- col_names_ctrl[-1]
+cols_to_sort_rnase <- col_names_rnase[-1]
+
+# 3. extract fraction number
+fraction_num_ctrl <- as.numeric(gsub(".*Fraction([0-9]+).*", "\\1", cols_to_sort_ctrl))
+fraction_num_rnase <- as.numeric(gsub(".*Fraction([0-9]+).*", "\\1", cols_to_sort_rnase))
+
+# 4. extract replicate number
+rep_num_ctrl <- as.numeric(gsub(".*Rep([0-9]+).*", "\\1", cols_to_sort_ctrl))
+rep_num_rnase <- as.numeric(gsub(".*Rep([0-9]+).*", "\\1", cols_to_sort_rnase))
+
+# 5. define sorting order
+order_index_ctrl <- order(fraction_num, rep_num_ctrl)
+order_index_rnase <- order(fraction_num, rep_num_rnase)
+
+# 6. sort columns
+sorted_cols_ctrl <- cols_to_sort_ctrl[order_index_ctrl]
+sorted_cols_rnase <- cols_to_sort_rnase[order_index_rnase]
+
+# 7. put dataframe together with proteinnames as first column
+sorted_norm_ctrl <- cbind(protein_col_ctrl, ctrl_norm_percent[, sorted_cols_ctrl])
+sorted_norm_rnase <- cbind(protein_col_rnase, rnase_norm_percent[, sorted_cols_rnase])
+
+#depict results
+head(sorted_norm_ctrl)
+head(sorted_norm_rnase)
+
+```
+
 
 ```{r}
 #compute average of replicates per fraction
 
-ctrl_avg <- rowMeans(ctrl_norm_percent)
-rnase_avg <- rowMeans(rnase_norm_percent)
+# function: computes rowmeans block wise (each time for 3 columns)
+compute_block_row_means <- function(df, protein_names) {
+  block_means <- sapply(seq(2, 76, by = 3), function(start_col) {
+    rowMeans(df[, start_col:(start_col + 2)])
+  })
+  
+  result <- as.data.frame(block_means)
+  colnames(result) <- paste0("Mean_Rep", seq_len(ncol(result)))
+  cbind(Protein_Name = protein_names, result)
+}
 
-#combine Ctrl and RNase result
-avg_fractions <- cbind(ctrl_avg, rnase_avg)
-avg_fractions_df <- as.data.frame(avg_fractions)
+# apply to dataframes
+means_ctrl  <- compute_block_row_means(sorted_norm_ctrl,  df$Protein_Name)
+means_rnase <- compute_block_row_means(sorted_norm_rnase, df$Protein_Name)
 
-#rename rows and columns
-colnames(avg_fractions_df) <- c("Average Ctrl", "Average Rnase")
-rownames(avg_fractions_df) <- fraction_names
 
-#depict result
-View(avg_fractions_df)
+#depict results
+head(means_ctrl)
+head(means_rnase)
 ```
 
 ```{r}
-#normalize total amount per condition to 100%
-normalized_cols <- function(df) {
-  df_norm <- df  # creates copy
+# normalization of amount of protein to equal 100%
 
-  # selects all cols 
-  col_range <- 1:length(ctrl_filtered)
-
-  # set amount to sum = 100% for each column
-  for (j in col_range) {
-    col_sum <- sum(df[[j]])
-    if (col_sum != 0) {
-      df_norm[[j]] <- (df[[j]] / col_sum * 100)
-    } else {
-      df_norm[[j]] <- 0  # oder NA
-    }
-  }
-  return(df_norm)
+# create normalization function
+normalize_rows <- function(df) {
+  values <- df[, -1]
+  normed <- values / rowSums(values) * 100
+  return(cbind(Protein_Name = df[, 1], normed))
 }
 
-# apply to filtered dataframes
-ctrl_norm_percent <- normalized_cols(ctrl_filtered)
-rnase_norm_percent <- normalized_cols(rnase_filtered)
+# apply to both dataframes
+ctrl_final <- normalize_rows(means_ctrl)
+rnase_final <- normalize_rows(means_rnase)
 
-#depict result
-head(ctrl_norm_percent)
-head(rnase_norm_percent)
+#depict results
+head(ctrl_final)
+head(rnase_final)
 
 #check if sums equal 100
-colSums(ctrl_norm_percent)  
-colSums(rnase_norm_percent)
+summary(rowSums(ctrl_final[, 2:26]))
+summary(rowSums(rnase_final[,2:26]))
 
 ```
 
