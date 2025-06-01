@@ -539,6 +539,9 @@ head(rnase_final)
 summary(rowSums(ctrl_final[, 2:26]))
 summary(rowSums(rnase_final[,2:26]))
 
+#check if normalization created NAs
+#finding NAs
+sum(is.na(A549_NS))
 ```
 
 
