@@ -107,6 +107,85 @@ class(tables_by_fraction$fraction1)
 ```
 
 ###Nooorrii hier würde die reproduzierbarkeit gut hinpassen
+```{r}
+#reproducability 
+#geordnete Tabelle
+
+length(tables_by_fraction)
+print(tables_by_fraction)
+protein_names <- tables_by_fraction[[1]]$Protein_Name
+table_list_no_names <- lapply(tables_by_fraction, function(x) x[, -1])
+
+# Spaltenweise zusammenfügen
+ordered_table <- do.call(cbind, table_list_no_names)
+
+# Protein_Name wieder hinzufügen
+ordered_table <- cbind(Protein_Name = protein_names, ordered_table)
+ordered_table <- as.data.frame(ordered_table, check.names = FALSE)
+print(ordered_table)
+
+```
+
+```{r}
+ctrl_correlations <- data.frame(
+  fraction = character(),
+  ctrl1_vs_ctrl2 = numeric(),
+  ctrl1_vs_ctrl3 = numeric(),
+  ctrl2_vs_ctrl3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 6 
+  end_col <- start_col + 2
+  ctrl_data <- ordered_table[, start_col:end_col]
+  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
+  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
+  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
+    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
+    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
+  ))
+}
+
+# Ergebnis ansehen
+View(ctrl_correlations)
+plot(ctrl_correlations) 
+```
+
+```{r}
+##nochmal mit RNase Korrelation
+
+rnase_correlations <- data.frame(
+  fraction = character(),
+  rnase1_vs_rnase2 = numeric(),
+  rnase1_vs_rnase3 = numeric(),
+  rnase2_vs_rnase3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 6 
+  end_col <- start_col + 2
+  rnase_data <- ordered_table[, start_col:end_col]
+  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
+  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
+  rnase_correlations <- rbind(rnase_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
+    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
+    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
+  ))
+}
+
+View(rnase_correlations)
+```
+
+
+
 
 ```{r}
 #facilitates access to different fractions
@@ -545,79 +624,4 @@ sum(is.na(A549_NS))
 ```
 
 
-```{r}
-#reproducability 
-#geordnete Tabelle
 
-length(tables_by_fraction)
-print(tables_by_fraction)
-protein_names <- tables_by_fraction[[1]]$Protein_Name
-table_list_no_names <- lapply(tables_by_fraction, function(x) x[, -1])
-
-# Spaltenweise zusammenfügen
-ordered_table <- do.call(cbind, table_list_no_names)
-
-# Protein_Name wieder hinzufügen
-ordered_table <- cbind(Protein_Name = protein_names, ordered_table)
-ordered_table <- as.data.frame(ordered_table, check.names = FALSE)
-print(ordered_table)
-
-```
-
-```{r}
-ctrl_correlations <- data.frame(
-  fraction = character(),
-  ctrl1_vs_ctrl2 = numeric(),
-  ctrl1_vs_ctrl3 = numeric(),
-  ctrl2_vs_ctrl3 = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Schleife über alle 25 Fraktionen
-for (i in 0:24) {
-  start_col <- 2 + i * 6 
-  end_col <- start_col + 2
-  ctrl_data <- ordered_table[, start_col:end_col]
-  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
-  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
-  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
-    fraction = paste0("fraction", i + 1),
-    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
-    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
-    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
-  ))
-}
-
-# Ergebnis ansehen
-View(ctrl_correlations)
-plot(ctrl_correlations) ####Richtig so????
-```
-
-```{r}
-##nochmal mit RNase Korrelation
-
-rnase_correlations <- data.frame(
-  fraction = character(),
-  rnase1_vs_rnase2 = numeric(),
-  rnase1_vs_rnase3 = numeric(),
-  rnase2_vs_rnase3 = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Schleife über alle 25 Fraktionen
-for (i in 0:24) {
-  start_col <- 2 + i * 6 
-  end_col <- start_col + 2
-  rnase_data <- ordered_table[, start_col:end_col]
-  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
-  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
-  rnase_correlations <- rbind(rnase_correlations, data.frame(
-    fraction = paste0("fraction", i + 1),
-    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
-    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
-    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
-  ))
-}
-
-View(rnase_correlations)
-```
