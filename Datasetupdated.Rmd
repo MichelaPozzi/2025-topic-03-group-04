@@ -107,88 +107,6 @@ class(tables_by_fraction$fraction1)
 ```
 
 ###Nooorrii hier würde die reproduzierbarkeit gut hinpassen
-```{r}
-#reproducability 
-#geordnete Tabelle
-
-length(tables_by_fraction)
-print(tables_by_fraction)
-protein_names <- tables_by_fraction[[1]]$Protein_Name
-table_list_no_names <- lapply(tables_by_fraction, function(x) x[, -1])
-
-# Spaltenweise zusammenfügen
-ordered_table <- do.call(cbind, table_list_no_names)
-
-# Protein_Name wieder hinzufügen
-ordered_table <- cbind(Protein_Name = protein_names, ordered_table)
-ordered_table <- as.data.frame(ordered_table, check.names = FALSE)
-print(ordered_table)
-
-```
-
-```{r}
-ctrl_correlations <- data.frame(
-  fraction = character(),
-  ctrl1_vs_ctrl2 = numeric(),
-  ctrl1_vs_ctrl3 = numeric(),
-  ctrl2_vs_ctrl3 = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Schleife über alle 25 Fraktionen
-for (i in 0:24) {
-  start_col <- 2 + i * 6 
-  end_col <- start_col + 2
-  ctrl_data <- ordered_table[, start_col:end_col]
-  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
-  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
-  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
-    fraction = paste0("fraction", i + 1),
-    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
-    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
-    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
-  ))
-}
-
-# Ergebnis ansehen
-View(ctrl_correlations)
-plot(ctrl_correlations) 
-##FRAKTION 22
-```
-
-```{r}
-##nochmal mit RNase Korrelation
-
-rnase_correlations <- data.frame(
-  fraction = character(),
-  rnase1_vs_rnase2 = numeric(),
-  rnase1_vs_rnase3 = numeric(),
-  rnase2_vs_rnase3 = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Schleife über alle 25 Fraktionen
-for (i in 0:24) {
-  start_col <- 5 + i * 6 
-  end_col <- start_col + 2
-  rnase_data <- ordered_table[, start_col:end_col]
-  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
-  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
-  rnase_correlations <- rbind(rnase_correlations, data.frame(
-    fraction = paste0("fraction", i + 1),
-    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
-    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
-    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
-  ))
-}
-
-View(rnase_correlations)
-plot(rnase_correlations)
-##Fraktion 12! 20 22
-```
-
-
-
 
 ```{r}
 #facilitates access to different fractions
@@ -621,10 +539,177 @@ head(rnase_final)
 summary(rowSums(ctrl_final[, 2:26]))
 summary(rowSums(rnase_final[,2:26]))
 
-#check if normalization created NAs
-#finding NAs
-sum(is.na(A549_NS))
 ```
 
+
+```{r}
+#reproducability 
+#geordnete Tabelle
+
+length(tables_by_fraction)
+print(tables_by_fraction)
+protein_names <- tables_by_fraction[[1]]$Protein_Name
+table_list_no_names <- lapply(tables_by_fraction, function(x) x[, -1])
+
+# Spaltenweise zusammenfügen
+ordered_table <- do.call(cbind, table_list_no_names)
+
+# Protein_Name wieder hinzufügen
+ordered_table <- cbind(Protein_Name = protein_names, ordered_table)
+ordered_table <- as.data.frame(ordered_table, check.names = FALSE)
+print(ordered_table)
+
+```
+
+```{r}
+ctrl_correlations <- data.frame(
+  fraction = character(),
+  ctrl1_vs_ctrl2 = numeric(),
+  ctrl1_vs_ctrl3 = numeric(),
+  ctrl2_vs_ctrl3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 6 
+  end_col <- start_col + 2
+  ctrl_data <- ordered_table[, start_col:end_col]
+  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
+  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
+  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
+    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
+    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
+  ))
+}
+
+# Ergebnis ansehen
+View(ctrl_correlations)
+plot(ctrl_correlations) ####Richtig so????
+```
+
+```{r}
+##nochmal mit RNase Korrelation
+
+rnase_correlations <- data.frame(
+  fraction = character(),
+  rnase1_vs_rnase2 = numeric(),
+  rnase1_vs_rnase3 = numeric(),
+  rnase2_vs_rnase3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 6 
+  end_col <- start_col + 2
+  rnase_data <- ordered_table[, start_col:end_col]
+  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
+  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
+  rnase_correlations <- rbind(rnase_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
+    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
+    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
+  ))
+}
+
+View(rnase_correlations)
+```
+
+```{r}
+#batch effect 
+
+sample_names <- colnames(A549_NS)[-1]  # Annahme: Erste Spalte ist Genname
+batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # Extrahiere "B1", "B2", etc.
+#matrix 
+expr_matrix <- as.matrix(A549_NS[, -1])
+rownames(expr_matrix) <- A549_NS[, 1]
+
+#PCA 
+pca <- prcomp(t(expr_matrix), scale. = TRUE)
+
+# Plot
+plot(pca$x[,1], pca$x[,2], col=as.factor(batch_info),
+     pch=19, xlab="PC1", ylab="PC2", main="PCA zur Batch-Detektion")
+legend("topright", inset=c(-0.4,1),        # Position rechts außerhalb
+       legend=unique(batch_info),
+       col=1:length(unique(batch_info)), pch=19, title="Batch")
+
+
+```
+```{r}
+expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: Erste Spalte sind Gen-IDs
+rownames(expr_matrix) <- A549_NS[, 1]
+
+pca_result <- prcomp(t(expr_matrix), scale. = TRUE)
+
+sample_names <- colnames(expr_matrix)
+batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # z.B. "Sample1_B1" → "B1"
+treatment_info <- sub("^(.*?)_.*$", "\\1", sample_names)  # z.B. "Control_B1" → "Control"
+
+library(ggplot2)
+
+pca_df <- as.data.frame(pca_result$x[, 1:2])  # PC1 & PC2
+pca_df$batch <- batch_info
+pca_df$treatment <- treatment_info
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "PCA Plot", color = "Batch") +
+  coord_cartesian(xlim = c(-15, 14), ylim = c(-13, 14))
+
+head(pca_df)
+str(pca_df)
+
+```
+```{r}
+# andere version 
+expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: die erste Spalte ist keine Expression
+batch_info <- as.factor(A549_NS$batch)   # Batch-Informationen
+
+# Berechnen der Distanzmatrix
+dist_matrix <- dist(t(expr_matrix))  # t() = Samples als Zeilen verwenden
+
+# Hierarchisches Clustering durchführen
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# Dendrogramm plotten
+plot(hc, labels = FALSE, main = "Clustering der Proben (Batch-Effekt)")
+
+# Dendrogramm und Batch-Färbung
+library(dendextend)
+
+# Umwandeln der hclust in ein dendrogramm
+dend <- as.dendrogram(hc)
+
+# Färben der Labels nach Batch
+labels_colors(dend) <- as.numeric(batch_info)[order.dendrogram(dend)]
+
+# Plotten des Dendrogramms
+plot(dend, main = "Hierarchisches Clustering mit Batch-Färbung")
+
+# Heatmap mit Batch-Zeilenannotation
+library(pheatmap)
+
+annotation <- data.frame(Batch = batch_info)
+rownames(annotation) <- colnames(expr_matrix)
+
+# Heatmap erstellen
+pheatmap(expr_matrix, scale = "row", annotation_col = annotation,
+         show_colnames = FALSE, main = "Heatmap zur Batch-Erkennung")
+
+```
+
+```{r}
+#limma install
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(version = "3.21")
+```
 
 
