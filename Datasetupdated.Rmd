@@ -442,16 +442,39 @@ calculate_fraction_percentages <- function(mean_df) {
 
 
 # Prozentuale Verteilungen
-percent_mean_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
-percent_mean_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
+normalized_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
+normalized_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
 
 # Kontrolle
-head(percent_mean_ctrl_df)
-head(percent_mean_rnase_df)
+head(normalized_ctrl_df)
+head(normalized_rnase_df)
 
 # Zeilensummen berechnen (ab der zweiten Spalte)
-zeilensumme <- rowSums(percent_mean_ctrl_df[, -1])
+zeilensumme <- rowSums(normalized_ctrl_df[, -1])
 print(zeilensumme)
+```
+
+```{r}
+# Prüfen, ob es Zeilen mit Summe == 0 gibt (ab Spalte 2) für Ctrl
+zeilensummen <- rowSums(normalized_ctrl_df[, -1])
+
+# Logischer Vektor: TRUE für Zeilen, deren Summe 0 ist
+zeilen_mit_nullsumme <- zeilensummen == 0
+
+# Gibt es mindestens eine solche Zeile?
+any(zeilen_mit_nullsumme)
+
+#für RNase
+# Prüfen, ob es Zeilen mit Summe == 0 gibt (ab Spalte 2)
+zeilensummen_rnase <- rowSums(normalized_rnase_df[, -1])
+
+# Logischer Vektor: TRUE für Zeilen, deren Summe 0 ist
+zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
+
+# Gibt es mindestens eine solche Zeile?
+any(zeilen_mit_nullsumme_rnase)
+
+
 ```
 
 
