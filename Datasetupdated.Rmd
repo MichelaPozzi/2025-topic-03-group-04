@@ -48,79 +48,6 @@ sum(is.na(A549_NS))
 ```
 
 ##Data cleanup##
-```{r}
-#definition of general parameters
-n_fractions <- 25
-n_replicates <- 6
-
-# treatment: variating CTRL and RNAse, 75 pairs -> 150 columns 
-treatment <- factor(rep(c("CTRL", "RNASE"), times = n_fractions * n_replicates/2))
-# replicates: 6 replicates per fraction
-replicates <- factor(c("ctrl1","rnase1","ctrl2","rnase2","ctrl3","rnase3"))
-replicates <- factor(rep(replicates, times = n_fractions))
-# fraction: each fraction has 6 values
-fraction <- factor(rep(paste0("fraction",1:n_fractions),each = n_replicates)) 
-
-```
-
-```{r}
-#dataframe definition
-df <- data.frame(
-  row.names = colnames(A549_NS)[colnames(A549_NS) != "Protein_Name"], 
-  treatment = treatment, 
-  replicates = replicates, 
-  fraction = fraction)
-
-#depict result
-head(df)
-```
-
-```{r}
-#sorting loop by fraction
-# define fraction names
-fraction_names <- levels(fraction)
-
-# create subtables
-tables_by_fraction <- lapply(fraction_names, function(fx) {
-  # select all colnames in A549_NS, which belong to a certain fraction
-  cols <- rownames(df)[df$fraction == fx]
-
-  #separate control and RNase sample within the subtable (grep-function searches for the word "Ctrl" or "RNase among the columnnames -> generally searches for textpatterns in vectors)
-  ctrl_cols <- grep("Ctrl",cols, value = TRUE)
-  RNase_cols <- grep("RNase",cols, value = TRUE)
-  
-  ordered_cols <- c(ctrl_cols, RNase_cols)
-
-  
-  # extract the said columns + Protein_Name
-  subdf <- A549_NS[, c("Protein_Name", ordered_cols)]
-  
-})
-
-# assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
-names(tables_by_fraction) <- fraction_names
-
-#depict result
-head(tables_by_fraction$fraction1)
-class(tables_by_fraction$fraction1)
-
-```
-
-
-
-```{r}
-#facilitates access to different fractions
-df_list <- list()
-
-for (a in 1:25) {
-  df_list[[a]] <- as.data.frame(tables_by_fraction[[paste0("fraction", a)]])
-}
-
-#depict result
-head(df_list[[1]])
-class(df_list[[1]])
-
-```
 
 ```{r}
 # Alle Spaltennamen abrufen
@@ -140,6 +67,8 @@ head(df_rnase)
 
 
 ```
+
+####Reproducibility####
 
 ```{r}
 #Reproducabilty der Control Messung
@@ -201,6 +130,8 @@ View(rnase_correlations)
 plot(rnase_correlations)
 ```
 
+####Normalization###
+
 ```{r}
 # Funktion zum spaltenweisen Mittelwert (außer Protein_Name)
 compute_column_means <- function(df) {
@@ -233,7 +164,6 @@ sum(rnase_means_df[, 2]==0)
 ```
 
 ```{r}
-# Funktion: Mittelwert der zwei nächsten Replikate
 # Funktion: Mittelwert des ähnlichsten Replikatpaares (von 3 Werten)
 mean_of_closest_pair <- function(x) {
   combs <- combn(x, 2)                          # Alle 2er-Kombinationen
@@ -535,84 +465,7 @@ any(zeilen_mit_nullsumme_rnase)
 
 ```
 
-
-```{r}
-#reproducability 
-#geordnete Tabelle
-
-length(tables_by_fraction)
-print(tables_by_fraction)
-protein_names <- tables_by_fraction[[1]]$Protein_Name
-table_list_no_names <- lapply(tables_by_fraction, function(x) x[, -1])
-
-# Spaltenweise zusammenfügen
-ordered_table <- do.call(cbind, table_list_no_names)
-
-# Protein_Name wieder hinzufügen
-ordered_table <- cbind(Protein_Name = protein_names, ordered_table)
-ordered_table <- as.data.frame(ordered_table, check.names = FALSE)
-print(ordered_table)
-
-```
-
-```{r}
-ctrl_correlations <- data.frame(
-  fraction = character(),
-  ctrl1_vs_ctrl2 = numeric(),
-  ctrl1_vs_ctrl3 = numeric(),
-  ctrl2_vs_ctrl3 = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Schleife über alle 25 Fraktionen
-for (i in 0:24) {
-  start_col <- 2 + i * 6 
-  end_col <- start_col + 2
-  ctrl_data <- ordered_table[, start_col:end_col]
-  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
-  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
-  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
-    fraction = paste0("fraction", i + 1),
-    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
-    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
-    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
-  ))
-}
-
-# Ergebnis ansehen
-View(ctrl_correlations)
-plot(ctrl_correlations) ####Richtig so????
-```
-
-```{r}
-##nochmal mit RNase Korrelation
-
-rnase_correlations <- data.frame(
-  fraction = character(),
-  rnase1_vs_rnase2 = numeric(),
-  rnase1_vs_rnase3 = numeric(),
-  rnase2_vs_rnase3 = numeric(),
-  stringsAsFactors = FALSE
-)
-
-# Schleife über alle 25 Fraktionen
-for (i in 0:24) {
-  start_col <- 2 + i * 6 
-  end_col <- start_col + 2
-  rnase_data <- ordered_table[, start_col:end_col]
-  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
-  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
-  rnase_correlations <- rbind(rnase_correlations, data.frame(
-    fraction = paste0("fraction", i + 1),
-    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
-    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
-    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
-  ))
-}
-
-View(rnase_correlations)
-```
-
+###Batch Effect###
 
 ```{r}
 install.packages("mixOmics") 
