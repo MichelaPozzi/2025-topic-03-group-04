@@ -205,293 +205,217 @@ class(df_list[[1]])
 ```
 
 ```{r}
-# Function to extract and sort columns by condition and replicate
-get_ordered_columns <- function(df, condition, replicates) {
-  col_names <- colnames(df)
-  condition_cols <- grep(condition, col_names, value = TRUE)
-  
-  # Sort by replicate order
-  sorted_cols <- unlist(lapply(replicates, function(rep) {
-    grep(rep, condition_cols, value = TRUE)
-  }))
-  
-  return(sorted_cols)
-}
+# Alle Spaltennamen abrufen
+col_names <- colnames(A549_NS)
 
-# Define replicates
-replicates <- c("Rep1", "Rep2", "Rep3")
+# Spalten für Ctrl und RNase erkennen (inkl. Protein_Name behalten)
+ctrl_cols <- c("Protein_Name", grep("Ctrl", col_names, value = TRUE))
+rnase_cols <- c("Protein_Name", grep("RNase", col_names, value = TRUE))
 
-# Get ordered columns
-ctrl_ordered_cols <- get_ordered_columns(A549_NS, "Ctrl", replicates)
-rnase_ordered_cols <- get_ordered_columns(A549_NS, "RNase", replicates)
+# Dataframes erstellen
+df_ctrl <- A549_NS[, ctrl_cols, drop = FALSE]
+df_rnase <- A549_NS[, rnase_cols, drop = FALSE]
 
-# Subset and include "Protein_Name"
-df_ctrl <- A549_NS[, c("Protein_Name", ctrl_ordered_cols), drop = FALSE]
-df_rnase <- A549_NS[, c("Protein_Name", rnase_ordered_cols), drop = FALSE]
-
-# Preview results
+# Vorschau anzeigen
 head(df_ctrl)
 head(df_rnase)
 
+
 ```
 
 
 ```{r}
-#create separate sublists for Ctrl and RNase per fraction and computes column-wise means
-
-ctrl_list <- list()
-rnase_list <- list()
-
-for (r in 1:25) {
+# Funktion zum spaltenweisen Mittelwert (außer Protein_Name)
+compute_column_means <- function(df) {
+  # Nur numerische Spalten auswählen (außer Protein_Name)
+  numeric_data <- df[, sapply(df, is.numeric)]
   
-  # defines access to the different fractions 
-  df <- df_list[[r]]  
-  # only takes numeric columns into account
-  numeric_df <- df[, sapply(df, is.numeric)] 
-  # computes averages by. column
-  avg_vector <- colMeans(numeric_df)
-  # transform result to dataframe
-  avg_df <- as.data.frame(t(avg_vector))
+  # Spaltenweise Mittelwerte berechnen
+  col_means <- colMeans(numeric_data, na.rm = TRUE)
   
-  # adds column with fraction name
-  fraction_label <- paste0("fraction", r)
-  
-  # creates separate dataframes for Ctrl and RNase per Fraktion
-  ctrl_df <- avg_df[, 1:3]  # Crtl replicates make up the first three columns of avg_df
-  ctrl_df$fraction <- fraction_label
-  
-  rnase_df <- avg_df[, 4:6]  # RNase makes up columns 4 to 6
-  rnase_df$fraction <- fraction_label
-  
-  # rename columns
-  colnames(ctrl_df) <- c("Mean_CTRL1", "Mean_CTRL2", "Mean_CTRL3", "fraction")
-  colnames(rnase_df) <- c("Mean_RNASE1", "Mean_RNASE2", "Mean_RNASE3", "fraction")
-  
-  # save columns in respective lists
-  ctrl_list[[r]] <- ctrl_df
-  rnase_list[[r]] <- rnase_df
+  return(col_means)
 }
 
-# create to dataframes which contain the averages for all fractions
-ctrl_combined <- do.call(rbind, ctrl_list)
-rnase_combined <- do.call(rbind, rnase_list)
+# Mittelwerte berechnen
+ctrl_means <- compute_column_means(df_ctrl)
+rnase_means <- compute_column_means(df_rnase)
 
-# depict result
-head(ctrl_combined)
-head(rnase_combined)
+
+# Mittelwerte als DataFrame speichern
+ctrl_means_df <- data.frame(Sample = names(ctrl_means), Mean = as.numeric(ctrl_means))
+rnase_means_df <- data.frame(Sample = names(rnase_means), Mean = as.numeric(rnase_means))
+
+#depict results
+head(ctrl_means_df)
+head(rnase_means_df)
+
+#überprüfen ob Mittelwert == 0, da averages bei berechnungen des Normierungsfaktors im Nenner stehen
+sum(ctrl_means_df[, 2] == 0)
+sum(rnase_means_df[, 2]==0)
 
 ```
 
 ```{r}
-# determine the mean of the two closest replicate means
-
-# function: mean of the two closest means (of 3 means per treatment)
+# Funktion: Mittelwert der zwei nächsten Replikate
+# Funktion: Mittelwert des ähnlichsten Replikatpaares (von 3 Werten)
 mean_of_closest_pair <- function(x) {
-  combs <- combn(x, 2)
-  diffs <- abs(combs[1, ] - combs[2, ])
-  min_idx <- which.min(diffs)
-  mean(combs[, min_idx])
+  combs <- combn(x, 2)                          # Alle 2er-Kombinationen
+  diffs <- abs(combs[1, ] - combs[2, ])         # Absolute Differenzen berechnen
+  min_idx <- which.min(diffs)                   # Index des kleinsten Unterschieds
+  mean(combs[, min_idx])                        # Mittelwert des ähnlichsten Paares
 }
 
-# initialize result vectors
-final_means_control <- numeric(n_fractions)
-final_means_rnase <- numeric(n_fractions)
-
-# loop over all 25 fractions
-for (r in 1:n_fractions) {
+# Funktion: Datenvektor blockweise (je 3 Werte) verarbeiten
+process_blocks <- function(values_vector) {
+  n_blocks <- length(values_vector) / 3         # Anzahl der Fraktionen
+  result <- numeric(n_blocks)
   
-  # access replicate means of control and RNase
-  control_values <- as.numeric(ctrl_combined[r, 1:3])
-  rnase_values   <- as.numeric(rnase_combined[r, 1:3])
+  for (i in 1:n_blocks) {
+    block <- values_vector[((i - 1) * 3 + 1):(i * 3)] #values vector enthält die drei werte der replikate für jede fraktion
+    result[i] <- mean_of_closest_pair(block)
+  }
   
-  # compution of the final means
-  final_means_control[r] <- mean_of_closest_pair(control_values)
-  final_means_rnase[r]   <- mean_of_closest_pair(rnase_values)
+  return(result)
 }
-# generate a dataframe with both treatment means per fraction
-  final_means_df <- data.frame(
-  fraction = 1:length(final_means_control),
-  control_mean = final_means_control,
-  rnase_mean = final_means_rnase)
 
-# depict results/dataframe 
-head(final_means_control)
-head(final_means_rnase)
-head(final_means_df)
+# Wertevektoren aus DataFrames extrahieren
+control_values <- ctrl_means_df$Mean    # Annahme: Spalte heißt 'Mittelwert'
+rnase_values   <- rnase_means_df$Mean
+
+# Berechnung durchführen
+control_means <- process_blocks(control_values)
+rnase_means   <- process_blocks(rnase_values)
+
+# Ergebnis als DataFrame zusammenfassen
+closest_means_ctrl <- data.frame(
+  Fraktion = paste0("Fraction", 1:length(control_means)),  
+  Control  = control_means
+)
+
+closest_means_rnase <- data.frame(
+  Fraktion = paste0("Fraction", 1:length(control_means)),  
+  RNase = rnase_means)
+
+# Ausgabe
+print(closest_means_ctrl)
+print(closest_means_rnase)
 
 ```
 
 ```{r}
-# compute normalization vectors for each replicate
-
-# number of fractions and replicates
 n_fractions <- 25
 n_replicates <- 3
 
-# initialize matrizes for saving the normalizationfacotrs 
+# ctrl_means_df und rnase_means_df enthalten alle Replikat-Mittelwerte in einer Spalte, z.B. 'Means'
+# ctrl_final_means_df und rnase_final_means_df enthalten je einen Mittelwert pro Fraktion in 'FinalMean'
+
+# Die Replikatwerte für jede Fraktion in eine Matrix (25x3) umwandeln
+ctrl_mat <- matrix(ctrl_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
+rnase_mat <- matrix(rnase_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
+
+# Initialisiere Normalisierungsmatrizen
 norm_ctrl_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 norm_rnase_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 
-# loop over all fractions
+# Schleife über Fraktionen
 for (r in 1:n_fractions) {
-  # extract values of the replicates
-  control_values <- as.numeric(ctrl_combined[r, 1:3])
-  rnase_values   <- as.numeric(rnase_combined[r, 1:3])
+  control_values <- ctrl_mat[r, ]  # 3 Replikate Control
+  rnase_values <- rnase_mat[r, ]   # 3 Replikate RNase
   
-  # define final_means of the treatments
-  mean_control <- final_means_control[r]
-  mean_rnase   <- final_means_rnase[r]
+  # FinalMean aus getrennten Final-DataFrames
+  mean_control <- closest_means_ctrl[r, 2]
+  mean_rnase <- closest_means_rnase[r, 2]
   
-  # compute normalization factors
-  norm_ctrl_mat[r, ] <- control_values / mean_control
-  norm_rnase_mat[r, ] <- rnase_values / mean_rnase
-}
-
-# create vectors for each replicate
-norm.ctrl1 <- norm_ctrl_mat[, 1]
-norm.ctrl2 <- norm_ctrl_mat[, 2]
-norm.ctrl3 <- norm_ctrl_mat[, 3]
-
-norm.rnase1 <- norm_rnase_mat[, 1]
-norm.rnase2 <- norm_rnase_mat[, 2]
-norm.rnase3 <- norm_rnase_mat[, 3]
-
-```
-
-```{r}
-# depict results
-head(norm.ctrl1)
-head(norm.ctrl2)
-head(norm.ctrl3)
-head(norm.rnase1)
-head(norm.rnase2)
-head(norm.rnase3)
-
-```
-
-
-```{r}
-# normalization of the data per replicate & fraction -> stimmt so nicht, glaube ich !!!!!!!!
-
-# initialize empty lists for the normalized tables
-norm_ctrl_list <- list()
-norm_rnase_list <- list()
-
-# loop over all fractions
-for (r in 1:n_fractions) {
-  
-  # use only the first three columns of the dataframes (the last   column contains rownames)
-  ctrl_df <- ctrl_combined[r, 1:3] ####müssten Originaldaten sein!!!!!!!
-  rnase_df <- rnase_combined[r, 1:3]
-  
-  # get the corresponding normalization factors for each fraction
-  norm_factors_ctrl <- norm_ctrl_mat[r, ]
-  norm_factors_rnase <- norm_rnase_mat[r, ]
-  
-  # apply normalization
-  norm_ctrl <- as.data.frame(mapply(`*`, ctrl_df, norm_factors_ctrl, SIMPLIFY = FALSE))
-  norm_rnase <- as.data.frame(mapply(`*`, rnase_df, norm_factors_rnase, SIMPLIFY = FALSE))
-  
-  # save in lists
-  norm_ctrl_list[[r]] <- norm_ctrl
-  norm_rnase_list[[r]] <- norm_rnase
-}
-
-# optional: combine to one df per treatment
-norm_ctrl_combined <- do.call(rbind, norm_ctrl_list)
-norm_rnase_combined <- do.call(rbind, norm_rnase_list)
-
-# depict result
-head(norm_ctrl_combined)
-head(norm_rnase_combined)
-
-```
-
-```{r}
-#normalization of the data per replicate & fraction for Ctrl
-
-#Orignal dataframe that is ordered by condition and replicates is used
-
-# results should have same dimensions as df_ctrl
-df_new_ctrl <- df_ctrl  
-
-# for each column of the normalization factor matrix
-for (i in 1:3) {
-  # matching column range in original data frame
-  col_idx <- ((i - 1) * 25 + 1):(i * 25)
-  
-  # factor vector: creates vector for each column
-  factors <- norm_ctrl_combined[, i]
-  
-  # multiply column with its factor
-  for (j in 2:25) {
-    df_new_ctrl[, col_idx[j]] <- df_ctrl[, col_idx[j]] * factors[j]
+  # Sicherstellen, dass nur 1 Wert pro Fraktion
+  if(length(mean_control) != 1 | length(mean_rnase) != 1) {
+    stop(paste("Mehr oder weniger als ein FinalMean für Fraktion", r))
   }
+  
+  # Normalisierung (Zähler und Nenner je nach Bedarf drehen)
+  norm_ctrl_mat[r, ] <- mean_control / control_values
+  norm_rnase_mat[r, ] <- mean_rnase / rnase_values
 }
 
-#depict result
-head(df_new_ctrl)
+head(norm_ctrl_mat)
+head(norm_rnase_mat)
+
 ```
 
 ```{r}
-#normalization of the data per replicate & fraction for Ctrl
 
-#Orignal dataframe that is ordered by condition and replicates is used
-
-# results should have same dimensions as df_ctrl
-df_new_rnase <- df_rnase  
-
-# for each column of the normalization factor matrix
-for (i in 1:3) {
-  # matching column range in original data frame
-  col_idx <- ((i - 1) * 25 + 1):(i * 25)
+normalize_df <- function(df, norm_mat) {
+  # Extrahiere numerische Daten (angenommen: erste Spalte ist "Protein_Name")
+  data_mat <- as.matrix(df[, -1])
   
-  # factor vector: creates vector for each column
-  factors <- norm_rnase_combined[, i]
+  # Dimensionen prüfen
+  n_blocks <- nrow(norm_mat)
+  cols_per_block <- ncol(norm_mat)
   
-  # multiply column with its factor
-  for (j in 2:25) {
-    df_new_rnase[, col_idx[j]] <- df_rnase[, col_idx[j]] * factors[j]
+  # Normierung blockweise anwenden: Normierungsmatrix wird spaltenweise durchlaufen und in dieser Reihenfolge auf die Spalten der Originaldaten angewendet
+  for (i in 1:n_blocks) {
+    for (j in 1:cols_per_block) {
+      col_index <- (i - 1) * cols_per_block + j
+      data_mat[, col_index] <- data_mat[, col_index] * norm_mat[i, j]
+    }
   }
+  
+  # Rückgabe als DataFrame (mit Protein_Name)
+  result_df <- cbind(Protein_Name = df$Protein_Name, as.data.frame(data_mat))
+  return(result_df)
 }
 
-#depict result
-head(df_new_rnase)
+# Anwenden auf Ctrl und RNase Daten
+normed_ctrl_df  <- normalize_df(df_ctrl, norm_ctrl_mat)
+normed_rnase_df <- normalize_df(df_rnase, norm_rnase_mat)
+
+# Ergebnisse anzeigen
+head(normed_ctrl_df)
+head(normed_rnase_df)
+
+
 ```
 
 
 ```{r}
 # Mean filter function for a row (preserving first and last value)
-mean_filter <- function(x) {
-  n <- length(x)
-  y <- numeric(n)
-  y[1] <- x[1] #first value will not be changed (e.g. Fraction1_Rep1)
-  y[n] <- x[n] #last value will not be changed (e.g. Fraction25_Rep1)
-  y[2:(n-1)] <- sapply(2:(n - 1), function(i) mean(x[(i - 1):(i + 1)])) #creates filter masks 
-  return(y)
+smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
+  proteins <- df[, 1]
+  
+  smoothed_reps <- lapply(1:n_replicates, function(rep) {
+    cols <- seq(1 + rep, 1 + rep + (n_fractions - 1) * 3, by = 3)
+    rep_data <- df[, cols]
+    
+    smoothed_data <- matrix(NA, nrow = nrow(rep_data), ncol = n_fractions)
+    smoothed_data[, 1] <- rep_data[, 1]
+    smoothed_data[, n_fractions] <- rep_data[, n_fractions]
+    
+    for (i in 2:(n_fractions - 1)) {
+      smoothed_data[, i] <- rowMeans(rep_data[, (i - 1):(i + 1)], na.rm = TRUE)
+    }
+    
+    smoothed_df <- as.data.frame(smoothed_data)
+    colnames(smoothed_df) <- paste0("Fraction", 1:n_fractions, "_Rep", rep)
+    smoothed_df
+  })
+  
+  combined_df <- do.call(cbind, smoothed_reps)
+  
+  # Sortiere Spalten: erst Fraktion 1 mit allen Replikaten, dann Fraktion 2 usw.
+  sorted_cols <- unlist(lapply(1:n_fractions, function(frac) {
+    paste0("Fraction", frac, "_Rep", 1:n_replicates)
+  }))
+  
+  final_df <- cbind(Protein = proteins, combined_df[, sorted_cols])
+  return(final_df)
 }
 
-# Function to apply the filter block-wise
-apply_mean_filter_blocks <- function(df, starts, block_size = 25) {
-  df_filtered <- df
-  for (start_col in starts) {
-    cols <- start_col:(start_col + block_size - 1)
-    df_filtered[, cols] <- t(apply(df[, cols], 1, mean_filter))
-  }
-  return(df_filtered)
-}
+# Anwendung für Kontroll- und RNAse-Datensätze:
+final_smoothed_ctrl <- smooth_and_reorder(normed_ctrl_df)
+final_smoothed_rnase <- smooth_and_reorder(normed_rnase_df)
 
-# Define block starts
-starts <- c(2, 27, 52)
-
-# Apply to both datasets
-ctrl_filtered  <- apply_mean_filter_blocks(df_new_ctrl,   starts)
-rnase_filtered <- apply_mean_filter_blocks(df_new_rnase,  starts)
-
-# Show results
-head(ctrl_filtered)
-head(rnase_filtered)
-
+# depict result
+head(final_smoothed_ctrl)
+head(final_smoothed_rnase)
 
 ```
 
