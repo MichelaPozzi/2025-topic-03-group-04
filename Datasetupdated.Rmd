@@ -153,6 +153,7 @@ for (i in 0:24) {
 # Ergebnis ansehen
 View(ctrl_correlations)
 plot(ctrl_correlations) 
+##FRAKTION 22
 ```
 
 ```{r}
@@ -168,7 +169,7 @@ rnase_correlations <- data.frame(
 
 # Schleife über alle 25 Fraktionen
 for (i in 0:24) {
-  start_col <- 2 + i * 6 
+  start_col <- 5 + i * 6 
   end_col <- start_col + 2
   rnase_data <- ordered_table[, start_col:end_col]
   colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
@@ -182,6 +183,8 @@ for (i in 0:24) {
 }
 
 View(rnase_correlations)
+plot(rnase_correlations)
+##Fraktion 12! 20 22
 ```
 
 
