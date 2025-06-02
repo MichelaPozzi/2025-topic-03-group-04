@@ -106,7 +106,7 @@ class(tables_by_fraction$fraction1)
 
 ```
 
-###Nooorrii hier würde die reproduzierbarkeit gut hinpassen
+
 
 ```{r}
 #facilitates access to different fractions
@@ -141,6 +141,7 @@ head(df_rnase)
 
 ```
 
+###Nooorrii hier würde die reproduzierbarkeit gut hinpassen
 
 ```{r}
 # Funktion zum spaltenweisen Mittelwert (außer Protein_Name)
