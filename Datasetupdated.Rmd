@@ -619,6 +619,13 @@ for (i in 0:24) {
 View(rnase_correlations)
 ```
 
+
+```{r}
+install.packages("mixOmics") 
+
+
+```
+
 ```{r}
 #batch effect 
 
