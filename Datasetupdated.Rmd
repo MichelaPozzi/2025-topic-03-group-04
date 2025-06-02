@@ -540,89 +540,82 @@ install.packages("mixOmics")
 ```
 
 ```{r}
-#batch effect 
-
-sample_names <- colnames(A549_NS)[-1]  # Annahme: Erste Spalte ist Genname
-batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # Extrahiere "B1", "B2", etc.
-#matrix 
-expr_matrix <- as.matrix(A549_NS[, -1])
-rownames(expr_matrix) <- A549_NS[, 1]
-
-#PCA 
-pca <- prcomp(t(expr_matrix), scale. = TRUE)
-
-# Plot
-plot(pca$x[,1], pca$x[,2], col=as.factor(batch_info),
-     pch=19, xlab="PC1", ylab="PC2", main="PCA zur Batch-Detektion")
-legend("topright", inset=c(-0.4,1),        # Position rechts außerhalb
-       legend=unique(batch_info),
-       col=1:length(unique(batch_info)), pch=19, title="Batch")
+library(mixOmics)
+res.pca <- pca((A549_NS)[-1], ncomp = 10)
+plot(res.pca)  
 
 
 ```
 ```{r}
-expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: Erste Spalte sind Gen-IDs
-rownames(expr_matrix) <- A549_NS[, 1]
-
-pca_result <- prcomp(t(expr_matrix), scale. = TRUE)
-
-sample_names <- colnames(expr_matrix)
-batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # z.B. "Sample1_B1" → "B1"
-treatment_info <- sub("^(.*?)_.*$", "\\1", sample_names)  # z.B. "Control_B1" → "Control"
-
+#ohne transformation 
+batch.pca.before <- pca((A549_NS)[-1], ncomp = 3)
 library(ggplot2)
 
-pca_df <- as.data.frame(pca_result$x[, 1:2])  # PC1 & PC2
-pca_df$batch <- batch_info
-pca_df$treatment <- treatment_info
+# Extrahiere Scores (PCA-Komponenten)
+pca_scores <- as.data.frame(batch.pca.before$variates$X)
 
-ggplot(pca_df, aes(x = PC1, y = PC2, color = batch)) +
-  geom_point(size = 3, alpha = 0.7) +
-  theme_minimal() +
-  labs(title = "PCA Plot", color = "Batch") +
-  coord_cartesian(xlim = c(-15, 14), ylim = c(-13, 14))
-
-head(pca_df)
-str(pca_df)
-
+ggplot(pca_scores, aes(x = PC1, y = PC2)) +
+  geom_point(size = 3, alpha = 0.8, color = "steelblue") +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot (Ungruppiert)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5)
+  )
 ```
 ```{r}
-# andere version 
-expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: die erste Spalte ist keine Expression
-batch_info <- as.factor(A549_NS$batch)   # Batch-Informationen
+batch.pca.before <- pca(t(A549_NS[-1]), ncomp = 3)
 
-# Berechnen der Distanzmatrix
-dist_matrix <- dist(t(expr_matrix))  # t() = Samples als Zeilen verwenden
+# Hole Sample-Namen
+sample_names <- colnames(A549_NS)[-1]
 
-# Hierarchisches Clustering durchführen
-hc <- hclust(dist_matrix, method = "ward.D2")
+# Extrahiere Fraction-Teil als Batch-Label
+fraction_labels <- sapply(strsplit(sample_names, "_"), `[`, 1)
 
-# Dendrogramm plotten
-plot(hc, labels = FALSE, main = "Clustering der Proben (Batch-Effekt)")
+# Hole PCA-Sample-Scores
+pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
 
-# Dendrogramm und Batch-Färbung
-library(dendextend)
+# Anhängen der Batch-Labels
+pca_sample_scores$batch <- fraction_labels
 
-# Umwandeln der hclust in ein dendrogramm
-dend <- as.dendrogram(hc)
+# Plot
+library(ggplot2)
 
-# Färben der Labels nach Batch
-labels_colors(dend) <- as.numeric(batch_info)[order.dendrogram(dend)]
-
-# Plotten des Dendrogramms
-plot(dend, main = "Hierarchisches Clustering mit Batch-Färbung")
-
-# Heatmap mit Batch-Zeilenannotation
-library(pheatmap)
-
-annotation <- data.frame(Batch = batch_info)
-rownames(annotation) <- colnames(expr_matrix)
-
-# Heatmap erstellen
-pheatmap(expr_matrix, scale = "row", annotation_col = annotation,
-         show_colnames = FALSE, main = "Heatmap zur Batch-Erkennung")
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot (Samples, gefärbt nach Fraction-Batch)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "right" ) +
+  guides(color = guide_legend(title = "Batch (Fraction)"))
+```
+```{r}
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = fraction, shape = treatment)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot (Fraction, Farbe, Treatment geformt )"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(hjust = 0.5),
+    legend.position = "right"
+  ) +
+  guides(
+    color = guide_legend(title = "Fraction"),
+    shape = guide_legend(title = "Treatment")
+  )
 
 ```
+
 
 ```{r}
 #limma install
