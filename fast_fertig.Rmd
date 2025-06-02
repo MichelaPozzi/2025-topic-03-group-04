@@ -1,0 +1,722 @@
+---
+title: "Nochmal_Reproducabilty"
+author: "Nora Otic"
+date: "2025-06-02"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
+
+
+```{r}
+#load dataset
+url <- "https://hub.dkfz.de/s/QT3BfRperQqMxPF/download/RDeeP_A549_NS.csv.zip"
+
+
+#Create a temporary file and download the ZIP
+temp_file <- tempfile()
+download.file(url, temp_file)
+zip_contents <- unzip(temp_file, list = TRUE)
+print(zip_contents)
+
+csv_file <- unzip(temp_file, files = zip_contents$Name[1], exdir = tempdir())
+A549_NS <- read.csv(csv_file, sep = ";")
+View(A549_NS)
+```
+
+```{r}
+#data exploration
+View(A549_NS)
+
+#number of rows and columns
+nrow(A549_NS)
+ncol(A549_NS)
+
+#type of data (überprüft die class der Spalten -> alle Eintrage haben zwangsweise dieselbe class)
+sum(sapply(A549_NS, is.numeric))
+
+#finding NAs
+sum(is.na(A549_NS))
+```
+
+##Data cleanup##
+```{r}
+#definition of general parameters
+n_fractions <- 25
+n_replicates <- 6
+
+# treatment: variating CTRL and RNAse, 75 pairs -> 150 columns 
+treatment <- factor(rep(c("CTRL", "RNASE"), times = n_fractions * n_replicates/2))
+# replicates: 6 replicates per fraction
+replicates <- factor(c("ctrl1","rnase1","ctrl2","rnase2","ctrl3","rnase3"))
+replicates <- factor(rep(replicates, times = n_fractions))
+# fraction: each fraction has 6 values
+fraction <- factor(rep(paste0("fraction",1:n_fractions),each = n_replicates)) 
+
+```
+
+```{r}
+#dataframe definition
+df <- data.frame(
+  row.names = colnames(A549_NS)[colnames(A549_NS) != "Protein_Name"], 
+  treatment = treatment, 
+  replicates = replicates, 
+  fraction = fraction)
+
+#depict result
+head(df)
+```
+
+```{r}
+#sorting loop by fraction
+# define fraction names
+fraction_names <- levels(fraction)
+
+# create subtables
+tables_by_fraction <- lapply(fraction_names, function(fx) {
+  # select all colnames in A549_NS, which belong to a certain fraction
+  cols <- rownames(df)[df$fraction == fx]
+
+  #separate control and RNase sample within the subtable (grep-function searches for the word "Ctrl" or "RNase among the columnnames -> generally searches for textpatterns in vectors)
+  ctrl_cols <- grep("Ctrl",cols, value = TRUE)
+  RNase_cols <- grep("RNase",cols, value = TRUE)
+  
+  ordered_cols <- c(ctrl_cols, RNase_cols)
+
+  
+  # extract the said columns + Protein_Name
+  subdf <- A549_NS[, c("Protein_Name", ordered_cols)]
+  
+})
+
+# assign names to the subtables -> names of fractions are assigned to the different subtables in chronological order
+names(tables_by_fraction) <- fraction_names
+
+#depict result
+head(tables_by_fraction$fraction1)
+class(tables_by_fraction$fraction1)
+
+```
+
+
+
+```{r}
+#facilitates access to different fractions
+df_list <- list()
+
+for (a in 1:25) {
+  df_list[[a]] <- as.data.frame(tables_by_fraction[[paste0("fraction", a)]])
+}
+
+#depict result
+head(df_list[[1]])
+class(df_list[[1]])
+
+```
+
+```{r}
+# Alle Spaltennamen abrufen
+col_names <- colnames(A549_NS)
+
+# Spalten für Ctrl und RNase erkennen (inkl. Protein_Name behalten)
+ctrl_cols <- c("Protein_Name", grep("Ctrl", col_names, value = TRUE))
+rnase_cols <- c("Protein_Name", grep("RNase", col_names, value = TRUE))
+
+# Dataframes erstellen
+df_ctrl <- A549_NS[, ctrl_cols, drop = FALSE]
+df_rnase <- A549_NS[, rnase_cols, drop = FALSE]
+
+# Vorschau anzeigen
+head(df_ctrl)
+head(df_rnase)
+
+
+```
+
+###Nooorrii hier würde die reproduzierbarkeit gut hinpassen
+
+```{r}
+ctrl_correlations <- data.frame(
+  fraction = character(),
+  ctrl1_vs_ctrl2 = numeric(),
+  ctrl1_vs_ctrl3 = numeric(),
+  ctrl2_vs_ctrl3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 3 
+  end_col <- start_col + 2
+  ctrl_data <- df_ctrl[, start_col:end_col]
+  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
+  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
+  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
+    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
+    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
+  ))
+}
+
+# Ergebnis ansehen
+View(ctrl_correlations)
+plot(ctrl_correlations) 
+```
+
+```{r}
+##nochmal mit RNase Korrelation
+
+rnase_correlations <- data.frame(
+  fraction = character(),
+  rnase1_vs_rnase2 = numeric(),
+  rnase1_vs_rnase3 = numeric(),
+  rnase2_vs_rnase3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 3 
+  end_col <- start_col + 2
+  rnase_data <- df_rnase[, start_col:end_col]
+  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
+  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
+  rnase_correlations <- rbind(rnase_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
+    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
+    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
+  ))
+}
+
+View(rnase_correlations)
+plot(rnase_correlations)
+```
+
+
+
+```{r}
+# Funktion zum spaltenweisen Mittelwert (außer Protein_Name)
+compute_column_means <- function(df) {
+  # Nur numerische Spalten auswählen (außer Protein_Name)
+  numeric_data <- df[, sapply(df, is.numeric)]
+  
+  # Spaltenweise Mittelwerte berechnen
+  col_means <- colMeans(numeric_data, na.rm = TRUE)
+  
+  return(col_means)
+}
+
+# Mittelwerte berechnen
+ctrl_means <- compute_column_means(df_ctrl)
+rnase_means <- compute_column_means(df_rnase)
+
+
+# Mittelwerte als DataFrame speichern
+ctrl_means_df <- data.frame(Sample = names(ctrl_means), Mean = as.numeric(ctrl_means))
+rnase_means_df <- data.frame(Sample = names(rnase_means), Mean = as.numeric(rnase_means))
+
+#depict results
+head(ctrl_means_df)
+head(rnase_means_df)
+
+#überprüfen ob Mittelwert == 0, da averages bei berechnungen des Normierungsfaktors im Nenner stehen
+sum(ctrl_means_df[, 2] == 0)
+sum(rnase_means_df[, 2]==0)
+
+```
+
+```{r}
+# Funktion: Mittelwert der zwei nächsten Replikate
+# Funktion: Mittelwert des ähnlichsten Replikatpaares (von 3 Werten)
+mean_of_closest_pair <- function(x) {
+  combs <- combn(x, 2)                          # Alle 2er-Kombinationen
+  diffs <- abs(combs[1, ] - combs[2, ])         # Absolute Differenzen berechnen
+  min_idx <- which.min(diffs)                   # Index des kleinsten Unterschieds
+  mean(combs[, min_idx])                        # Mittelwert des ähnlichsten Paares
+}
+
+# Funktion: Datenvektor blockweise (je 3 Werte) verarbeiten
+process_blocks <- function(values_vector) {
+  n_blocks <- length(values_vector) / 3         # Anzahl der Fraktionen
+  result <- numeric(n_blocks)
+  
+  for (i in 1:n_blocks) {
+    block <- values_vector[((i - 1) * 3 + 1):(i * 3)] #values vector enthält die drei werte der replikate für jede fraktion
+    result[i] <- mean_of_closest_pair(block)
+  }
+  
+  return(result)
+}
+
+# Wertevektoren aus DataFrames extrahieren
+control_values <- ctrl_means_df$Mean    # Annahme: Spalte heißt 'Mittelwert'
+rnase_values   <- rnase_means_df$Mean
+
+# Berechnung durchführen
+control_means <- process_blocks(control_values)
+rnase_means   <- process_blocks(rnase_values)
+
+# Ergebnis als DataFrame zusammenfassen
+closest_means_ctrl <- data.frame(
+  Fraktion = paste0("Fraction", 1:length(control_means)),  
+  Control  = control_means
+)
+
+closest_means_rnase <- data.frame(
+  Fraktion = paste0("Fraction", 1:length(control_means)),  
+  RNase = rnase_means)
+
+# Ausgabe
+print(closest_means_ctrl)
+print(closest_means_rnase)
+
+```
+
+```{r}
+n_fractions <- 25
+n_replicates <- 3
+
+# ctrl_means_df und rnase_means_df enthalten alle Replikat-Mittelwerte in einer Spalte, z.B. 'Means'
+# ctrl_final_means_df und rnase_final_means_df enthalten je einen Mittelwert pro Fraktion in 'FinalMean'
+
+# Die Replikatwerte für jede Fraktion in eine Matrix (25x3) umwandeln
+ctrl_mat <- matrix(ctrl_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
+rnase_mat <- matrix(rnase_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
+
+# Initialisiere Normalisierungsmatrizen
+norm_ctrl_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
+norm_rnase_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
+
+# Schleife über Fraktionen
+for (r in 1:n_fractions) {
+  control_values <- ctrl_mat[r, ]  # 3 Replikate Control
+  rnase_values <- rnase_mat[r, ]   # 3 Replikate RNase
+  
+  # FinalMean aus getrennten Final-DataFrames
+  mean_control <- closest_means_ctrl[r, 2]
+  mean_rnase <- closest_means_rnase[r, 2]
+  
+  # Sicherstellen, dass nur 1 Wert pro Fraktion
+  if(length(mean_control) != 1 | length(mean_rnase) != 1) {
+    stop(paste("Mehr oder weniger als ein FinalMean für Fraktion", r))
+  }
+  
+  # Normalisierung (Zähler und Nenner je nach Bedarf drehen)
+  norm_ctrl_mat[r, ] <- mean_control / control_values
+  norm_rnase_mat[r, ] <- mean_rnase / rnase_values
+}
+
+head(norm_ctrl_mat)
+head(norm_rnase_mat)
+
+```
+
+```{r}
+
+normalize_df <- function(df, norm_mat) {
+  # Extrahiere numerische Daten (angenommen: erste Spalte ist "Protein_Name")
+  data_mat <- as.matrix(df[, -1])
+  
+  # Dimensionen prüfen
+  n_blocks <- nrow(norm_mat)
+  cols_per_block <- ncol(norm_mat)
+  
+  # Normierung blockweise anwenden: Normierungsmatrix wird spaltenweise durchlaufen und in dieser Reihenfolge auf die Spalten der Originaldaten angewendet
+  for (i in 1:n_blocks) {
+    for (j in 1:cols_per_block) {
+      col_index <- (i - 1) * cols_per_block + j
+      data_mat[, col_index] <- data_mat[, col_index] * norm_mat[i, j]
+    }
+  }
+  
+  # Rückgabe als DataFrame (mit Protein_Name)
+  result_df <- cbind(Protein_Name = df$Protein_Name, as.data.frame(data_mat))
+  return(result_df)
+}
+
+# Anwenden auf Ctrl und RNase Daten
+normed_ctrl_df  <- normalize_df(df_ctrl, norm_ctrl_mat)
+normed_rnase_df <- normalize_df(df_rnase, norm_rnase_mat)
+
+# Ergebnisse anzeigen
+head(normed_ctrl_df)
+head(normed_rnase_df)
+
+
+```
+
+
+```{r}
+# Mean filter function for a row (preserving first and last value)
+smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
+  proteins <- df[, 1]
+  
+  smoothed_reps <- lapply(1:n_replicates, function(rep) {
+    cols <- seq(1 + rep, 1 + rep + (n_fractions - 1) * 3, by = 3)
+    rep_data <- df[, cols]
+    
+    smoothed_data <- matrix(NA, nrow = nrow(rep_data), ncol = n_fractions)
+    smoothed_data[, 1] <- rep_data[, 1]
+    smoothed_data[, n_fractions] <- rep_data[, n_fractions]
+    
+    for (i in 2:(n_fractions - 1)) {
+      smoothed_data[, i] <- rowMeans(rep_data[, (i - 1):(i + 1)], na.rm = TRUE)
+    }
+    
+    smoothed_df <- as.data.frame(smoothed_data)
+    colnames(smoothed_df) <- paste0("Fraction", 1:n_fractions, "_Rep", rep)
+    smoothed_df
+  })
+  
+  combined_df <- do.call(cbind, smoothed_reps)
+  
+  # Sortiere Spalten: erst Fraktion 1 mit allen Replikaten, dann Fraktion 2 usw.
+  sorted_cols <- unlist(lapply(1:n_fractions, function(frac) {
+    paste0("Fraction", frac, "_Rep", 1:n_replicates)
+  }))
+  
+  final_df <- cbind(Protein = proteins, combined_df[, sorted_cols])
+  return(final_df)
+}
+
+# Anwendung für Kontroll- und RNAse-Datensätze:
+final_smoothed_ctrl <- smooth_and_reorder(normed_ctrl_df)
+final_smoothed_rnase <- smooth_and_reorder(normed_rnase_df)
+
+# depict result
+head(final_smoothed_ctrl)
+head(final_smoothed_rnase)
+
+```
+
+```{r}
+#normalize total amount per replicate to 100%
+
+# Function to normalize rows to 100% within column blocks 
+normalize_blocks <- function(df, starts, block_size = 25) {
+  df_norm <- df  # create a copy of the dataframe
+  
+  for (start_col in starts) {
+    end_col <- start_col + block_size - 1 #(e.g. 1 + 25 - 1 = 25 )
+    cols <- start_col:end_col
+    
+    block <- df[, cols]  # extract block of columns
+    block_norm <- block * 100 / rowSums(block, na.rm = TRUE)  # normalize row sums to 100%
+    df_norm[, cols] <- block_norm  # replace original block with normalized block
+  }
+  
+  return(df_norm)
+}
+
+# Define starting points of each replicate block
+starts <- c(2, 27, 52)
+
+# Apply the function to both datasets
+ctrl_norm_percent  <- normalize_blocks(ctrl_filtered,  starts)
+rnase_norm_percent <- normalize_blocks(rnase_filtered, starts)
+
+
+# depict result
+head(ctrl_norm_percent)
+head(rnase_norm_percent)
+
+# check if row sums per block are ~100
+summary(rowSums(ctrl_norm_percent[, 2:26]))
+summary(rowSums(rnase_norm_percent[, 2:26]))
+  
+
+```
+
+```{r}
+#sorts normalized dataframes by fraction 
+
+# define columnnames
+col_names_ctrl <- colnames(ctrl_norm_percent)
+col_names_rnase <- colnames(rnase_norm_percent)
+
+# 1. save proteinnames column separately
+protein_col_ctrl <- ctrl_norm_percent[, 1, drop = FALSE]
+protein_col_rnase <- rnase_norm_percent[, 1, drop = FALSE]
+
+# 2. define columnnames without the first column
+cols_to_sort_ctrl <- col_names_ctrl[-1]
+cols_to_sort_rnase <- col_names_rnase[-1]
+
+# 3. extract fraction number
+fraction_num_ctrl <- as.numeric(gsub(".*Fraction([0-9]+).*", "\\1", cols_to_sort_ctrl))
+fraction_num_rnase <- as.numeric(gsub(".*Fraction([0-9]+).*", "\\1", cols_to_sort_rnase))
+
+# 4. extract replicate number
+rep_num_ctrl <- as.numeric(gsub(".*Rep([0-9]+).*", "\\1", cols_to_sort_ctrl))
+rep_num_rnase <- as.numeric(gsub(".*Rep([0-9]+).*", "\\1", cols_to_sort_rnase))
+
+# 5. define sorting order
+order_index_ctrl <- order(fraction_num, rep_num_ctrl)
+order_index_rnase <- order(fraction_num, rep_num_rnase)
+
+# 6. sort columns
+sorted_cols_ctrl <- cols_to_sort_ctrl[order_index_ctrl]
+sorted_cols_rnase <- cols_to_sort_rnase[order_index_rnase]
+
+# 7. put dataframe together with proteinnames as first column
+sorted_norm_ctrl <- cbind(protein_col_ctrl, ctrl_norm_percent[, sorted_cols_ctrl])
+sorted_norm_rnase <- cbind(protein_col_rnase, rnase_norm_percent[, sorted_cols_rnase])
+
+#depict results
+head(sorted_norm_ctrl)
+head(sorted_norm_rnase)
+
+```
+
+
+```{r}
+#compute average of replicates per fraction
+
+# function: computes rowmeans block wise (each time for 3 columns)
+compute_block_row_means <- function(df, protein_names) {
+  block_means <- sapply(seq(2, 76, by = 3), function(start_col) {
+    rowMeans(df[, start_col:(start_col + 2)])
+  })
+  
+  result <- as.data.frame(block_means)
+  colnames(result) <- paste0("Mean_Rep", seq_len(ncol(result)))
+  cbind(Protein_Name = protein_names, result)
+}
+
+# apply to dataframes
+means_ctrl  <- compute_block_row_means(sorted_norm_ctrl,  df$Protein_Name)
+means_rnase <- compute_block_row_means(sorted_norm_rnase, df$Protein_Name)
+
+
+#depict results
+head(means_ctrl)
+head(means_rnase)
+```
+
+```{r}
+# normalization of amount of protein to equal 100%
+
+# create normalization function
+normalize_rows <- function(df) {
+  values <- df[, -1]
+  normed <- values / rowSums(values) * 100
+  return(cbind(Protein_Name = df[, 1], normed))
+}
+
+# apply to both dataframes
+ctrl_final <- normalize_rows(means_ctrl)
+rnase_final <- normalize_rows(means_rnase)
+
+#depict results
+head(ctrl_final)
+head(rnase_final)
+
+#check if sums equal 100
+summary(rowSums(ctrl_final[, 2:26]))
+summary(rowSums(rnase_final[,2:26]))
+
+```
+
+
+```{r}
+#reproducability 
+#geordnete Tabelle
+
+length(tables_by_fraction)
+print(tables_by_fraction)
+protein_names <- tables_by_fraction[[1]]$Protein_Name
+table_list_no_names <- lapply(tables_by_fraction, function(x) x[, -1])
+
+# Spaltenweise zusammenfügen
+ordered_table <- do.call(cbind, table_list_no_names)
+
+# Protein_Name wieder hinzufügen
+ordered_table <- cbind(Protein_Name = protein_names, ordered_table)
+ordered_table <- as.data.frame(ordered_table, check.names = FALSE)
+print(ordered_table)
+
+```
+
+```{r}
+ctrl_correlations <- data.frame(
+  fraction = character(),
+  ctrl1_vs_ctrl2 = numeric(),
+  ctrl1_vs_ctrl3 = numeric(),
+  ctrl2_vs_ctrl3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 6 
+  end_col <- start_col + 2
+  ctrl_data <- ordered_table[, start_col:end_col]
+  colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
+  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
+  ctrl_correlations <- rbind(ctrl_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
+    ctrl1_vs_ctrl3 = cor_matrix["ctrl1", "ctrl3"],
+    ctrl2_vs_ctrl3 = cor_matrix["ctrl2", "ctrl3"]
+  ))
+}
+
+# Ergebnis ansehen
+View(ctrl_correlations)
+plot(ctrl_correlations) ####Richtig so????
+```
+
+```{r}
+##nochmal mit RNase Korrelation
+
+rnase_correlations <- data.frame(
+  fraction = character(),
+  rnase1_vs_rnase2 = numeric(),
+  rnase1_vs_rnase3 = numeric(),
+  rnase2_vs_rnase3 = numeric(),
+  stringsAsFactors = FALSE
+)
+
+# Schleife über alle 25 Fraktionen
+for (i in 0:24) {
+  start_col <- 2 + i * 6 
+  end_col <- start_col + 2
+  rnase_data <- ordered_table[, start_col:end_col]
+  colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
+  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
+  rnase_correlations <- rbind(rnase_correlations, data.frame(
+    fraction = paste0("fraction", i + 1),
+    rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
+    rnase1_vs_rnase3 = cor_matrix["rnase1", "rnase3"],
+    rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
+  ))
+}
+
+View(rnase_correlations)
+```
+
+
+```{r}
+install.packages("mixOmics") 
+
+
+```
+
+```{r}
+#batch effect 
+
+sample_names <- colnames(A549_NS)[-1]  # Annahme: Erste Spalte ist Genname
+batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # Extrahiere "B1", "B2", etc.
+#matrix 
+expr_matrix <- as.matrix(A549_NS[, -1])
+rownames(expr_matrix) <- A549_NS[, 1]
+
+#PCA 
+pca <- prcomp(t(expr_matrix), scale. = TRUE)
+
+# Plot
+plot(pca$x[,1], pca$x[,2], col=as.factor(batch_info),
+     pch=19, xlab="PC1", ylab="PC2", main="PCA zur Batch-Detektion")
+legend("topright", inset=c(-0.4,1),        # Position rechts außerhalb
+       legend=unique(batch_info),
+       col=1:length(unique(batch_info)), pch=19, title="Batch")
+
+
+```
+```{r}
+expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: Erste Spalte sind Gen-IDs
+rownames(expr_matrix) <- A549_NS[, 1]
+
+pca_result <- prcomp(t(expr_matrix), scale. = TRUE)
+
+sample_names <- colnames(expr_matrix)
+batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # z.B. "Sample1_B1" → "B1"
+treatment_info <- sub("^(.*?)_.*$", "\\1", sample_names)  # z.B. "Control_B1" → "Control"
+
+library(ggplot2)
+
+pca_df <- as.data.frame(pca_result$x[, 1:2])  # PC1 & PC2
+pca_df$batch <- batch_info
+pca_df$treatment <- treatment_info
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "PCA Plot", color = "Batch") +
+  coord_cartesian(xlim = c(-15, 14), ylim = c(-13, 14))
+
+head(pca_df)
+str(pca_df)
+
+```
+```{r}
+# andere version 
+expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: die erste Spalte ist keine Expression
+batch_info <- as.factor(A549_NS$batch)   # Batch-Informationen
+
+# Berechnen der Distanzmatrix
+dist_matrix <- dist(t(expr_matrix))  # t() = Samples als Zeilen verwenden
+
+# Hierarchisches Clustering durchführen
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# Dendrogramm plotten
+plot(hc, labels = FALSE, main = "Clustering der Proben (Batch-Effekt)")
+
+# Dendrogramm und Batch-Färbung
+library(dendextend)
+
+# Umwandeln der hclust in ein dendrogramm
+dend <- as.dendrogram(hc)
+
+# Färben der Labels nach Batch
+labels_colors(dend) <- as.numeric(batch_info)[order.dendrogram(dend)]
+
+# Plotten des Dendrogramms
+plot(dend, main = "Hierarchisches Clustering mit Batch-Färbung")
+
+# Heatmap mit Batch-Zeilenannotation
+library(pheatmap)
+
+annotation <- data.frame(Batch = batch_info)
+rownames(annotation) <- colnames(expr_matrix)
+
+# Heatmap erstellen
+pheatmap(expr_matrix, scale = "row", annotation_col = annotation,
+         show_colnames = FALSE, main = "Heatmap zur Batch-Erkennung")
+
+```
+
+```{r}
+#limma install
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(version = "3.21")
+```
