@@ -388,51 +388,70 @@ head(percent_rnase_df)
 
 
 ```{r}
-#compute average of replicates per fraction
+calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
+  proteins <- df[, 1]  # Protein-Namen
+  data_only <- df[, -1]  # Nur Werte
 
-# function: computes rowmeans block wise (each time for 3 columns)
-compute_block_row_means <- function(df, protein_names) {
-  block_means <- sapply(seq(2, 76, by = 3), function(start_col) {
-    rowMeans(df[, start_col:(start_col + 2)])
-  })
-  
-  result <- as.data.frame(block_means)
-  colnames(result) <- paste0("Mean_Rep", seq_len(ncol(result)))
-  cbind(Protein_Name = protein_names, result)
+  mean_matrix <- matrix(NA, nrow = nrow(data_only), ncol = n_fractions)
+
+  for (f in 1:n_fractions) {
+    # Spalten für Fraktion f (jeweils 3 Replikate)
+    cols <- ((f - 1) * n_replicates + 1):(f * n_replicates)
+    mean_matrix[, f] <- rowMeans(data_only[, cols], na.rm = TRUE)
+  }
+
+  # Ergebnis als DataFrame
+  mean_df <- as.data.frame(mean_matrix)
+  colnames(mean_df) <- paste0("Fraction", 1:n_fractions)
+  final_df <- cbind(Protein = proteins, mean_df)
+
+  return(final_df)
 }
 
-# apply to dataframes
-means_ctrl  <- compute_block_row_means(sorted_norm_ctrl,  df$Protein_Name)
-means_rnase <- compute_block_row_means(sorted_norm_rnase, df$Protein_Name)
+mean_ctrl_df <- calculate_mean_per_fraction(percent_ctrl_df)
+mean_rnase_df <- calculate_mean_per_fraction(percent_rnase_df)
 
+# Kontrolle
+head(mean_ctrl_df)
+head(mean_rnase_df)
 
-#depict results
-head(means_ctrl)
-head(means_rnase)
+# Zeilensummen berechnen (ab der zweiten Spalte)
+zeilensummen <- rowSums(mean_ctrl_df[, -1])
+print(zeilensummen)
 ```
 
 ```{r}
 # normalization of amount of protein to equal 100%
 
-# create normalization function
-normalize_rows <- function(df) {
-  values <- df[, -1]
-  normed <- values / rowSums(values) * 100
-  return(cbind(Protein_Name = df[, 1], normed))
+calculate_fraction_percentages <- function(mean_df) {
+  proteins <- mean_df[, 1]
+  data_only <- mean_df[, -1]
+  
+  # Zeilensummen (Summe über alle Fraktionen pro Protein)
+  row_totals <- rowSums(data_only, na.rm = TRUE)
+  
+  # Prozentuale Anteile berechnen
+  percent_matrix <- sweep(data_only, 1, row_totals, FUN = "/") * 100
+  
+  # Ergebnis zusammenführen
+  percent_df <- cbind(Protein = proteins, as.data.frame(percent_matrix))
+  colnames(percent_df) <- colnames(mean_df)
+  
+  return(percent_df)
 }
 
-# apply to both dataframes
-ctrl_final <- normalize_rows(means_ctrl)
-rnase_final <- normalize_rows(means_rnase)
 
-#depict results
-head(ctrl_final)
-head(rnase_final)
+# Prozentuale Verteilungen
+percent_mean_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
+percent_mean_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
 
-#check if sums equal 100
-summary(rowSums(ctrl_final[, 2:26]))
-summary(rowSums(rnase_final[,2:26]))
+# Kontrolle
+head(percent_mean_ctrl_df)
+head(percent_mean_rnase_df)
 
+# Zeilensummen berechnen (ab der zweiten Spalte)
+zeilensumme <- rowSums(percent_mean_ctrl_df[, -1])
+print(zeilensumme)
 ```
 
 
