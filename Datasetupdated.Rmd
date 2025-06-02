@@ -336,86 +336,55 @@ final_smoothed_rnase <- smooth_and_reorder(normed_rnase_df)
 head(final_smoothed_ctrl)
 head(final_smoothed_rnase)
 
+#check if any NAs were created
+sum(is.na(final_smoothed_ctrl))
+sum(is.na(final_smoothed_rnase))
+
 ```
 
 ```{r}
 #normalize total amount per replicate to 100%
 
-# Function to normalize rows to 100% within column blocks 
-normalize_blocks <- function(df, starts, block_size = 25) {
-  df_norm <- df  # create a copy of the dataframe
+calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
+  proteins <- df[, 1]
+  percent_reps <- list()
   
-  for (start_col in starts) {
-    end_col <- start_col + block_size - 1 #(e.g. 1 + 25 - 1 = 25 )
-    cols <- start_col:end_col
+  for (rep in 1:n_replicates) {
+    # Replizierte Fraktionsspalten
+    cols <- seq(1 + rep, 1 + rep + (n_fractions - 1) * 3, by = 3)
+    rep_data <- as.matrix(df[, cols])
     
-    block <- df[, cols]  # extract block of columns
-    block_norm <- block * 100 / rowSums(block, na.rm = TRUE)  # normalize row sums to 100%
-    df_norm[, cols] <- block_norm  # replace original block with normalized block
+    row_sums <- rowSums(rep_data, na.rm = TRUE)
+    percent_data <- sweep(rep_data, 1, row_sums, FUN = "/") * 100
+    
+    percent_df <- as.data.frame(percent_data)
+    colnames(percent_df) <- paste0("Fraction", 1:n_fractions, "_Rep", rep)
+    percent_reps[[rep]] <- percent_df
   }
   
-  return(df_norm)
+  # Kombiniere alle Replikate
+  combined_percent_df <- do.call(cbind, percent_reps)
+  
+  # Neue Spaltenreihenfolge: Fraktion 1 mit allen Reps, dann Fraktion 2, ...
+  sorted_cols <- unlist(lapply(1:n_fractions, function(frac) {
+    paste0("Fraction", frac, "_Rep", 1:n_replicates)
+  }))
+  
+  final_percent_df <- cbind(Protein = proteins, combined_percent_df[, sorted_cols])
+  return(final_percent_df)
 }
 
-# Define starting points of each replicate block
-starts <- c(2, 27, 52)
+# Anwendung
+percent_ctrl_df <- calc_fraction_percentages(normed_ctrl_df)
+percent_rnase_df <- calc_fraction_percentages(normed_rnase_df)
 
-# Apply the function to both datasets
-ctrl_norm_percent  <- normalize_blocks(ctrl_filtered,  starts)
-rnase_norm_percent <- normalize_blocks(rnase_filtered, starts)
-
-
-# depict result
-head(ctrl_norm_percent)
-head(rnase_norm_percent)
-
-# check if row sums per block are ~100
-summary(rowSums(ctrl_norm_percent[, 2:26]))
-summary(rowSums(rnase_norm_percent[, 2:26]))
+# Optional: Ergebnisse ansehen
+head(percent_ctrl_df)
+head(percent_rnase_df)
   
 
 ```
 
-```{r}
-#sorts normalized dataframes by fraction 
-
-# define columnnames
-col_names_ctrl <- colnames(ctrl_norm_percent)
-col_names_rnase <- colnames(rnase_norm_percent)
-
-# 1. save proteinnames column separately
-protein_col_ctrl <- ctrl_norm_percent[, 1, drop = FALSE]
-protein_col_rnase <- rnase_norm_percent[, 1, drop = FALSE]
-
-# 2. define columnnames without the first column
-cols_to_sort_ctrl <- col_names_ctrl[-1]
-cols_to_sort_rnase <- col_names_rnase[-1]
-
-# 3. extract fraction number
-fraction_num_ctrl <- as.numeric(gsub(".*Fraction([0-9]+).*", "\\1", cols_to_sort_ctrl))
-fraction_num_rnase <- as.numeric(gsub(".*Fraction([0-9]+).*", "\\1", cols_to_sort_rnase))
-
-# 4. extract replicate number
-rep_num_ctrl <- as.numeric(gsub(".*Rep([0-9]+).*", "\\1", cols_to_sort_ctrl))
-rep_num_rnase <- as.numeric(gsub(".*Rep([0-9]+).*", "\\1", cols_to_sort_rnase))
-
-# 5. define sorting order
-order_index_ctrl <- order(fraction_num, rep_num_ctrl)
-order_index_rnase <- order(fraction_num, rep_num_rnase)
-
-# 6. sort columns
-sorted_cols_ctrl <- cols_to_sort_ctrl[order_index_ctrl]
-sorted_cols_rnase <- cols_to_sort_rnase[order_index_rnase]
-
-# 7. put dataframe together with proteinnames as first column
-sorted_norm_ctrl <- cbind(protein_col_ctrl, ctrl_norm_percent[, sorted_cols_ctrl])
-sorted_norm_rnase <- cbind(protein_col_rnase, rnase_norm_percent[, sorted_cols_rnase])
-
-#depict results
-head(sorted_norm_ctrl)
-head(sorted_norm_rnase)
-
-```
 
 
 ```{r}
