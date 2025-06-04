@@ -475,14 +475,14 @@ install.packages("mixOmics")
 
 ```{r}
 library(mixOmics)
-res.pca <- pca((A549_NS)[-1], ncomp = 10)
+res.pca <- pca((percent_ctrl_df)[-1], ncomp = 10)
 plot(res.pca)  
 
 
 ```
 ```{r}
 #ohne transformation 
-batch.pca.before <- pca((A549_NS)[-1], ncomp = 3)
+batch.pca.before <- pca((percent_ctrl_df)[-1], ncomp = 3)
 library(ggplot2)
 
 # Extrahiere Scores (PCA-Komponenten)
