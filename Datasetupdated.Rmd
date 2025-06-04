@@ -475,14 +475,14 @@ install.packages("mixOmics")
 
 ```{r}
 library(mixOmics)
-res.pca <- pca((percent_ctrl_df)[-1], ncomp = 10)
+res.pca <- pca((normed_ctrl_df)[-1], ncomp = 10)
 plot(res.pca)  
 
 
 ```
 ```{r}
 #ohne transformation 
-batch.pca.before <- pca((percent_ctrl_df)[-1], ncomp = 3)
+batch.pca.before <- pca((normed_ctrl_df)[-1], ncomp = 3)
 library(ggplot2)
 
 # Extrahiere Scores (PCA-Komponenten)
@@ -501,10 +501,10 @@ ggplot(pca_scores, aes(x = PC1, y = PC2)) +
   )
 ```
 ```{r}
-batch.pca.before <- pca(t(A549_NS[-1]), ncomp = 3)
+batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
 
 # Hole Sample-Namen
-sample_names <- colnames(A549_NS)[-1]
+sample_names <- colnames(normed_ctrl_df)[-1]
 
 # Extrahiere Fraction-Teil als Batch-Label
 fraction_labels <- sapply(strsplit(sample_names, "_"), `[`, 1)
@@ -554,9 +554,45 @@ ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = fraction, shape = treatm
 ```{r}
 #limma install
 
-if (!require("BiocManager", quietly = TRUE))
-    install.packages("BiocManager")
-BiocManager::install(version = "3.21")
+install.packages("BiocManager")
+BiocManager::install("limma")
+```
+
+
+```{r}
+library(limma)
+library(mixOmics) 
+library(ggplot2)
+
+# 1. Matrix vorbereiten
+expr_matrix <- as.matrix(normed_ctrl_df[,-1])  # ohne Feature-Namen
+rownames(expr_matrix) <- normed_ctrl_df[[1]]   # Zeilennamen setzen
+
+# 2. Batch-Labels extrahieren 
+sample_names <- colnames(expr_matrix)
+batch <- sapply(strsplit(sample_names, "_"), `[`, 1)
+
+# 3. Remove Batch Effect
+corrected_matrix <- removeBatchEffect(expr_matrix, batch = batch)
+
+# 4. PCA auf korrigierter Matrix
+batch.pca.after <- pca(t(corrected_matrix), ncomp = 3)  # transponieren wegen Samples in Spalten
+
+# 5. Ergebnisse vorbereiten für Plot
+pca_sample_scores <- as.data.frame(batch.pca.after$variates$X)
+pca_sample_scores$batch <- batch
+
+# 6. Plot
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.after$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.after$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot nach Batch-Korrektur (limma)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  guides(color = guide_legend(title = "Batch (Fraction)"))
 ```
 
 
