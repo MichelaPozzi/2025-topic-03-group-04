@@ -501,6 +501,7 @@ ggplot(pca_scores, aes(x = PC1, y = PC2)) +
   )
 ```
 ```{r}
+#nach fraktionen
 batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
 
 # Hole Sample-Namen
@@ -530,6 +531,85 @@ ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
         legend.position = "right" ) +
   guides(color = guide_legend(title = "Batch (Fraction)"))
 ```
+```{r}
+#nach replikaten 
+# PCA durchführen (wie vorher)
+batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
+
+# Hole Sample-Namen (ohne die erste Spalte)
+sample_names <- colnames(normed_ctrl_df)[-1]
+
+# Extrahiere den Replikat-Teil als Label (zweiter Teil nach "_")
+replicate_labels <- sapply(strsplit(sample_names, "_"), `[`, 3) # 3 für rep, 1 für frak
+
+# Hole PCA-Sample-Scores
+pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
+
+# Anhängen der Replikat-Labels
+pca_sample_scores$replicate <- replicate_labels
+
+# Plot mit Färbung nach Replikaten
+library(ggplot2)
+
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = replicate)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot (Samples, gefärbt nach Replikaten)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "right") +
+  guides(color = guide_legend(title = "Replikat"))
+
+```
+```{r}
+#fraktion und rep 
+# Sample-Namen holen
+sample_names <- colnames(normed_ctrl_df)[-1]
+
+# Jeden Sample-Namen splitten bei "_"
+split_names <- strsplit(sample_names, "_")
+
+# Fraktion extrahieren (erster Teil)
+fractions <- sapply(split_names, `[`, 1)
+
+# Replikat extrahieren (zweiter Teil)
+replicates <- sapply(split_names, `[`, 3)
+
+# Neue Labels erstellen (z.B. "Fraction1_Rep1")
+combined_labels <- paste(fractions, replicates, sep = "_")
+
+# Beispiel Ausgabe
+print(combined_labels)
+
+# PCA wie gehabt
+batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
+
+# PCA-Scores als DataFrame
+pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
+
+# Kombinierte Labels anhängen
+pca_sample_scores$batch <- combined_labels
+
+# Plot mit kombinierten Labels als Farbe
+library(ggplot2)
+
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot (Samples, gefärbt nach Fraktion und Replikat)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "right") +
+  guides(color = guide_legend(title = "Fraktion_Replikat"))
+```
+
+
 ```{r}
 ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = fraction, shape = treatment)) +
   geom_point(size = 3, alpha = 0.8) +
@@ -570,7 +650,7 @@ rownames(expr_matrix) <- normed_ctrl_df[[1]]   # Zeilennamen setzen
 
 # 2. Batch-Labels extrahieren 
 sample_names <- colnames(expr_matrix)
-batch <- sapply(strsplit(sample_names, "_"), `[`, 1)
+batch <- sapply(strsplit(sample_names, "_"), `[`, 3) # 3 für replikate, 1 für fraktion
 
 # 3. Remove Batch Effect
 corrected_matrix <- removeBatchEffect(expr_matrix, batch = batch)
