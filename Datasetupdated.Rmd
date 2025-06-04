@@ -86,7 +86,7 @@ for (i in 0:24) {
   end_col <- start_col + 2
   ctrl_data <- df_ctrl[, start_col:end_col]
   colnames(ctrl_data) <- c("ctrl1", "ctrl2", "ctrl3")
-  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "pearson")
+  cor_matrix <- cor(ctrl_data, use = "pairwise.complete.obs", method = "spearman")
   ctrl_correlations <- rbind(ctrl_correlations, data.frame(
     fraction = paste0("fraction", i + 1),
     ctrl1_vs_ctrl2 = cor_matrix["ctrl1", "ctrl2"],
@@ -117,7 +117,7 @@ for (i in 0:24) {
   end_col <- start_col + 2
   rnase_data <- df_rnase[, start_col:end_col]
   colnames(rnase_data) <- c("rnase1", "rnase2", "rnase3")
-  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "pearson")
+  cor_matrix <- cor(rnase_data, use = "pairwise.complete.obs", method = "spearman")
   rnase_correlations <- rbind(rnase_correlations, data.frame(
     fraction = paste0("fraction", i + 1),
     rnase1_vs_rnase2 = cor_matrix["rnase1", "rnase2"],
