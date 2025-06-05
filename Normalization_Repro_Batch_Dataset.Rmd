@@ -462,7 +462,7 @@ zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
 # Gibt es mindestens eine solche Zeile?
 any(zeilen_mit_nullsumme_rnase)
 
-
+ 
 ```
 ```{r}
 #Dataframes speichern

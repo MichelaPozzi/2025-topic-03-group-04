@@ -1,5 +1,5 @@
 ---
-title: "Gaussian_fit"
+title: "Zoes_PCA2"
 author: "Nora Otic"
 date: "2025-06-05"
 output: html_document
@@ -28,6 +28,8 @@ plot(pressure)
 ```
 
 Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+
 
 ```{r}
 #RDS-Daten laden
@@ -68,4 +70,3 @@ if (!file.exists("data/normalized_rnase_df.rds")) {
   message("Datensatz existiert bereits")
 }
 ```
-
