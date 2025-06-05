@@ -464,6 +464,14 @@ any(zeilen_mit_nullsumme_rnase)
 
 
 ```
+```{r}
+#Dataframes speichern
+dir.create("data", showWarnings = FALSE)
+saveRDS(normalized_ctrl_df, file = "data/normalized_ctrl_df.rds")
+saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
+```
+
+
 
 ###Batch Effect###
 
