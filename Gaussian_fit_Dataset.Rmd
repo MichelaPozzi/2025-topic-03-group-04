@@ -69,3 +69,204 @@ if (!file.exists("data/normalized_rnase_df.rds")) {
 }
 ```
 
+```{r}
+#visualize starting "material"
+head(normalized_rnase_df)
+dim(normalized_rnase_df)
+```
+
+
+```{r}
+#visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
+# Protein auswählen
+protein_id <- "SPB6_HUMAN"
+
+# extract amount of protein
+intensities <- as.numeric(normalized_ctrl_df[4, 2:26 ])
+fraktionen <- 1:25
+
+# Plot 
+plot(fraktionen, intensities, type = "n",
+       xlab = "Fraktion (1–25)", ylab = "Normierte Intensität (Fläche = 1)",
+       main = paste("Dichte-Plot von", protein_id),
+       ylim = c(0, max(intensities)*1.1))
+
+ polygon(c(fraktionen, rev(fraktionen)),
+          c(rep(0, length(fraktionen)), rev(intensities)),
+          col = "lavender", border = NA)
+  lines(fraktionen, intensities, col = "lavender", lwd = 2)
+```
+
+```{r}
+#find all maxima
+# recognize peaks with diff()
+find_peaks_diff <- function(x, threshold = 2) {
+  n <- length(x)
+  peaks <- logical(n)
+  
+  dx <- diff(x)
+  
+  # Interne Punkte prüfen: vorher steigend, danach fallend
+  for (i in 2:(n-1)) {
+    if (x[i] >= threshold && dx[i-1] > 0 && dx[i] < 0) {
+      peaks[i] <- TRUE
+    }
+  }
+  
+  # Ränder prüfen
+  if (x[1] >= threshold && x[1] > x[2]) peaks[1] <- TRUE
+  if (x[n] >= threshold && x[n] > x[n-1]) peaks[n] <- TRUE
+  
+  which(peaks)
+}
+
+# Beispielhafte Anwendung auf Dataframe mit Protein in Spalte 1 und 25 Messwerten in Spalten 2–26
+process_df_peaks <- function(df, threshold = 2) {
+  results <- lapply(1:nrow(df), function(i) {
+    intensities <- as.numeric(df[i, 2:26])
+    protein <- df[i, 1]
+    peaks <- find_peaks_diff(intensities, threshold)
+    list(Protein = protein, Peaks = peaks)
+  })
+  
+  # Ergebnis in Dataframe umwandeln: Peaks als kommaseparierte Liste oder NA, falls keine Peaks
+  df_peaks <- data.frame(
+    Protein = sapply(results, `[[`, "Protein"),
+    Maxima_Positions = sapply(results, function(x) {
+      if (length(x$Peaks) == 0) {
+        NA_character_
+      } else {
+        paste(x$Peaks, collapse = ",")
+      }
+    }),
+    stringsAsFactors = FALSE
+  )
+  
+  return(df_peaks)
+}
+
+# apply to our dataframe
+
+df_peaks_CTRL <- process_df_peaks(normalized_ctrl_df, threshold = 2)
+df_peaks_RNAse <- process_df_peaks(normalized_rnase_df, threshold = 2)
+
+
+# depict results
+head(df_peaks_CTRL)
+head(df_peaks_RNAse)
+
+```
+
+```{r}
+#find global maxima
+find_global_maxima <- function(x, threshold = 2) {
+  max_val <- max(x)
+  if (max_val >= threshold) {
+    which(x == max_val)
+  } else {
+    integer(0)  # keine Maxima, falls max < threshold
+  }
+}
+
+process_df_global_maxima <- function(df, threshold = 2) {
+  results <- lapply(1:nrow(df), function(i) {
+    intensities <- as.numeric(df[i, 2:26])
+    protein <- df[i, 1]
+    maxima <- find_global_maxima(intensities, threshold)
+    list(Protein = protein, Global_Maxima = maxima)
+  })
+  
+  df_maxima <- data.frame(
+    Protein = sapply(results, `[[`, "Protein"),
+    Global_Maximum = sapply(results, function(x) {
+      if (length(x$Global_Maxima) == 0) {
+        NA_character_
+      } else {
+        paste(x$Global_Maxima, collapse = ",")
+      }
+    }),
+    stringsAsFactors = FALSE
+  )
+  
+  return(df_maxima)
+}
+
+#apply to dataframes
+global_ctrl <- process_df_global_maxima(normalized_ctrl_df, threshold =2)
+global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold =2)
+
+#depict results
+head(global_ctrl)
+head(global_rnase)
+```
+
+
+```{r}
+# find shoulders
+find_shoulders <- function(x, slope_threshold = 1, min_prominence = 0.1) {
+  n <- length(x)
+  dx <- diff(x)
+  
+  shoulders <- logical(n)
+  
+  # Stellen suchen, wo Steigung fast null ist (aber kein Peak)
+  for (i in 2:(n-2)) {
+    local_slope <- abs(dx[i])  # Betrag der Steigung
+    
+    # Prüfe, ob die Steigung klein ist (nahe null), aber KEIN echtes Peak
+    if (local_slope < slope_threshold) {
+      left_diff  <- x[i] - x[i-1]
+      right_diff <- x[i+1] - x[i]
+      
+      # Richtung der Kurve beachten (flach, aber nicht symmetrischer Peak)
+      if ((left_diff > min_prominence || right_diff > min_prominence) &&
+          !(x[i] > x[i-1] && x[i] > x[i+1])) {
+        shoulders[i] <- TRUE
+      }
+    }
+  }
+  
+  which(shoulders)
+}
+
+# Anwenden auf einen Dataframe zeilenweise (erste Spalte ignorieren)
+process_df_shoulders <- function(df, slope_threshold = 1, min_prominence = 0.1) {
+  results <- lapply(1:nrow(df), function(i) {
+    signal <- as.numeric(df[i, 2:26])  # Spalten 2 bis 26: Signalwerte
+    protein <- df[i, 1]                # Spalte 1: Proteinname
+    shoulders <- find_shoulders(signal, slope_threshold, min_prominence)
+    
+    list(Protein = protein, Shoulders = shoulders)
+  })
+  
+  df_shoulders <- data.frame(
+    Protein = sapply(results, `[[`, "Protein"),
+    Shoulder_Positions = sapply(results, function(x) {
+      if (length(x$Shoulders) == 0) {
+        NA_character_
+      } else {
+        paste(x$Shoulders, collapse = ",")
+      }
+    }),
+    stringsAsFactors = FALSE
+  )
+  
+  return(df_shoulders)
+}
+#apply to our data
+shoulders_ctrl <- process_df_shoulders(normalized_ctrl_df)
+shoulders_rnase <- process_df_shoulders(normalized_rnase_df)
+
+#depict results
+head(shoulders_ctrl)
+head(shoulders_rnase)
+
+```
+
+```{r}
+x <- as.numeric(normalized_ctrl_df[1, 2:26])
+dx <- abs(diff(x))
+
+hist(dx, breaks = 30, main = "Histogramm der Steigungen", xlab = "Steigung (|dx|)")
+```
+
