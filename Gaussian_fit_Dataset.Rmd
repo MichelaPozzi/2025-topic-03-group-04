@@ -269,4 +269,325 @@ dx <- abs(diff(x))
 
 hist(dx, breaks = 30, main = "Histogramm der Steigungen", xlab = "Steigung (|dx|)")
 ```
+```{r} # Ergebnis ergibt wenig Sinn
+#plateau detection
 
+detect_plateaus_rowwise <- function(dataframe, window_size = 4, var_thresh = 0.02, min_mean_threshold = 0.1) {
+  n_proteins <- nrow(dataframe)
+  n_values <- ncol(dataframe) - 1
+  plateaus_mat <- matrix(FALSE, nrow = n_proteins, ncol = n_values)
+  
+  for (protein_idx in 1:n_proteins) {
+    values <- as.numeric(dataframe[protein_idx, 2:ncol(dataframe)])
+    
+    for (i in 1:(n_values - window_size + 1)) {
+      window <- values[i:(i + window_size - 1)]
+      valid_values <- window[!is.na(window)]
+      
+      min_valid_points <- 2
+      
+      if (length(valid_values) >= min_valid_points) {
+        window_var <- var(valid_values)
+        window_mean <- mean(valid_values)
+        
+        if (!is.na(window_var) && window_var < var_thresh && abs(window_mean) > min_mean_threshold) {
+          plateaus_mat[protein_idx, i:(i + window_size - 1)] <- TRUE
+        }
+      }
+    }
+  }
+  
+  plateaus_df <- data.frame(Protein = dataframe[, 1], plateaus_mat, check.names = FALSE)
+  colnames(plateaus_df)[-1] <- colnames(dataframe)[-1]
+  return(plateaus_df)
+}
+
+# apply on dataframes
+
+plateaus_ctrl <- detect_plateaus_rowwise(normalized_ctrl_df, window_size = 4, var_thresh = 0.05, min_mean_threshold = 0.1)
+plateaus_rnase <- detect_plateaus_rowwise(normalized_rnase_df, window_size = 4, var_thresh = 0.05, min_mean_threshold = 0.1)
+
+# view results
+head(plateaus_ctrl)
+head(plateaus_rnase)
+
+# Anzahl der TRUE-Werte in plateaus_ctrl (nur Spalten 2 bis Ende)
+anzahl_true_ctrl <- sum(plateaus_ctrl[, -1])
+
+# Anzahl der TRUE-Werte in plateaus_rnase (nur Spalten 2 bis Ende)
+anzahl_true_rnase <- sum(plateaus_rnase[, -1])
+
+# Ausgabe
+cat("Anzahl TRUE in plateaus_ctrl:", anzahl_true_ctrl, "\n")
+cat("Anzahl TRUE in plateaus_rnase:", anzahl_true_rnase, "\n")
+
+```
+
+```{r}
+## plateau detection (output faultyyyyy)
+df_numeric_ctrl <- normalized_ctrl_df[, 2:26]
+rownames(df_numeric_ctrl) <- normalized_ctrl_df[, 1]
+
+df_numeric_rnase <- normalized_rnase_df[, 2:26]
+rownames(df_numeric_rnase) <- normalized_rnase_df[, 1]
+
+
+# function for plateau-detection
+detect_plateau_mask <- function(x, tolerance = 1e-5, min_length = 2, max_slope = 0.01) {
+  n <- length(x)
+  mask <- rep(FALSE, n)
+  start <- 1
+  
+  for (i in 2:n) {
+    if (abs(x[i] - x[start]) > tolerance) {
+      segment <- x[start:(i-1)]
+      slopes <- abs(diff(segment))
+      if ((i - start) >= min_length && all(slopes < max_slope)) {
+        mask[start:(i-1)] <- TRUE
+      }
+      start <- i
+    }
+  }
+  
+  segment <- x[start:n]
+  slopes <- abs(diff(segment))
+  if ((n - start + 1) >= min_length && all(slopes < max_slope)) {
+    mask[start:n] <- TRUE
+  }
+  
+  return(mask)
+}
+
+# function filtering for minimal plateau height
+filter_plateaus_by_height <- function(x, plateau_mask, height_threshold) {
+  filtered_mask <- rep(FALSE, length(x))
+  
+  rle_mask <- rle(plateau_mask)
+  ends <- cumsum(rle_mask$lengths)
+  starts <- ends - rle_mask$lengths + 1
+  
+  for (i in seq_along(rle_mask$values)) {
+    if (rle_mask$values[i]) {
+      idx_range <- starts[i]:ends[i]
+      plateau_mean <- mean(x[idx_range], na.rm = TRUE)
+      if (plateau_mean >= height_threshold) {
+        filtered_mask[idx_range] <- TRUE
+      }
+    }
+  }
+  
+  return(filtered_mask)
+}
+
+# boolean matrix
+create_plateau_boolean_matrix <- function(df, tolerance = 0.05, min_length = 3, max_slope = 0.01, height_threshold = 0.5) {
+  n_proteins <- nrow(df)
+  n_points <- ncol(df)
+  bool_mat <- matrix(FALSE, nrow = n_proteins, ncol = n_points)
+  rownames(bool_mat) <- rownames(df)
+  colnames(bool_mat) <- colnames(df)
+  
+  for (i in 1:n_proteins) {
+    x <- as.numeric(df[i, ])
+    plateau_mask <- detect_plateau_mask(x, tolerance, min_length, max_slope)
+    bool_mat[i, ] <- filter_plateaus_by_height(x, plateau_mask, height_threshold)
+  }
+  
+  return(as.data.frame(bool_mat))
+}
+
+# apply function on dataframes (faulty)
+plateau_ctrl <- create_plateau_boolean_matrix(df_numeric_ctrl,
+                                             tolerance = 0.01,
+                                             min_length = 3,
+                                             max_slope = 0.005,
+                                             height_threshold = 0.01)
+
+plateau_rnase <- create_plateau_boolean_matrix(df_numeric_rnase,
+                                              tolerance = 0.01,
+                                              min_length = 3,
+                                              max_slope = 0.005,
+                                              height_threshold = 0.01)
+
+# view results
+head(plateau_ctrl)
+head(plateau_rnase)
+
+plateau_ctrl[1, ] 
+
+```
+```{r}# debug (faulty)
+i <- 1
+x <- as.numeric(df_numeric_ctrl[i, ])
+print(x)
+plateau_mask <- detect_plateau_mask(x, tolerance = 0.05, min_length = 2, max_slope = 0.02)
+print(plateau_mask)
+filtered_mask <- filter_plateaus_by_height(x, plateau_mask, height_threshold = 0.1)
+print(filtered_mask)
+```
+
+
+```{r}
+## shoulder detection
+
+# vector for finding shoulders
+find_shoulder_points <- function(values, min_mean = 0.05, min_slope = 0.01, max_slope_drop = -0.01, window = 1) {
+  values <- as.numeric(values)
+  first_deriv <- diff(values)
+  second_deriv <- diff(first_deriv)
+
+  shoulder_points <- c()
+
+  for (i in (1 + window):(length(values) - window - 1)) {
+    slope <- first_deriv[i]
+    slope_change <- second_deriv[i]
+    local_window <- values[(i - window):(i + window)]
+    local_mean <- mean(local_window, na.rm = TRUE)
+
+    if (
+      slope > min_slope &&
+      slope_change < max_slope_drop &&
+      local_mean > min_mean
+    ) {
+      shoulder_points <- c(shoulder_points, i + 1)
+    }
+  }
+
+  return(shoulder_points)
+}
+
+## execution on all proteins from a dataframe
+
+# shoulder-finding on all proteins
+detect_shoulders_dataframe <- function(df, window = 1, min_mean = 0.05, min_slope = 0.01, max_slope_drop = -0.01) {
+  results <- vector("list", nrow(df))  # list with all shoulder points for every row
+  names(results) <- df[[1]]  # protein-names as names
+
+  for (i in 1:nrow(df)) {
+    values <- as.numeric(df[i, 2:ncol(df)])
+    results[[i]] <- find_shoulder_points(values,
+                                         min_mean = min_mean,
+                                         min_slope = min_slope,
+                                         max_slope_drop = max_slope_drop,
+                                         window = window)
+  }
+
+  return(results)
+}
+
+## execution on both treatment dataframes
+shoulders_ctrl <- detect_shoulders_dataframe(normalized_ctrl_df)
+shoulders_rnase <- detect_shoulders_dataframe(normalized_rnase_df)
+
+## results as lists
+# shoulder points for the first protein in control treatment
+normalized_ctrl_df[1, 1]  # protein name
+shoulders_ctrl[[1]]       # fractions with shoulders
+
+# all proteins with at least one shoulder point
+proteins_with_shoulders <- names(shoulders_ctrl)[sapply(shoulders_ctrl, length) > 0]
+
+## Results as boolean-matrix
+# generate TRUE/FALSE matrix for shoulder points
+shoulder_matrix_dataframe <- function(df, window = 1, min_mean = 0.05, min_slope = 0.01, max_slope_drop = -0.01) {
+  n_proteins <- nrow(df)
+  n_fractions <- ncol(df) - 1  # first column = proteinname
+
+  # empty matrix with FALSE
+  shoulder_mat <- matrix(FALSE, nrow = n_proteins, ncol = n_fractions)
+  colnames(shoulder_mat) <- colnames(df)[-1]
+  rownames(shoulder_mat) <- df[[1]]  # protein-names
+
+  for (i in 1:n_proteins) {
+    values <- as.numeric(df[i, 2:ncol(df)])
+    shoulder_positions <- find_shoulder_points(values,
+                                               min_mean = min_mean,
+                                               min_slope = min_slope,
+                                               max_slope_drop = max_slope_drop,
+                                               window = window)
+    if (length(shoulder_positions) > 0) {
+      shoulder_mat[i, shoulder_positions] <- TRUE
+    }
+  }
+
+  # results as dataframe
+  shoulder_df <- data.frame(Protein = df[[1]], shoulder_mat, check.names = FALSE)
+  return(shoulder_df)
+}
+
+# execute function
+shoulder_bool_ctrl <- shoulder_matrix_dataframe(normalized_ctrl_df)
+shoulder_bool_rnase <- shoulder_matrix_dataframe(normalized_rnase_df)
+
+# view results
+head(shoulder_bool_ctrl)
+head(shoulder_bool_rnase)
+
+```
+```{r}# faultyyyyyyy
+## comparing shoulders
+# common shoulder-points
+common_shoulders <- shoulder_bool_ctrl
+common_shoulders[, -1] <- shoulder_bool_ctrl[, -1] & shoulder_bool_rnase[, -1]
+
+# shoulder-points only in Ctrl (TRUE in Ctrl, FALSE in RNase)
+ctrl_only <- shoulder_bool_ctrl
+ctrl_only[, -1] <- shoulder_bool_ctrl[, -1] & (!shoulder_bool_rnase[, -1])
+
+# shoulder-points only in RNase (TRUE in RNase, FALSE in Ctrl)
+rnase_only <- shoulder_bool_rnase
+rnase_only[, -1] <- (!shoulder_bool_ctrl[, -1]) & shoulder_bool_rnase[, -1]
+
+mat_common_flip <- t(as.matrix(common_shoulders)[nrow(common_shoulders):1, ])
+
+# plot heatmap
+plot_shoulder_heatmap_base <- function(df_bool, title) {
+  mat <- as.matrix(df_bool[, -1])
+  rownames(mat) <- df_bool$Protein
+
+  # binarize TRUE/FALSE
+  mat_num <- matrix(as.numeric(as.matrix(mat_common_flip)), 
+                  nrow = nrow(mat_common_flip), 
+                  ncol = ncol(mat_common_flip))
+
+  # reverse row order for plotting heatmap
+  mat_num <- mat_num[nrow(mat_num):1, ]
+
+  # define colours: 0=lavender, 1=violet
+  col_palette <- c("lavender", "violet")
+
+  # Plot with image
+  # binarize matrix (TRUE -> 1, FALSE -> 0)
+  mat_num <- matrix(as.numeric(mat_common_flip), nrow = nrow(mat_common_flip), ncol = ncol(mat_common_flip))
+
+  # transpose matrix for image() and pivot y-axis
+  mat_for_image <- t(mat_num[nrow(mat_num):1, ])
+
+  # apply image
+  image(mat_for_image,
+      col = c("lavender", "violet"),
+      axes = FALSE,
+      main = "Common Shoulder Positions")
+
+  # x-axis: fractions (column)
+  axis(1,
+     at = seq(0, 1, length.out = ncol(mat_num)),
+     labels = colnames(mat_common_flip),
+     las = 2)
+
+# y-axis: proteins (rows)
+  axis(2,
+     at = seq(0, 1, length.out = nrow(mat_num)),
+     labels = rev(rownames(mat_common_flip)),
+     las = 2)
+}
+
+# view plots
+par(mfrow = c(3,1), mar = c(5,8,4,2))  # 3 Plots below each other
+
+plot_shoulder_heatmap_base(mat_common_flip, "Common shoulders (Ctrl & RNase)")
+
+plot_shoulder_heatmap_base(ctrl_only, "shoulders only in Ctrl")
+plot_shoulder_heatmap_base(rnase_only, "shoulders only in RNase")
+
+```
