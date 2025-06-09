@@ -190,22 +190,8 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 BiocManager::install(version = "3.21")
 ```
-```
-```{r}
 
-boxplot(data = normalized_rnase_df, x = normalized_rnase_df$batch,
-             y = normalized_rnase_df$value, title = 'OTU9 (Sponge)',
-             batch.legend.title = 'Gel (batch)')
 
-```
-
-```{r}
-ggplot(normalized_rnase_df, aes(x = value, fill = batch)) + 
-  geom_density(alpha = 0.5) + scale_fill_manual(values = color.mixo(1:10)) + 
-  labs(title = 'OTU9 (Sponge)', x = 'Value', fill = 'Gel (batch)') + 
-  theme_bw() + theme(plot.title = element_text(hjust = 0.5), 
-                     panel.grid = element_blank())
-```
 
 ```{r}
  head(normalized_rnase_df)
@@ -237,9 +223,11 @@ boxplot(expr_matrix,
 
 legend("topright", legend = unique(batch_labels), fill = rainbow(length(unique(batch_labels))), title = "Batch")
 ```
+
 ```{r}
 names(normalized_rnase_df)
 ```
+
 ```{r}
 #entfernen 
 library(limma)
@@ -274,6 +262,8 @@ boxplot(expr_corrected,
         ylab = "Expression",
         col = rainbow(length(batch))[batch])
 ```
+
+
 ```{r}
 # PCA-Analyse vorbereiten
 pca_before <- prcomp(t(expr_matrix), scale. = TRUE)
@@ -303,6 +293,9 @@ legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))),
 # Reset Layout
 par(mfrow = c(1, 1))
 ```
+
+
+
 ```{r}
 # Optional: Wenn du pheatmap noch nicht hast
 install.packages("pheatmap")
@@ -341,4 +334,5 @@ pheatmap(heat_after,
 par(mfrow = c(1, 1))
 
 ```
+
 
