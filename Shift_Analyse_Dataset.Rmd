@@ -68,3 +68,69 @@ if (!file.exists("data/normalized_rnase_df.rds")) {
   message("Datensatz existiert bereits")
 }
 ```
+
+```{r}
+#visualize starting "material"
+head(normalized_ctrl_df)
+head(normalized_rnase_df)
+
+dim(normalized_ctrl_df)
+dim(normalized_rnase_df)
+```
+
+
+```{r}
+install.packages("emdist")  
+
+```
+
+```{r}
+library(emdist)
+
+# Custom function to compute 1D Earth Mover's Distance
+compute_emd_1d <- function(vec1, vec2) {
+  # Remove NAs
+  vec1 <- as.numeric(na.omit(vec1))
+  vec2 <- as.numeric(na.omit(vec2))
+  
+  # Ensure both vectors have the same length
+  if (length(vec1) != length(vec2)) {
+    return(NA)
+  }
+  
+  # Normalize both vectors to sum to 1 (as probability distributions)
+  vec1 <- vec1 / sum(vec1)
+  vec2 <- vec2 / sum(vec2)
+  
+  # Compute cumulative distributions
+  cdf1 <- cumsum(vec1)
+  cdf2 <- cumsum(vec2)
+  
+  # EMD in 1D is the sum of absolute differences of CDFs
+  emd <- sum(abs(cdf1 - cdf2))
+  
+  return(emd)
+}
+
+# Vector to store EMD results
+emd_values <- numeric(nrow(normalized_ctrl_df))
+
+# Loop through all proteins (rows)
+for (i in 1:nrow(normalized_ctrl_df)) {
+  # Extract fraction profiles (columns 2 to 26)
+  vec_ctrl <- as.numeric(normalized_ctrl_df[i, 2:26])
+  vec_rnase <- as.numeric(normalized_rnase_df[i, 2:26])
+  
+  # Compute 1D EMD
+  emd_values[i] <- compute_emd_1d(vec_ctrl, vec_rnase)
+}
+
+# Add EMD results as a new column to the data frame
+normalized_ctrl_df$EMD <- emd_values
+normalized_rnase_df$EMD <- emd_values  # Optional, for consistency (values are the same as for Ctrl)
+
+# depict results
+head(normalized_ctrl_df[, c(1, 27)])  # Show protein name and EMD
+
+```
+
