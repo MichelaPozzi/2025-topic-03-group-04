@@ -374,6 +374,102 @@ head(percent_rnase_df)
 
 ```
 
+
+```{r}
+calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
+  proteins <- df[, 1]  # Protein-Names
+  data_only <- df[, -1]  # only numeric values
+
+  mean_matrix <- matrix(NA, nrow = nrow(data_only), ncol = n_fractions)
+
+  for (f in 1:n_fractions) {
+    # columns for fraction f (3 replicates each)
+    cols <- ((f - 1) * n_replicates + 1):(f * n_replicates)
+    mean_matrix[, f] <- rowMeans(data_only[, cols], na.rm = TRUE)
+  }
+
+  # save result as dataframe
+  mean_df <- as.data.frame(mean_matrix)
+  colnames(mean_df) <- paste0("Fraction", 1:n_fractions)
+  final_df <- cbind(Protein = proteins, mean_df)
+
+  return(final_df)
+}
+
+#apply to our data
+mean_ctrl_df <- calculate_mean_per_fraction(percent_ctrl_df)
+mean_rnase_df <- calculate_mean_per_fraction(percent_rnase_df)
+
+# depict results
+head(mean_ctrl_df)
+head(mean_rnase_df)
+
+```
+
+```{r}
+# normalization of amount of protein to equal 100%
+
+calculate_fraction_percentages <- function(mean_df) {
+  proteins <- mean_df[, 1]
+  data_only <- mean_df[, -1]
+  
+  # calculate row sum (sum across all fractions for each protein)
+  row_totals <- rowSums(data_only, na.rm = TRUE)
+  
+  # transform amount into percent
+  percent_matrix <- sweep(data_only, 1, row_totals, FUN = "/") * 100
+  
+  # combine result to a dataframe
+  percent_df <- cbind(Protein = proteins, as.data.frame(percent_matrix))
+  colnames(percent_df) <- colnames(mean_df)
+  
+  return(percent_df)
+}
+
+
+# apply to our data
+normalized_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
+normalized_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
+
+# depict result
+head(normalized_ctrl_df)
+head(normalized_rnase_df)
+
+```
+
+```{r}
+#for Ctrl
+# are there rows with sum == (starting with second column) for Ctrl
+zeilensummen <- rowSums(normalized_ctrl_df[, -1])
+
+# boolean vector: TRUE for rows with sum == 0
+zeilen_mit_nullsumme <- zeilensummen == 0
+
+# are there any such rows?
+any(zeilen_mit_nullsumme)
+
+#für RNase
+#are there rows with sum == (starting with second column) for Ctrl
+zeilensummen_rnase <- rowSums(normalized_rnase_df[, -1])
+
+# boolean vector: TRUE for rows with sum == 0
+zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
+
+# are there any such rows?
+any(zeilen_mit_nullsumme_rnase)
+
+ 
+```
+```{r}
+#Dataframes speichern
+dir.create("data", showWarnings = FALSE)
+saveRDS(normalized_ctrl_df, file = "data/normalized_ctrl_df.rds")
+saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
+```
+
+
+###Check Normality###
+
 ```{r}
 # Funktion zum Testen auf Normalverteilung je Replikat pro Fraktion
 check_normality <- function(df, df_name = "") {
@@ -438,108 +534,7 @@ cat("Nicht normalverteilte Replikate (CTRL):", nicht_normal_ctrl, "\n")
 cat("Nicht normalverteilte Replikate (RNase):", nicht_normal_rnase, "\n")
 
 
-
 ```
-
-
-```{r}
-calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
-  proteins <- df[, 1]  # Protein-Names
-  data_only <- df[, -1]  # only numeric values
-
-  mean_matrix <- matrix(NA, nrow = nrow(data_only), ncol = n_fractions)
-
-  for (f in 1:n_fractions) {
-    # columns for fraction f (3 replicates each)
-    cols <- ((f - 1) * n_replicates + 1):(f * n_replicates)
-    mean_matrix[, f] <- rowMeans(data_only[, cols], na.rm = TRUE)
-  }
-
-  # save result as dataframe
-  mean_df <- as.data.frame(mean_matrix)
-  colnames(mean_df) <- paste0("Fraction", 1:n_fractions)
-  final_df <- cbind(Protein = proteins, mean_df)
-
-  return(final_df)
-}
-
-#apply to our data
-mean_ctrl_df <- calculate_mean_per_fraction(percent_ctrl_df)
-mean_rnase_df <- calculate_mean_per_fraction(percent_rnase_df)
-
-# depict results
-head(mean_ctrl_df)
-head(mean_rnase_df)
-
-# Zeilensummen berechnen (ab der zweiten Spalte)
-zeilensummen <- rowSums(mean_ctrl_df[, -1])
-print(zeilensummen)
-```
-
-```{r}
-# normalization of amount of protein to equal 100%
-
-calculate_fraction_percentages <- function(mean_df) {
-  proteins <- mean_df[, 1]
-  data_only <- mean_df[, -1]
-  
-  # calculate row sum (sum across all fractions for each protein)
-  row_totals <- rowSums(data_only, na.rm = TRUE)
-  
-  # transform amount into percent
-  percent_matrix <- sweep(data_only, 1, row_totals, FUN = "/") * 100
-  
-  # combine result to a dataframe
-  percent_df <- cbind(Protein = proteins, as.data.frame(percent_matrix))
-  colnames(percent_df) <- colnames(mean_df)
-  
-  return(percent_df)
-}
-
-
-# apply to our data
-normalized_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
-normalized_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
-
-# depict result
-head(normalized_ctrl_df)
-head(normalized_rnase_df)
-
-# Zeilensummen berechnen (ab der zweiten Spalte)
-zeilensumme <- rowSums(normalized_ctrl_df[, -1])
-print(zeilensumme)
-```
-
-```{r}
-#for Ctrl
-# are there rows with sum == (starting with second column) for Ctrl
-zeilensummen <- rowSums(normalized_ctrl_df[, -1])
-
-# boolean vector: TRUE for rows with sum == 0
-zeilen_mit_nullsumme <- zeilensummen == 0
-
-# are there any such rows?
-any(zeilen_mit_nullsumme)
-
-#für RNase
-#are there rows with sum == (starting with second column) for Ctrl
-zeilensummen_rnase <- rowSums(normalized_rnase_df[, -1])
-
-# boolean vector: TRUE for rows with sum == 0
-zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
-
-# are there any such rows?
-any(zeilen_mit_nullsumme_rnase)
-
- 
-```
-```{r}
-#Dataframes speichern
-dir.create("data", showWarnings = FALSE)
-saveRDS(normalized_ctrl_df, file = "data/normalized_ctrl_df.rds")
-saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
-```
-
 
 
 ###Batch Effect###
