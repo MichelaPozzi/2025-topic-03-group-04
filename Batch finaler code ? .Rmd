@@ -1,0 +1,211 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-06-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+#RDS-Daten laden
+normalized_ctrl_df <- readRDS("data/normalized_ctrl_df.rds")
+
+str(normalized_ctrl_df)
+
+summary(normalized_ctrl_df)
+
+# Nur erzeugen, wenn Datei noch nicht existiert
+if (!file.exists("data/normalized_ctrl_df.rds")) {
+  message("HAAALT!!!! Speicher erst neuen Datensatz")
+  
+  final_data <- data.frame(
+    normalized_ctrl_df
+  )
+  
+  saveRDS(final_data, "data/normalized_ctrl_df.rds")
+} else {
+  message("Datensatz existiert bereits")
+}
+```
+
+```{r}
+```{r}
+normalized_rnase_df <- readRDS("data/normalized_rnase_df.rds")
+str(normalized_rnase_df)
+summary(normalized_rnase_df)
+
+if (!file.exists("data/normalized_rnase_df.rds")) {
+  message("HAAALT!!!! Speicher erst neuen Datensatz")
+  
+  final_data <- data.frame(
+    normalized_rnase_df
+  )
+  
+  saveRDS(final_data, "data/normalized_rnase_df.rds")
+} else {
+  message("Datensatz existiert bereits")
+}
+```
+
+```{r}
+
+```{r}
+#limma install nicht notwendig wenn ihr es schon habt, führt zu doofen fehlern 
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(version = "3.21")
+```
+
+
+
+```{r}
+ head(normalized_rnase_df)
+```
+
+```{r}
+dim(normalized_rnase_df)
+```
+
+```{r}
+expr_matrix <- normalized_rnase_df[, -1]
+
+boxplot(expr_matrix,
+        main = "Proteinexpression pro Fraction",
+        ylab = "Expression",
+        xlab = "Fraction",
+        las = 2,                 
+        col = "lightblue")
+
+batch_labels <- c(rep("Batch1", 3), rep("Batch2", 3), rep("Batch3", 3), rep("Batch4", 3), rep("Batch5", 3), rep("Batch6", 3), rep("Batch7", 4))  
+colors <- as.factor(batch_labels)
+
+boxplot(expr_matrix,
+        main = "Expression nach Fraction (nach Batch gefärbt)",
+        ylab = "Expression",
+        xlab = "Fraction",
+        las = 2,
+        col = rainbow(length(unique(batch_labels)))[colors])
+
+legend("topright", legend = unique(batch_labels), fill = rainbow(length(unique(batch_labels))), title = "Batch")
+```
+
+```{r}
+names(normalized_rnase_df)
+```
+
+```{r}
+#entfernen 
+library(limma)
+
+batch <- c(rep("Batch1", 3),  # Fraction1-3
+           rep("Batch2", 3),  # Fraction4-6
+           rep("Batch3", 3),  # Fraction7-9
+           rep("Batch4", 3),  # Fraction10-12
+           rep("Batch5", 3),  # Fraction13-15
+           rep("Batch6", 3),  # Fraction16-18
+           rep("Batch7", 7))  # Fraction19-25
+
+batch <- factor(batch)
+
+
+# Expression-Matrix ohne Protein-Spalte
+expr_matrix <- as.matrix(normalized_rnase_df[, -1])
+
+expr_corrected <- removeBatchEffect(expr_matrix, batch = batch)
+
+# Originaldaten
+boxplot(expr_matrix,
+        main = "Vor Batch-Korrektur",
+        las = 2,
+        ylab = "Expression",
+        col = rainbow(length(batch))[batch])
+
+# Nach Korrektur
+boxplot(expr_corrected,
+        main = "Nach Batch-Korrektur (limma)",
+        las = 2,
+        ylab = "Expression",
+        col = rainbow(length(batch))[batch])
+```
+
+
+```{r}
+# PCA-Analyse vorbereiten
+pca_before <- prcomp(t(expr_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(expr_corrected), scale. = TRUE)
+
+# Batch-Zuordnung erneut für Farben
+batch <- factor(c(rep("Batch1", 3), rep("Batch2", 3), rep("Batch3", 3),
+                  rep("Batch4", 3), rep("Batch5", 3), rep("Batch6", 3), rep("Batch7", 7)))
+
+# Plot nebeneinander
+par(mfrow = c(1, 2))
+
+# PCA vor Korrektur
+plot(pca_before$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA vor Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# PCA nach Korrektur
+plot(pca_after$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA nach Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+```
+
+
+
+```{r}
+# Optional: Wenn du pheatmap noch nicht hast
+install.packages("pheatmap")
+library(pheatmap)
+
+# Auswahl einer Teilmenge der Proteine (z. B. Top 100 variabelsten)
+select_top_var <- function(mat, top_n = 100) {
+  vars <- apply(mat, 1, var)
+  mat[order(vars, decreasing = TRUE)[1:top_n], ]
+}
+
+# Top 100 Gene mit höchster Varianz (vorher/nachher)
+heat_before <- select_top_var(expr_matrix, 100)
+heat_after  <- select_top_var(expr_corrected, 100)
+
+# Spaltenannotation nach Batch
+annotation_col <- data.frame(Batch = batch)
+rownames(annotation_col) <- colnames(expr_matrix)
+
+# Zwei Heatmaps nebeneinander
+par(mfrow = c(1, 2))
+
+pheatmap(heat_before,
+         main = "Heatmap vor Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE)
+
+pheatmap(heat_after,
+         main = "Heatmap nach Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+
+```
+
+
+
+```
+
+```
+
