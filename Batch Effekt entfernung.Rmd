@@ -1,0 +1,344 @@
+---
+title: "Batch"
+output: html_document
+date: "2025-06-08"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+RDS-Daten laden
+normalized_ctrl_df <- readRDS("data/normalized_ctrl_df.rds")
+
+str(normalized_ctrl_df)
+
+summary(normalized_ctrl_df)
+
+# Nur erzeugen, wenn Datei noch nicht existiert
+if (!file.exists("data/normalized_ctrl_df.rds")) {
+  message("HAAALT!!!! Speicher erst neuen Datensatz")
+  
+  final_data <- data.frame(
+    normalized_ctrl_df
+  )
+  
+  saveRDS(final_data, "data/normalized_ctrl_df.rds")
+} else {
+  message("Datensatz existiert bereits")
+}
+```
+
+```{r}
+normalized_rnase_df <- readRDS("data/normalized_rnase_df.rds")
+str(normalized_rnase_df)
+summary(normalized_rnase_df)
+
+if (!file.exists("data/normalized_rnase_df.rds")) {
+  message("HAAALT!!!! Speicher erst neuen Datensatz")
+  
+  final_data <- data.frame(
+    normalized_rnase_df
+  )
+  
+  saveRDS(final_data, "data/normalized_rnase_df.rds")
+} else {
+  message("Datensatz existiert bereits")
+}
+```
+```
+
+
+```{r}
+install.packages("mixOmics") 
+
+
+```
+
+```{r}
+#batch effect 
+
+sample_names <- colnames(A549_NS)[-1]  # Annahme: Erste Spalte ist Genname
+batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # Extrahiere "B1", "B2", etc.
+#matrix 
+expr_matrix <- as.matrix(A549_NS[, -1])
+rownames(expr_matrix) <- A549_NS[, 1]
+
+#PCA 
+pca <- prcomp(t(expr_matrix), scale. = TRUE)
+
+# Plot
+plot(pca$x[,1], pca$x[,2], col=as.factor(batch_info),
+     pch=19, xlab="PC1", ylab="PC2", main="PCA zur Batch-Detektion")
+legend("topright", inset=c(-0.4,1),        # Position rechts außerhalb
+       legend=unique(batch_info),
+       col=1:length(unique(batch_info)), pch=19, title="Batch")
+
+
+```
+```{r}
+expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: Erste Spalte sind Gen-IDs
+rownames(expr_matrix) <- A549_NS[, 1]
+
+pca_result <- prcomp(t(expr_matrix), scale. = TRUE)
+
+sample_names <- colnames(expr_matrix)
+batch_info <- sub(".*_(B\\d+)$", "\\1", sample_names)  # z.B. "Sample1_B1" → "B1"
+treatment_info <- sub("^(.*?)_.*$", "\\1", sample_names)  # z.B. "Control_B1" → "Control"
+
+library(ggplot2)
+
+pca_df <- as.data.frame(pca_result$x[, 1:2])  # PC1 & PC2
+pca_df$batch <- batch_info
+pca_df$treatment <- treatment_info
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_minimal() +
+  labs(title = "PCA Plot", color = "Batch") +
+  coord_cartesian(xlim = c(-15, 14), ylim = c(-13, 14))
+
+head(pca_df)
+str(pca_df)
+
+```
+```{r}
+# andere version 
+expr_matrix <- as.matrix(A549_NS[, -1])  # Annahme: die erste Spalte ist keine Expression
+batch_info <- as.factor(A549_NS$batch)   # Batch-Informationen
+
+# Berechnen der Distanzmatrix
+dist_matrix <- dist(t(expr_matrix))  # t() = Samples als Zeilen verwenden
+
+# Hierarchisches Clustering durchführen
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# Dendrogramm plotten
+plot(hc, labels = FALSE, main = "Clustering der Proben (Batch-Effekt)")
+
+# Dendrogramm und Batch-Färbung
+library(dendextend)
+
+# Umwandeln der hclust in ein dendrogramm
+dend <- as.dendrogram(hc)
+
+# Färben der Labels nach Batch
+labels_colors(dend) <- as.numeric(batch_info)[order.dendrogram(dend)]
+
+# Plotten des Dendrogramms
+plot(dend, main = "Hierarchisches Clustering mit Batch-Färbung")
+
+# Heatmap mit Batch-Zeilenannotation
+library(pheatmap)
+
+annotation <- data.frame(Batch = batch_info)
+rownames(annotation) <- colnames(expr_matrix)
+
+# Heatmap erstellen
+pheatmap(expr_matrix, scale = "row", annotation_col = annotation,
+         show_colnames = FALSE, main = "Heatmap zur Batch-Erkennung")
+
+```
+
+
+```{r}
+# PCA-Scores als DataFrame
+pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
+
+# Kombinierte Labels anhängen
+pca_sample_scores$batch <- combined_labels
+
+# Plot mit kombinierten Labels als Farbe
+library(ggplot2)
+
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
+  geom_point(size = 3, alpha = 0.8) +
+  labs(
+    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
+    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
+    title = "PCA Plot (Samples, gefärbt nach Fraktion und Replikat)"
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "right") +
+  guides(color = guide_legend(title = "Fraktion_Replikat"))
+```
+
+
+```{r}
+ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = fraction, shape = treatment)) +
+  geom_point(size = 3, alpha = 0.8) +
+
+
+@@ -570,7 +650,7 @@ rownames(expr_matrix) <- normed_ctrl_df[[1]]   # Zeilennamen setzen
+
+# 2. Batch-Labels extrahieren 
+sample_names <- colnames(expr_matrix)
+batch <- sapply(strsplit(sample_names, "_"), `[`, 1)
+batch <- sapply(strsplit(sample_names, "_"), `[`, 3) # 3 für replikate, 1 für fraktion
+
+# 3. Remove Batch Effect
+corrected_matrix <- removeBatchEffect(expr_matrix, batch = batch)
+```
+
+
+```{r}
+#limma install
+
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+BiocManager::install(version = "3.21")
+```
+```
+```{r}
+
+boxplot(data = normalized_rnase_df, x = normalized_rnase_df$batch,
+             y = normalized_rnase_df$value, title = 'OTU9 (Sponge)',
+             batch.legend.title = 'Gel (batch)')
+
+```
+
+```{r}
+ggplot(normalized_rnase_df, aes(x = value, fill = batch)) + 
+  geom_density(alpha = 0.5) + scale_fill_manual(values = color.mixo(1:10)) + 
+  labs(title = 'OTU9 (Sponge)', x = 'Value', fill = 'Gel (batch)') + 
+  theme_bw() + theme(plot.title = element_text(hjust = 0.5), 
+                     panel.grid = element_blank())
+```
+
+```{r}
+ head(normalized_rnase_df)
+```
+
+```{r}
+dim(normalized_rnase_df)
+```
+
+```{r}
+expr_matrix <- normalized_rnase_df[, -1]
+
+boxplot(expr_matrix,
+        main = "Proteinexpression pro Fraction",
+        ylab = "Expression",
+        xlab = "Fraction",
+        las = 2,                 
+        col = "lightblue")
+
+batch_labels <- c(rep("Batch1", 3), rep("Batch2", 3), rep("Batch3", 3), rep("Batch4", 3), rep("Batch5", 3), rep("Batch6", 3), rep("Batch7", 4))  
+colors <- as.factor(batch_labels)
+
+boxplot(expr_matrix,
+        main = "Expression nach Fraction (nach Batch gefärbt)",
+        ylab = "Expression",
+        xlab = "Fraction",
+        las = 2,
+        col = rainbow(length(unique(batch_labels)))[colors])
+
+legend("topright", legend = unique(batch_labels), fill = rainbow(length(unique(batch_labels))), title = "Batch")
+```
+```{r}
+names(normalized_rnase_df)
+```
+```{r}
+#entfernen 
+library(limma)
+
+batch <- c(rep("Batch1", 3),  # Fraction1-3
+           rep("Batch2", 3),  # Fraction4-6
+           rep("Batch3", 3),  # Fraction7-9
+           rep("Batch4", 3),  # Fraction10-12
+           rep("Batch5", 3),  # Fraction13-15
+           rep("Batch6", 3),  # Fraction16-18
+           rep("Batch7", 7))  # Fraction19-25
+
+batch <- factor(batch)
+
+
+# Expression-Matrix ohne Protein-Spalte
+expr_matrix <- as.matrix(normalized_rnase_df[, -1])
+
+expr_corrected <- removeBatchEffect(expr_matrix, batch = batch)
+
+# Originaldaten
+boxplot(expr_matrix,
+        main = "Vor Batch-Korrektur",
+        las = 2,
+        ylab = "Expression",
+        col = rainbow(length(batch))[batch])
+
+# Nach Korrektur
+boxplot(expr_corrected,
+        main = "Nach Batch-Korrektur (limma)",
+        las = 2,
+        ylab = "Expression",
+        col = rainbow(length(batch))[batch])
+```
+```{r}
+# PCA-Analyse vorbereiten
+pca_before <- prcomp(t(expr_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(expr_corrected), scale. = TRUE)
+
+# Batch-Zuordnung erneut für Farben
+batch <- factor(c(rep("Batch1", 3), rep("Batch2", 3), rep("Batch3", 3),
+                  rep("Batch4", 3), rep("Batch5", 3), rep("Batch6", 3), rep("Batch7", 7)))
+
+# Plot nebeneinander
+par(mfrow = c(1, 2))
+
+# PCA vor Korrektur
+plot(pca_before$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA vor Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# PCA nach Korrektur
+plot(pca_after$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA nach Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+```
+```{r}
+# Optional: Wenn du pheatmap noch nicht hast
+install.packages("pheatmap")
+library(pheatmap)
+
+# Auswahl einer Teilmenge der Proteine (z. B. Top 100 variabelsten)
+select_top_var <- function(mat, top_n = 100) {
+  vars <- apply(mat, 1, var)
+  mat[order(vars, decreasing = TRUE)[1:top_n], ]
+}
+
+# Top 100 Gene mit höchster Varianz (vorher/nachher)
+heat_before <- select_top_var(expr_matrix, 100)
+heat_after  <- select_top_var(expr_corrected, 100)
+
+# Spaltenannotation nach Batch
+annotation_col <- data.frame(Batch = batch)
+rownames(annotation_col) <- colnames(expr_matrix)
+
+# Zwei Heatmaps nebeneinander
+par(mfrow = c(1, 2))
+
+pheatmap(heat_before,
+         main = "Heatmap vor Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE)
+
+pheatmap(heat_after,
+         main = "Heatmap nach Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+
+```
+
