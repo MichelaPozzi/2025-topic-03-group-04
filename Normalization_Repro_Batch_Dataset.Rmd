@@ -373,6 +373,50 @@ head(percent_rnase_df)
 
 ```
 
+```{r}
+# Angenommen die erste Spalte enthält die Proteinnamen:
+# Also Spalten 2 bis 76 enthalten die 75 Werte
+numeric_columns <- 2:76
+
+shapiro_pvals_ctrl <- numeric(nrow(percent_ctrl_df))
+shapiro_pvals_rnase <- numeric(nrow(percent_rnase_df))
+
+for (i in 1:nrow(percent_ctrl_df)) {
+  values_ctrl <- as.numeric(percent_ctrl_df[i, numeric_columns])
+  values_rnase <- as.numeric(percent_rnase_df[i, numeric_columns])
+  
+  if (length(unique(values_ctrl)) >= 3) {
+    shapiro_pvals_ctrl[i] <- shapiro.test(values_ctrl)$p.value
+  } else {
+    shapiro_pvals_ctrl[i] <- NA
+  }
+
+  if (length(unique(values_rnase)) >= 3) {
+    shapiro_pvals_rnase[i] <- shapiro.test(values_rnase)$p.value
+  } else {
+    shapiro_pvals_rnase[i] <- NA
+  }
+}
+
+# Protein-Namen aus der ersten Spalte extrahieren
+protein_names <- percent_ctrl_df[[1]]
+
+# Zusammenfassen
+shapiro_results <- data.frame(
+  Protein = protein_names,
+  Shapiro_p_ctrl = shapiro_pvals_ctrl,
+  Shapiro_p_rnase = shapiro_pvals_rnase,
+  Normal_ctrl = shapiro_pvals_ctrl > 0.05,
+  Normal_rnase = shapiro_pvals_rnase > 0.05
+)
+
+head(shapiro_results, 10)
+
+sum(shapiro_results$Normal_ctrl, na.rm = TRUE)   # Für Kontrollbedingung
+sum(shapiro_results$Normal_rnase, na.rm = TRUE)  # Für RNase-Bedingung
+
+
+```
 
 
 ```{r}
