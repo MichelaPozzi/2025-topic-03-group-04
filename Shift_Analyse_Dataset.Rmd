@@ -129,6 +129,8 @@ for (i in 1:nrow(normalized_ctrl_df)) {
 normalized_ctrl_df$EMD <- emd_values
 normalized_rnase_df$EMD <- emd_values  # Optional, for consistency (values are the same as for Ctrl)
 
+#EMD results can potentially range from 0 (Ctrl and RNase are identical) to 25 (Ctrl and RNase are as dissimilar as they can be)
+
 # depict results
 head(normalized_ctrl_df[, c(1, 27)])  # Show protein name and EMD
 
