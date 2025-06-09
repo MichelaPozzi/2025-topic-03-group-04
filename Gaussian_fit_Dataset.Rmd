@@ -523,7 +523,10 @@ shoulder_bool_rnase <- shoulder_matrix_dataframe(normalized_rnase_df)
 head(shoulder_bool_ctrl)
 head(shoulder_bool_rnase)
 
+
+
 ```
+
 ```{r}# faultyyyyyyy
 ## comparing shoulders
 # common shoulder-points
