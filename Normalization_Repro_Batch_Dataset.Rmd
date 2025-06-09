@@ -133,23 +133,23 @@ plot(rnase_correlations)
 ####Normalization###
 
 ```{r}
-# Funktion zum spaltenweisen Mittelwert (außer Protein_Name)
+# function to compute mean columnwise (except Protein_Name)
 compute_column_means <- function(df) {
-  # Nur numerische Spalten auswählen (außer Protein_Name)
+  # select numeric columns (except Protein_Name)
   numeric_data <- df[, sapply(df, is.numeric)]
   
-  # Spaltenweise Mittelwerte berechnen
+  # calculate mean coulmnwise
   col_means <- colMeans(numeric_data, na.rm = TRUE)
   
   return(col_means)
 }
 
-# Mittelwerte berechnen
+#apply to our data
 ctrl_means <- compute_column_means(df_ctrl)
 rnase_means <- compute_column_means(df_rnase)
 
 
-# Mittelwerte als DataFrame speichern
+# save means as dataframes
 ctrl_means_df <- data.frame(Sample = names(ctrl_means), Mean = as.numeric(ctrl_means))
 rnase_means_df <- data.frame(Sample = names(rnase_means), Mean = as.numeric(rnase_means))
 
@@ -157,53 +157,53 @@ rnase_means_df <- data.frame(Sample = names(rnase_means), Mean = as.numeric(rnas
 head(ctrl_means_df)
 head(rnase_means_df)
 
-#überprüfen ob Mittelwert == 0, da averages bei berechnungen des Normierungsfaktors im Nenner stehen
+#check whether there are means == 0 (to calculate normalization factor: mean are denominator -> would create NAs if mean were 0)
 sum(ctrl_means_df[, 2] == 0)
 sum(rnase_means_df[, 2]==0)
 
 ```
 
 ```{r}
-# Funktion: Mittelwert des ähnlichsten Replikatpaares (von 3 Werten)
+# create function to calculate the mean of the two most similar replicates (out of three replicates)
 mean_of_closest_pair <- function(x) {
-  combs <- combn(x, 2)                          # Alle 2er-Kombinationen
-  diffs <- abs(combs[1, ] - combs[2, ])         # Absolute Differenzen berechnen
-  min_idx <- which.min(diffs)                   # Index des kleinsten Unterschieds
-  mean(combs[, min_idx])                        # Mittelwert des ähnlichsten Paares
+  combs <- combn(x, 2)                          # all pairwise combinations
+  diffs <- abs(combs[1, ] - combs[2, ])         # calculates the absolute distance
+  min_idx <- which.min(diffs)                   # indices of minimal distance replicates
+  mean(combs[, min_idx])                        # mean of the most similar pair
 }
 
-# Funktion: Datenvektor blockweise (je 3 Werte) verarbeiten
+# alter function so it will be applied to three values at a time moving fractionwise
 process_blocks <- function(values_vector) {
-  n_blocks <- length(values_vector) / 3         # Anzahl der Fraktionen
+  n_blocks <- length(values_vector) / 3         # number of fractions
   result <- numeric(n_blocks)
   
   for (i in 1:n_blocks) {
-    block <- values_vector[((i - 1) * 3 + 1):(i * 3)] #values vector enthält die drei werte der replikate für jede fraktion
+    block <- values_vector[((i - 1) * 3 + 1):(i * 3)] #values vector contains the three values of the replicates for each fraction
     result[i] <- mean_of_closest_pair(block)
   }
   
   return(result)
 }
 
-# Wertevektoren aus DataFrames extrahieren
-control_values <- ctrl_means_df$Mean    # Annahme: Spalte heißt 'Mittelwert'
+# extract values from the dataframe 
+control_values <- ctrl_means_df$Mean    
 rnase_values   <- rnase_means_df$Mean
 
-# Berechnung durchführen
+# apply to our data
 control_means <- process_blocks(control_values)
 rnase_means   <- process_blocks(rnase_values)
 
-# Ergebnis als DataFrame zusammenfassen
+# save result as dataframe
 closest_means_ctrl <- data.frame(
   Fraktion = paste0("Fraction", 1:length(control_means)),  
-  Control  = control_means
+  Control_most_similar_pair_mean  = control_means
 )
 
 closest_means_rnase <- data.frame(
   Fraktion = paste0("Fraction", 1:length(control_means)),  
-  RNase = rnase_means)
+  RNase_most_similar_pair_mean = rnase_means)
 
-# Ausgabe
+# depict result
 print(closest_means_ctrl)
 print(closest_means_rnase)
 
@@ -216,33 +216,34 @@ n_replicates <- 3
 # ctrl_means_df und rnase_means_df enthalten alle Replikat-Mittelwerte in einer Spalte, z.B. 'Means'
 # ctrl_final_means_df und rnase_final_means_df enthalten je einen Mittelwert pro Fraktion in 'FinalMean'
 
-# Die Replikatwerte für jede Fraktion in eine Matrix (25x3) umwandeln
+# create matrix for replicates of each fraction (25x3)
 ctrl_mat <- matrix(ctrl_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
 rnase_mat <- matrix(rnase_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
 
-# Initialisiere Normalisierungsmatrizen
+# initialize normalization matrixes
 norm_ctrl_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 norm_rnase_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 
-# Schleife über Fraktionen
+# loop over all fractions
 for (r in 1:n_fractions) {
-  control_values <- ctrl_mat[r, ]  # 3 Replikate Control
-  rnase_values <- rnase_mat[r, ]   # 3 Replikate RNase
+  control_values <- ctrl_mat[r, ]  # 3 replicates Control
+  rnase_values <- rnase_mat[r, ]   # 3 replicates RNase
   
-  # FinalMean aus getrennten Final-DataFrames
+  # FinalMean from Ctrl and RNAse dataframe
   mean_control <- closest_means_ctrl[r, 2]
   mean_rnase <- closest_means_rnase[r, 2]
   
-  # Sicherstellen, dass nur 1 Wert pro Fraktion
+  # check if only one value per fraction
   if(length(mean_control) != 1 | length(mean_rnase) != 1) {
     stop(paste("Mehr oder weniger als ein FinalMean für Fraktion", r))
   }
   
-  # Normalisierung (Zähler und Nenner je nach Bedarf drehen)
+  # calculate normalization factors
   norm_ctrl_mat[r, ] <- mean_control / control_values
   norm_rnase_mat[r, ] <- mean_rnase / rnase_values
 }
 
+#depict results
 head(norm_ctrl_mat)
 head(norm_rnase_mat)
 
@@ -251,14 +252,14 @@ head(norm_rnase_mat)
 ```{r}
 
 normalize_df <- function(df, norm_mat) {
-  # Extrahiere numerische Daten (angenommen: erste Spalte ist "Protein_Name")
+  # extract numeric data (not "Protein_Name")
   data_mat <- as.matrix(df[, -1])
   
-  # Dimensionen prüfen
+  # check dimensions
   n_blocks <- nrow(norm_mat)
   cols_per_block <- ncol(norm_mat)
   
-  # Normierung blockweise anwenden: Normierungsmatrix wird spaltenweise durchlaufen und in dieser Reihenfolge auf die Spalten der Originaldaten angewendet
+  # blockwise normalization: Normierungsmatrix wird spaltenweise durchlaufen und in dieser Reihenfolge auf die Spalten der Originaldaten angewendet
   for (i in 1:n_blocks) {
     for (j in 1:cols_per_block) {
       col_index <- (i - 1) * cols_per_block + j
@@ -266,16 +267,16 @@ normalize_df <- function(df, norm_mat) {
     }
   }
   
-  # Rückgabe als DataFrame (mit Protein_Name)
+  # create dataframe as result
   result_df <- cbind(Protein_Name = df$Protein_Name, as.data.frame(data_mat))
   return(result_df)
 }
 
-# Anwenden auf Ctrl und RNase Daten
+# apply to our data
 normed_ctrl_df  <- normalize_df(df_ctrl, norm_ctrl_mat)
 normed_rnase_df <- normalize_df(df_rnase, norm_rnase_mat)
 
-# Ergebnisse anzeigen
+# depict results
 head(normed_ctrl_df)
 head(normed_rnase_df)
 
@@ -307,7 +308,7 @@ smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
   
   combined_df <- do.call(cbind, smoothed_reps)
   
-  # Sortiere Spalten: erst Fraktion 1 mit allen Replikaten, dann Fraktion 2 usw.
+  # sort columns: first all replicates of first fraction, then fraction 2, etc.
   sorted_cols <- unlist(lapply(1:n_fractions, function(frac) {
     paste0("Fraction", frac, "_Rep", 1:n_replicates)
   }))
@@ -316,7 +317,7 @@ smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
   return(final_df)
 }
 
-# Anwendung für Kontroll- und RNAse-Datensätze:
+# apply to our data
 final_smoothed_ctrl <- smooth_and_reorder(normed_ctrl_df)
 final_smoothed_rnase <- smooth_and_reorder(normed_rnase_df)
 
@@ -338,7 +339,7 @@ calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
   percent_reps <- list()
   
   for (rep in 1:n_replicates) {
-    # Replizierte Fraktionsspalten
+    # select replicates that belong together (e.g. Rep1 of all fractions)
     cols <- seq(1 + rep, 1 + rep + (n_fractions - 1) * 3, by = 3)
     rep_data <- as.matrix(df[, cols])
     
@@ -350,10 +351,10 @@ calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
     percent_reps[[rep]] <- percent_df
   }
   
-  # Kombiniere alle Replikate
+  # combine all replicates
   combined_percent_df <- do.call(cbind, percent_reps)
   
-  # Neue Spaltenreihenfolge: Fraktion 1 mit allen Reps, dann Fraktion 2, ...
+  # sort columns: first all replicates of first fraction, then fraction 2, etc.
   sorted_cols <- unlist(lapply(1:n_fractions, function(frac) {
     paste0("Fraction", frac, "_Rep", 1:n_replicates)
   }))
@@ -362,77 +363,32 @@ calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
   return(final_percent_df)
 }
 
-# Anwendung
+# apply to our data
 percent_ctrl_df <- calc_fraction_percentages(normed_ctrl_df)
 percent_rnase_df <- calc_fraction_percentages(normed_rnase_df)
 
-# Optional: Ergebnisse ansehen
+# depict results
 head(percent_ctrl_df)
 head(percent_rnase_df)
   
 
 ```
 
-```{r}
-# Angenommen die erste Spalte enthält die Proteinnamen:
-# Also Spalten 2 bis 76 enthalten die 75 Werte
-numeric_columns <- 2:76
-
-shapiro_pvals_ctrl <- numeric(nrow(percent_ctrl_df))
-shapiro_pvals_rnase <- numeric(nrow(percent_rnase_df))
-
-for (i in 1:nrow(percent_ctrl_df)) {
-  values_ctrl <- as.numeric(percent_ctrl_df[i, numeric_columns])
-  values_rnase <- as.numeric(percent_rnase_df[i, numeric_columns])
-  
-  if (length(unique(values_ctrl)) >= 3) {
-    shapiro_pvals_ctrl[i] <- shapiro.test(values_ctrl)$p.value
-  } else {
-    shapiro_pvals_ctrl[i] <- NA
-  }
-
-  if (length(unique(values_rnase)) >= 3) {
-    shapiro_pvals_rnase[i] <- shapiro.test(values_rnase)$p.value
-  } else {
-    shapiro_pvals_rnase[i] <- NA
-  }
-}
-
-# Protein-Namen aus der ersten Spalte extrahieren
-protein_names <- percent_ctrl_df[[1]]
-
-# Zusammenfassen
-shapiro_results <- data.frame(
-  Protein = protein_names,
-  Shapiro_p_ctrl = shapiro_pvals_ctrl,
-  Shapiro_p_rnase = shapiro_pvals_rnase,
-  Normal_ctrl = shapiro_pvals_ctrl > 0.05,
-  Normal_rnase = shapiro_pvals_rnase > 0.05
-)
-
-head(shapiro_results, 10)
-
-sum(shapiro_results$Normal_ctrl, na.rm = TRUE)   # Für Kontrollbedingung
-sum(shapiro_results$Normal_rnase, na.rm = TRUE)  # Für RNase-Bedingung
-
-
-```
-
 
 ```{r}
 calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
-  proteins <- df[, 1]  # Protein-Namen
-  data_only <- df[, -1]  # Nur Werte
+  proteins <- df[, 1]  # Protein-Names
+  data_only <- df[, -1]  # only numeric values
 
   mean_matrix <- matrix(NA, nrow = nrow(data_only), ncol = n_fractions)
 
   for (f in 1:n_fractions) {
-    # Spalten für Fraktion f (jeweils 3 Replikate)
+    # columns for fraction f (3 replicates each)
     cols <- ((f - 1) * n_replicates + 1):(f * n_replicates)
     mean_matrix[, f] <- rowMeans(data_only[, cols], na.rm = TRUE)
   }
 
-  # Ergebnis als DataFrame
+  # save result as dataframe
   mean_df <- as.data.frame(mean_matrix)
   colnames(mean_df) <- paste0("Fraction", 1:n_fractions)
   final_df <- cbind(Protein = proteins, mean_df)
@@ -440,16 +396,14 @@ calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) 
   return(final_df)
 }
 
+#apply to our data
 mean_ctrl_df <- calculate_mean_per_fraction(percent_ctrl_df)
 mean_rnase_df <- calculate_mean_per_fraction(percent_rnase_df)
 
-# Kontrolle
+# depict results
 head(mean_ctrl_df)
 head(mean_rnase_df)
 
-# Zeilensummen berechnen (ab der zweiten Spalte)
-zeilensummen <- rowSums(mean_ctrl_df[, -1])
-print(zeilensummen)
 ```
 
 ```{r}
@@ -459,13 +413,13 @@ calculate_fraction_percentages <- function(mean_df) {
   proteins <- mean_df[, 1]
   data_only <- mean_df[, -1]
   
-  # Zeilensummen (Summe über alle Fraktionen pro Protein)
+  # calculate row sum (sum across all fractions for each protein)
   row_totals <- rowSums(data_only, na.rm = TRUE)
   
-  # Prozentuale Anteile berechnen
+  # transform amount into percent
   percent_matrix <- sweep(data_only, 1, row_totals, FUN = "/") * 100
   
-  # Ergebnis zusammenführen
+  # combine result to a dataframe
   percent_df <- cbind(Protein = proteins, as.data.frame(percent_matrix))
   colnames(percent_df) <- colnames(mean_df)
   
@@ -473,37 +427,35 @@ calculate_fraction_percentages <- function(mean_df) {
 }
 
 
-# Prozentuale Verteilungen
+# apply to our data
 normalized_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
 normalized_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
 
-# Kontrolle
+# depict result
 head(normalized_ctrl_df)
 head(normalized_rnase_df)
 
-# Zeilensummen berechnen (ab der zweiten Spalte)
-zeilensumme <- rowSums(normalized_ctrl_df[, -1])
-print(zeilensumme)
 ```
 
 ```{r}
-# Prüfen, ob es Zeilen mit Summe == 0 gibt (ab Spalte 2) für Ctrl
+#for Ctrl
+# are there rows with sum == (starting with second column) for Ctrl
 zeilensummen <- rowSums(normalized_ctrl_df[, -1])
 
-# Logischer Vektor: TRUE für Zeilen, deren Summe 0 ist
+# boolean vector: TRUE for rows with sum == 0
 zeilen_mit_nullsumme <- zeilensummen == 0
 
-# Gibt es mindestens eine solche Zeile?
+# are there any such rows?
 any(zeilen_mit_nullsumme)
 
 #für RNase
-# Prüfen, ob es Zeilen mit Summe == 0 gibt (ab Spalte 2)
+#are there rows with sum == (starting with second column) for Ctrl
 zeilensummen_rnase <- rowSums(normalized_rnase_df[, -1])
 
-# Logischer Vektor: TRUE für Zeilen, deren Summe 0 ist
+# boolean vector: TRUE for rows with sum == 0
 zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
 
-# Gibt es mindestens eine solche Zeile?
+# are there any such rows?
 any(zeilen_mit_nullsumme_rnase)
 
  
@@ -515,6 +467,74 @@ saveRDS(normalized_ctrl_df, file = "data/normalized_ctrl_df.rds")
 saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
 ```
 
+
+###Check Normality###
+
+```{r}
+# Funktion zum Testen auf Normalverteilung je Replikat pro Fraktion
+check_normality <- function(df, df_name = "") {
+  results <- data.frame()
+  
+  # Entferne erste Spalte (Proteinnamen)
+  data_only <- df[, -1]
+  
+  # Es gibt 25 Fraktionen à 3 Replikate → 75 Spalten
+  for (i in 1:25) {
+    for (r in 1:3) {
+      col_index <- (i - 1) * 3 + r
+      column_values <- data_only[[col_index]]
+      col_name <- colnames(data_only)[col_index]
+      
+      # Shapiro-Wilk-Test (nur wenn genügend Daten vorhanden sind)
+      if (length(na.omit(column_values)) >= 3 && length(na.omit(column_values)) <= 5000) {
+        test <- shapiro.test(na.omit(column_values))
+        p_val <- test$p.value
+        normal <- p_val > 0.05
+      } else {
+        p_val <- NA
+        normal <- NA
+      }
+      
+      # Ergebnis hinzufügen
+      results <- rbind(results, data.frame(
+        DataFrame = df_name,
+        Fraktion = i,
+        Replikat = r,
+        Spalte = col_name,
+        P_Wert = p_val,
+        Normalverteilt = normal
+      ))
+    }
+  }
+  
+  return(results)
+}
+
+# ✅ Wende die Funktion auf deine DataFrames an
+ergebnis_ctrl <- check_normality(percent_ctrl_df, "CTRL")
+ergebnis_rnase <- check_normality(percent_rnase_df, "RNase")
+
+# Ergebnisse zusammenführen (optional)
+gesamt_ergebnisse <- rbind(ergebnis_ctrl, ergebnis_rnase)
+
+# Ergebnisse anzeigen (optional)
+print(head(gesamt_ergebnisse, 10))
+
+
+#wie viele replicate sind nicht normalverteilt
+count_not_normal <- function(normality_df) {
+  sum(normality_df$Normalverteilt == FALSE, na.rm = TRUE)
+}
+
+# Anwendung:
+nicht_normal_ctrl <- count_not_normal(ergebnis_ctrl)
+nicht_normal_rnase <- count_not_normal(ergebnis_rnase)
+
+cat("Nicht normalverteilte Replikate (CTRL):", nicht_normal_ctrl, "\n")
+cat("Nicht normalverteilte Replikate (RNase):", nicht_normal_rnase, "\n")
+
+
+```
 
 
 ###Batch Effect###
