@@ -32,42 +32,9 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 ```{r}
 #RDS-Daten laden
 normalized_ctrl_df <- readRDS("data/normalized_ctrl_df.rds")
-
-str(normalized_ctrl_df)
-
-summary(normalized_ctrl_df)
-
-# Nur erzeugen, wenn Datei noch nicht existiert
-if (!file.exists("data/normalized_ctrl_df.rds")) {
-  message("HAAALT!!!! Speicher erst neuen Datensatz")
-  
-  final_data <- data.frame(
-    normalized_ctrl_df
-  )
-  
-  saveRDS(final_data, "data/normalized_ctrl_df.rds")
-} else {
-  message("Datensatz existiert bereits")
-}
-```
-
-```{r}
 normalized_rnase_df <- readRDS("data/normalized_rnase_df.rds")
-str(normalized_rnase_df)
-summary(normalized_rnase_df)
-
-if (!file.exists("data/normalized_rnase_df.rds")) {
-  message("HAAALT!!!! Speicher erst neuen Datensatz")
-  
-  final_data <- data.frame(
-    normalized_rnase_df
-  )
-  
-  saveRDS(final_data, "data/normalized_rnase_df.rds")
-} else {
-  message("Datensatz existiert bereits")
-}
 ```
+
 
 ```{r}
 #visualize starting "material"
@@ -76,26 +43,7 @@ dim(normalized_rnase_df)
 ```
 
 
-```{r}
-#visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
-# Protein auswählen
-protein_id <- "SPB6_HUMAN"
 
-# extract amount of protein
-intensities <- as.numeric(normalized_ctrl_df[4, 2:26 ])
-fraktionen <- 1:25
-
-# Plot 
-plot(fraktionen, intensities, type = "n",
-       xlab = "Fraktion (1–25)", ylab = "Normierte Intensität (Fläche = 1)",
-       main = paste("Dichte-Plot von", protein_id),
-       ylim = c(0, max(intensities)*1.1))
-
- polygon(c(fraktionen, rev(fraktionen)),
-          c(rep(0, length(fraktionen)), rev(intensities)),
-          col = "lavender", border = NA)
-  lines(fraktionen, intensities, col = "lavender", lwd = 2)
-```
 
 ```{r}
 #find all maxima
@@ -269,7 +217,9 @@ dx <- abs(diff(x))
 
 hist(dx, breaks = 30, main = "Histogramm der Steigungen", xlab = "Steigung (|dx|)")
 ```
-```{r} # Ergebnis ergibt wenig Sinn
+
+```{r} 
+##Ergebnis ergibt wenig Sinn
 #plateau detection
 
 detect_plateaus_rowwise <- function(dataframe, window_size = 4, var_thresh = 0.02, min_mean_threshold = 0.1) {
