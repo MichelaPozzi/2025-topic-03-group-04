@@ -101,16 +101,20 @@ RNA_pca$sdev
 ```
 
 ```{r}
-RNA_pca_var <- RNA_pca$sdev^2
+RNA_pca_var <- RNA_pca$sdev^2 # eigenvalues 
 RNA_pca_var
 ```
 
 ```{r}
-RNA_pca_ve <- RNA_pca_var / sum(RNA_pca_var)
+RNA_pca_ve <- round(RNA_pca_var / sum(RNA_pca_var)*100,2) # wert in prozent auf zwei dezimal 
 RNA_pca_ve
 ```
 ```{r}
 sort(RNA_pca_ve,decreasing=TRUE)
+```
+
+```{r}
+barplot(RNA_pca_ve)
 ```
 
 
@@ -122,11 +126,11 @@ biplot(RNA_pca, scale = 0, cex = 0.4)
 
 
 ```{r}
-wss <- sapply(1:10, function(k){
-  kmeans(RNA_pca$x, centers = k, nstart = 10)$tot.withinss
+wss <- sapply(1:25, function(k){
+  kmeans(RNA_pca$x, centers = k, nstart = 25)$tot.withinss
 })
 
-plot(1:10, wss, type = "b", pch = 19,
+plot(1:25, wss, type = "b", pch = 19,
      xlab = "Anzahl der Cluster (k)",
      ylab = "Totale Within-Cluster-Varianz",
      main = "Elbow-Methode zur Bestimmung von k") 
@@ -148,7 +152,7 @@ plot(2:10, sil_width, type = "b", pch = 19,
 ```
 
 ```{r}
-kmeans_result <- kmeans(RNA_pca$x, centers = 6, nstart = 25)
+kmeans_result <- kmeans(RNA_pca$x, centers = 11, nstart = 25)
 ```
 
 ```{r}
@@ -171,4 +175,13 @@ ggplot(pca_data, aes(x = PC1, y = PC2, color = cluster)) +
   theme_minimal() +
   scale_color_brewer(palette = "Set1")
 ```
+
+```{r}
+first_two_components <- RNA_pca$x[,1:2]
+plot(first_two_components)
+```
+
+
+
+
 
