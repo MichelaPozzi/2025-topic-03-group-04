@@ -283,16 +283,6 @@ abline(a = 0, b = 1, col = "grey",lty=2)
 ```
 
 ```{r}
-# Beschriftung der Punkte
- text(
-  df_joined$Global_Maximum_RNase, df_joined$Global_Maximum_Controll,
-  labels = df_joined$Protein,
-  pos = 3, cex = 0.7
-)
-```
-
-
-```{r}
 install.packages("emdist")  
 
 ```
@@ -360,5 +350,27 @@ test_scores_combined_df <- data.frame(
   EMD = normalized_ctrl_df$EMD
 )
   head(test_scores_combined_df)
+```
+
+
+```{r}
+# create dataframe positive control 
+# create vector with RNA-dependent proteins 
+positive_control <- c("RBM15_HUMAN", "HNRDL_HUMAN", "ELAV1_HUMAN","DIC_HUMAN","ARGL1_HUMAN", "FUS_HUMAN", "DDX20_HUMAN", "SFPQ_HUMAN", "ROA3_HUMAN", "ZFR_HUMAN", "CIRBP_HUMAN") 
+# extract corresponding proteins from test_scores_combined_df 
+df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
+# depict result
+print(df_positive_control)
+```
+
+
+```{r}
+# create dataframe negative control
+# create vector with RNA-independent proteins 
+negative_control <- c("ATP5L_HUMAN", "GAPD1_HUMAN", "GPT_HUMAN","COX7R_HUMAN","CYC_HUMAN", "IDH3A_HUMAN", "UTRO_HUMAN", "TPSN_HUMAN", "CPT2_HUMAN", "LTOR1_HUMAN")
+# extract corresponding proteins from test_scores_combined_df
+df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% negative_control, ] 
+# depict result
+print(df_negative_control)
 ```
 
