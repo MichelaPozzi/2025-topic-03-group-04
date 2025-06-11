@@ -81,6 +81,65 @@ plot(fraktionen, intensities, type = "n",
   lines(fraktionen, intensities, col = "lavender", lwd = 2)
 ```
 
+```{r}
+#find all maxima
+# recognize peaks with diff()
+find_peaks_diff <- function(x, threshold = 2) {
+  n <- length(x)
+  peaks <- logical(n)
+  
+  dx <- diff(x)
+  
+  # Interne Punkte prüfen: vorher steigend, danach fallend
+  for (i in 2:(n-1)) {
+    if (x[i] >= threshold && dx[i-1] > 0 && dx[i] < 0) {
+      peaks[i] <- TRUE
+    }
+  }
+  
+  # Ränder prüfen
+  if (x[1] >= threshold && x[1] > x[2]) peaks[1] <- TRUE
+  if (x[n] >= threshold && x[n] > x[n-1]) peaks[n] <- TRUE
+  
+  which(peaks)
+}
+
+# Beispielhafte Anwendung auf Dataframe mit Protein in Spalte 1 und 25 Messwerten in Spalten 2–26
+process_df_peaks <- function(df, threshold = 2) {
+  results <- lapply(1:nrow(df), function(i) {
+    intensities <- as.numeric(df[i, 2:26])
+    protein <- df[i, 1]
+    peaks <- find_peaks_diff(intensities, threshold)
+    list(Protein = protein, Peaks = peaks)
+  })
+  
+  # Ergebnis in Dataframe umwandeln: Peaks als kommaseparierte Liste oder NA, falls keine Peaks
+  df_peaks <- data.frame(
+    Protein = sapply(results, `[[`, "Protein"),
+    Maxima_Positions = sapply(results, function(x) {
+      if (length(x$Peaks) == 0) {
+        NA_character_
+      } else {
+        paste(x$Peaks, collapse = ",")
+      }
+    }),
+    stringsAsFactors = FALSE
+  )
+  
+  return(df_peaks)
+}
+
+# apply to our dataframe
+
+df_peaks_CTRL <- process_df_peaks(normalized_ctrl_df, threshold = 2)
+df_peaks_RNAse <- process_df_peaks(normalized_rnase_df, threshold = 2)
+
+
+# depict results
+head(df_peaks_CTRL)
+head(df_peaks_RNAse)
+
+```
 
 ```{r}
 #find global maxima
