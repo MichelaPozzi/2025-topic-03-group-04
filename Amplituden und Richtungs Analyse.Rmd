@@ -118,6 +118,7 @@ global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold =2)
 
 head(global_ctrl)
 ```
+
 ```{r}
 get_global_amplitudes <- function(expression_df, global_ctrl) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
@@ -230,5 +231,50 @@ shift_result <- data.frame(
 head(shift_result)
 ```
 
+```{r}
+# look up, if Protein is in data
+ergebnis <- normalized_ctrl_df[grep("CTCF", normalized_ctrl_df[[1]]), ]
 
+print(ergebnis)
+```
+
+```{r}
+# Join beider Dataframes mit globalen Maxima
+df_joined <- df_joined %>%
+  filter(is.finite(Global_Maximum_RNase) & is.finite(Global_Maximum_Controll))
+
+
+# Differenz berechnen und im selben df speichern
+df_joined <- df_joined %>%
+  mutate(diff = Global_Maximum_RNase - Global_Maximum_Controll)
+
+# Plot vorbereiten
+max_val <- max(df_joined$Global_Maximum_RNase, df_joined$Global_Maximum_Controll) * 1.1
+colors <- ifelse(df_joined$diff > 0, "pink", ifelse(df_joined$diff < 0, "lavender", "cyan"))
+
+# Scatterplot
+plot(
+  df_joined$Global_Maximum_RNase, df_joined$Global_Maximum_Controll,
+  xlim = c(0, max_val), ylim = c(0, max_val),
+  xlab = "Globales Maximum RNase",
+  ylab = "Globales Maximum Kontroll",
+  main = "Vergleich der globalen Maxima der Proteine",
+  pch = 19,
+  col = colors
+)
+
+# y = x Referenzlinie
+abline(a = 0, b = 1, col = "grey", lty = 2)
+
+
+```
+
+```{r}
+# Beschriftung der Punkte
+ text(
+  df_joined$Global_Maximum_RNase, df_joined$Global_Maximum_Controll,
+  labels = df_joined$Protein,
+  pos = 3, cex = 0.7
+)
+```
 
