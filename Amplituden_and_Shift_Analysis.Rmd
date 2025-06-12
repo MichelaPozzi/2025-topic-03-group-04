@@ -45,6 +45,11 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
+# setup chunk (made with AI)
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
 ```{r}
 #RDS-Daten laden
 normalized_ctrl_df <- readRDS("data/normalized_ctrl_df.rds")
@@ -471,6 +476,7 @@ df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %
 # depict result
 print(df_negative_control)
 ```
+
 ```{r}
 # load dataframe for t-test
 percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
