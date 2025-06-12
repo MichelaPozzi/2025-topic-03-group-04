@@ -403,6 +403,12 @@ head(percent_rnase_df)
 
 ```
 
+```{r}
+# save dataframe for t-test
+saveRDS(percent_ctrl_df, file = "data/percent_ctrl_df.rds")
+saveRDS(percent_rnase_df, file =  "data/percent_rnase_df.rds")
+```
+
 
 ```{r}
 calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {

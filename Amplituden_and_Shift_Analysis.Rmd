@@ -471,3 +471,9 @@ df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %
 # depict result
 print(df_negative_control)
 ```
+```{r}
+# load dataframe for t-test
+percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
+percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
+```
+
