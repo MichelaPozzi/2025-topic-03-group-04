@@ -455,22 +455,67 @@ test_scores_combined_df <- data.frame(
   head(test_scores_combined_df)
 ```
 
-
 ```{r}
-# create dataframe positive control 
-# create vector with RNA-dependent proteins 
-positive_control <- c("RBM15_HUMAN", "HNRDL_HUMAN", "ELAV1_HUMAN","DIC_HUMAN","ARGL1_HUMAN", "FUS_HUMAN", "DDX20_HUMAN", "SFPQ_HUMAN", "ROA3_HUMAN", "ZFR_HUMAN", "CIRBP_HUMAN") 
-# extract corresponding proteins from test_scores_combined_df 
-df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
-# depict result
-print(df_positive_control)
+# load dataframe for t-test
+percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
+percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
 ```
 
+```{r}
+# install and load package
+install.packages("DT")
+library(DT)
+
+# read data
+url <- "https://raw.githubusercontent.com/MichelaPozzi/2025-topic-03-group-04/main/table_RBP_lists.csv"
+lines <- readLines(url, encoding = "UTF-8")
+header <- unlist(strsplit(lines[6], ","))
+data <- read.csv(text = lines[7:length(lines)], header = FALSE, sep = ",", stringsAsFactors = FALSE)
+colnames(data) <- header
+
+# depict datatable
+datatable(data, filter = "top", options = list(pageLength = 25))
+
+# save dataframe locally
+write.csv(data, "mein_ergebnis.csv", row.names = FALSE)
+
+#save result as dataframe
+RBP_resources <- as.data.frame(data)
+
+#depict result
+head(RBP_resources)
+```
+
+```{r}
+#identify proteins which can potentially be used as negative control
+# proteins which were identified as RDPs not more than once
+RNA_independent <- RBP_resources[RBP_resources[,4] %in% c(0,1), , drop = FALSE]
+
+# depict result
+head(RNA_independent)
+```
+
+```{r}
+# check which of the potential proteins for negative control are actually contained in our dataset
+
+row_subset <- RNA_independent[,1]
+ref_row <- normalized_ctrl_df[,1]
+
+# find common proteins 
+common_proteins_negative <- intersect(row_subset, ref_row)
+
+# depict vector with common proteins
+length(common_proteins_negative)
+
+# 400 zufällige Elemente aus 'mein_vektor' ziehen (ohne Zurücklegen)
+negative_control <- sample(common_proteins_negative, 550, replace = FALSE)
+
+length(negative_control)
+
+```
 
 ```{r}
 # create dataframe negative control
-# create vector with RNA-independent proteins 
-negative_control <- c("ATP5L_HUMAN", "GAPD1_HUMAN", "GPT_HUMAN","COX7R_HUMAN","CYC_HUMAN", "IDH3A_HUMAN", "UTRO_HUMAN", "TPSN_HUMAN", "CPT2_HUMAN", "LTOR1_HUMAN")
 # extract corresponding proteins from test_scores_combined_df
 df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% negative_control, ] 
 # depict result
@@ -478,8 +523,35 @@ print(df_negative_control)
 ```
 
 ```{r}
-# load dataframe for t-test
-percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
-percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
+#identify proteins which can potentially be used as positive control
+RNA_dependent <- RBP_resources[RBP_resources[,4] %in% c(8, 9, 10, 11, 12, 13, 14, 15,16, 17, 18), , drop = FALSE]
+
+#depict result
+head(RNA_dependent)
+```
+
+```{r}
+#check which of the potential proteins for negative control are actually contained in our dataset
+row_subset <- RNA_dependent[,1]
+ref_row <- normalized_ctrl_df[,1]
+
+# find common proteins
+common_proteins_positive <- intersect(row_subset, ref_row)
+
+# Ausgabe des Vektors mit gemeinsamen Proteinen
+length(common_proteins_positive)
+
+# 400 zufällige Elemente aus 'mein_vektor' ziehen (ohne Zurücklegen)
+positive_control <- sample(common_proteins_positive, 550, replace = FALSE)
+
+length(positive_control)
+```
+
+```{r}
+# create dataframe positive control 
+# extract corresponding proteins from test_scores_combined_df 
+df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
+# depict result
+print(df_positive_control)
 ```
 
