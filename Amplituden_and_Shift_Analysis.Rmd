@@ -373,7 +373,7 @@ head(right_shift_df)
 dim(right_shift_df)
 ```
 
-```{r}
+```{r}#
 ##prepare shift dataframe for linear regression
 # save rigth shift proteins as text file
 write.table(right_shift_df, file = "Right_Shift_Proteins.txt", sep = "\t", row.names = FALSE, quote = FALSE)
