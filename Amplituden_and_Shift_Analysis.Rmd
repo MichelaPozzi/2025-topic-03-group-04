@@ -1,0 +1,473 @@
+---
+title: "Untitled"
+output: html_document
+date: "2025-06-12"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+---
+title: "Nochmal"
+author: "Nora Otic"
+date: "2025-06-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+#RDS-Daten laden
+normalized_ctrl_df <- readRDS("data/normalized_ctrl_df.rds")
+normalized_rnase_df <- readRDS("data/normalized_rnase_df.rds")
+```
+
+##Als Referenz Proteine wurden folgende ermittelt: ?? PLIN3, IGF1R,
+#RNA-abhängig: RBM15_HUMAN, HNRDL_HUMAN, ELAV1_HUMAN, DIC_HUMAN, ARGL1_HUMAN (indirekt abhängig), FUS_HUMAN, DDX20_HUMAN, SFPQ_HUMAN, ROA3_HUMAN, CTCF_HUMAN, CLIP1_HUMAN (Alles nachgewiesene RBPs und in R-DeeP gelistet)
+#RNA-unabhängig: ATP5L_HUMAN, GAPD1_HUMAN, GPT_HUMAN, COX7R_HUMAN, CYC_HUMAN, IDH3A_HUMAN, UTRO_HUMAN, TPSN_HUMAN, CPT2_HUMAN, LTOR1_HUMAN
+# ->(Die als unabhängig definierten Proteine wurden in R-Deep als nicht RBPs gelistet und mit RNAIntra auf Interaktionen mit verschiedenen RNAs geprüft, unter Berücksichtigung ihrer Funktio und Lokalisation wurden sie von uns als negativ Kontrollen für RNA-unabhängige Proteine eingestuft)
+
+```{r}
+#visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
+# Protein auswählen
+protein_id <- "SPB6_HUMAN"
+
+# extract amount of protein
+intensities <- as.numeric(normalized_ctrl_df[4, 2:26 ])
+fraktionen <- 1:25
+
+# Plot 
+plot(fraktionen, intensities, type = "n",
+       xlab = "Fraktion (1–25)", ylab = "Normierte Intensität (Fläche = 1)",
+       main = paste("Dichte-Plot von", protein_id),
+       ylim = c(0, max(intensities)*1.1))
+
+ polygon(c(fraktionen, rev(fraktionen)),
+          c(rep(0, length(fraktionen)), rev(intensities)),
+          col = "lavender", border = NA)
+  lines(fraktionen, intensities, col = "lavender", lwd = 2)
+```
+
+```{r}
+#visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
+# Protein auswählen
+protein_id <- "SPB6_HUMAN"
+
+# extract amount of protein
+intensities <- as.numeric(normalized_ctrl_df[4, 2:26 ])
+fraktionen <- 1:25
+
+# Plot 
+plot(fraktionen, intensities, type = "n",
+       xlab = "Fraktion (1–25)", ylab = "Normierte Intensität (Fläche = 1)",
+       main = paste("Dichte-Plot von", protein_id),
+       ylim = c(0, max(intensities)*1.1))
+
+ polygon(c(fraktionen, rev(fraktionen)),
+          c(rep(0, length(fraktionen)), rev(intensities)),
+          col = "lavender", border = NA)
+  lines(fraktionen, intensities, col = "lavender", lwd = 2)
+```
+
+```{r}
+#find all maxima
+# recognize peaks with diff()
+find_peaks_diff <- function(x, threshold = 2) {
+  n <- length(x)
+  peaks <- logical(n)
+  
+  dx <- diff(x)
+  
+  # Interne Punkte prüfen: vorher steigend, danach fallend
+  for (i in 2:(n-1)) {
+    if (x[i] >= threshold && dx[i-1] > 0 && dx[i] < 0) {
+      peaks[i] <- TRUE
+    }
+  }
+  
+  # Ränder prüfen
+  if (x[1] >= threshold && x[1] > x[2]) peaks[1] <- TRUE
+  if (x[n] >= threshold && x[n] > x[n-1]) peaks[n] <- TRUE
+  
+  which(peaks)
+}
+
+# Beispielhafte Anwendung auf Dataframe mit Protein in Spalte 1 und 25 Messwerten in Spalten 2–26
+process_df_peaks <- function(df, threshold = 2) {
+  results <- lapply(1:nrow(df), function(i) {
+    intensities <- as.numeric(df[i, 2:26])
+    protein <- df[i, 1]
+    peaks <- find_peaks_diff(intensities, threshold)
+    list(Protein = protein, Peaks = peaks)
+  })
+  
+  # Ergebnis in Dataframe umwandeln: Peaks als kommaseparierte Liste oder NA, falls keine Peaks
+  df_peaks <- data.frame(
+    Protein = sapply(results, `[[`, "Protein"),
+    Maxima_Positions = sapply(results, function(x) {
+      if (length(x$Peaks) == 0) {
+        NA_character_
+      } else {
+        paste(x$Peaks, collapse = ",")
+      }
+    }),
+    stringsAsFactors = FALSE
+  )
+  
+  return(df_peaks)
+}
+
+# apply to our dataframe
+
+df_peaks_CTRL <- process_df_peaks(normalized_ctrl_df, threshold = 2)
+df_peaks_RNAse <- process_df_peaks(normalized_rnase_df, threshold = 2)
+
+
+# depict results
+head(df_peaks_CTRL)
+head(df_peaks_RNAse)
+
+```
+
+```{r}
+#find global maxima
+find_global_maxima <- function(x, threshold = 2) {
+  max_val <- max(x)
+  if (max_val >= threshold) {
+    which(x == max_val)
+  } else {
+    integer(0)  # keine Maxima, falls max < threshold
+  }
+}
+
+process_df_global_maxima <- function(df, threshold = 2) {
+  results <- lapply(1:nrow(df), function(i) {
+    intensities <- as.numeric(df[i, 2:26])
+    protein <- df[i, 1]
+    maxima <- find_global_maxima(intensities, threshold)
+    list(Protein = protein, Global_Maxima = maxima)
+  })
+  
+  df_maxima <- data.frame(
+    Protein = sapply(results, `[[`, "Protein"),
+    Global_Maximum = sapply(results, function(x) {
+      if (length(x$Global_Maxima) == 0) {
+        NA_character_
+      } else {
+        paste(x$Global_Maxima, collapse = ",")
+      }
+    }),
+    stringsAsFactors = FALSE
+  )
+  
+  return(df_maxima)
+}
+
+#apply to dataframes
+global_ctrl <- process_df_global_maxima(normalized_ctrl_df, threshold =2)
+global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold =2)
+
+head(global_ctrl)
+```
+
+```{r}
+global_ctrl$Global_Maximum <- as.numeric(as.character(global_ctrl$Global_Maximum))
+global_rnase$Global_Maximum <- as.numeric(as.character(global_rnase$Global_Maximum))
+
+shift_distance <- global_rnase$Global_Maximum - global_ctrl$Global_Maximum
+
+# Richtung bestimmen
+shift_direction <- ifelse(shift_distance > 0, "right shift",
+                    ifelse(shift_distance < 0, "left shift",
+                           "No Shift"))
+
+# Ergebnis zusammenfassen
+shift_result <- data.frame(
+  Protein = global_ctrl$Protein,
+  Position_Control = global_ctrl$Global_Maximum,
+  Position_RNase = global_rnase$Global_Maximum,
+  Shift_Distance = shift_distance,
+  Shift_Direction = shift_direction
+)
+
+head(shift_result)
+```
+
+```{r}
+get_global_amplitudes <- function(expression_df, global_ctrl) {
+  amplitudes <- mapply(function(row_idx, max_pos_str) {
+    # max_pos_str kann mehrere Maxima enthalten, z.B. "5,10"
+    max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))
+    
+    if (length(max_positions) == 0 || all(is.na(max_positions))) {
+      return(NA)
+    }
+    
+    # Intensitäten an den Maxima (Achtung: +1 wegen Proteinspalte in expression_df)
+    intensities <- as.numeric(expression_df[row_idx, max_positions + 1])
+    
+    # Falls mehrere Maxima, alle Werte als String mit Komma trennen
+    paste(intensities, collapse = ",")
+  },
+  row_idx = 1:nrow(expression_df),
+  max_pos_str = as.character(global_ctrl$Global_Maximum)
+
+  )
+  
+  data.frame(
+    Protein = expression_df[[1]],
+    Amplitudes = amplitudes,
+    stringsAsFactors = FALSE
+  )
+}
+
+global_amplitudes_ctrl <- get_global_amplitudes(normalized_ctrl_df, global_ctrl)
+
+head(global_amplitudes_ctrl)
+
+```
+```{r}
+get_global_amplitudes <- function(expression_df, global_rnase) {
+  amplitudes <- mapply(function(row_idx, max_pos_str) {
+    # max_pos_str kann mehrere Maxima enthalten, z.B. "5,10"
+    max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))
+    
+    if (length(max_positions) == 0 || all(is.na(max_positions))) {
+      return(NA)
+    }
+    
+    # Intensitäten an den Maxima (Achtung: +1 wegen Proteinspalte in expression_df)
+    intensities <- as.numeric(expression_df[row_idx, max_positions + 1])
+    
+    # Falls mehrere Maxima, alle Werte als String mit Komma trennen
+    paste(intensities, collapse = ",")
+  },
+  row_idx = 1:nrow(expression_df),
+  max_pos_str = as.character(global_rnase$Global_Maximum)
+
+  )
+  
+  data.frame(
+    Protein = expression_df[[1]],
+    Amplitudes = amplitudes,
+    stringsAsFactors = FALSE
+  )
+}
+
+global_amplitudes_rnase <- get_global_amplitudes(normalized_rnase_df, global_rnase)
+
+head(global_amplitudes_rnase)
+
+```
+
+
+
+```{r}
+##Gain and loss of amplitude in peak 
+# Erst numerisch machen
+global_amplitudes_ctrl$Amplitude <- as.numeric(as.character(global_amplitudes_ctrl$Amplitude))
+global_amplitudes_rnase$Amplitude <- as.numeric(as.character(global_amplitudes_rnase$Amplitude))
+
+# Verlust: Abnahme der Amplitude nach RNase-Behandlung 
+amplitude_loss <- pmax(global_amplitudes_ctrl$Amplitude - global_amplitudes_rnase$Amplitude, 0)
+
+# Zuwachs: Zunahme der Amplitude nach RNase-Behandlung
+amplitude_gain <- pmax(global_amplitudes_rnase$Amplitude - global_amplitudes_ctrl$Amplitude, 0)
+
+amplitude_changes <- data.frame(
+  Protein = global_amplitudes_ctrl$Protein,
+  Amplitude_Control = global_amplitudes_ctrl$Amplitude,
+  Amplitude_RNase = global_amplitudes_rnase$Amplitude,
+  loss = amplitude_loss,
+  gain = amplitude_gain
+)
+
+head(amplitude_changes)
+```
+```{r}
+###Addition of all amplitude changes
+amplitude_changes$changes <- amplitude_changes$loss + amplitude_changes$gain
+amplitude_changes$changes_in25 <- (amplitude_changes$changes/100)*25
+head(amplitude_changes)
+```
+
+
+```{r}
+# Join beider Dataframes mit globalen Maxima
+df_diff_peaks <- shift_result[, 1:3]
+
+
+# Differenz berechnen (neue Spalte 'diff')
+df_diff_peaks$diff <- df_diff_peaks$Position_RNase - df_diff_peaks$Position_Control
+
+# Achsenlimit berechnen
+max_val <- max(
+  df_diff_peaks$Position_RNase,
+  df_diff_peaks$Position_Control,
+  na.rm= TRUE
+)*1.1
+
+# Farben für Punkte definieren
+colors <- ifelse(df_diff_peaks$diff > 0, "pink",
+                 ifelse(df_diff_peaks$diff < 0, "lavender", "cyan"))
+
+# Scatterplot erstellen
+plot(
+  df_diff_peaks$Position_RNase,
+  df_diff_peaks$Position_Control,
+  xlim = c(0, max_val),
+  ylim = c(0, max_val),
+  xlab = "Globales Maximum RNase",
+  ylab = "Globales Maximum Kontroll",
+  main = "Vergleich der globalen Maxima der Proteine",
+  pch = 19,
+  col = colors
+)
+
+# Diagonale Referenzlinie y = x
+abline(a = 0, b = 1, col = "grey",lty=2)
+
+```
+
+```{r}
+## right shift proteins
+# create dataframe with proteins and their shift direction
+shift_df <- data.frame(
+  Proteins = normalized_ctrl_df$Protein,
+  Shift = shift_result$Shift_Direction
+)
+
+# sort all right shift proteins in one dataframe
+right_shift_df <- shift_df[shift_df$Shift == "right shift", ]
+head(right_shift_df)
+
+dim(right_shift_df)
+```
+
+```{r}
+##prepare shift dataframe for linear regression
+# save rigth shift proteins as text file
+write.table(right_shift_df, file = "Right_Shift_Proteins.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+
+```
+
+```{r}
+install.packages("emdist")  
+
+```
+
+```{r}
+library(emdist)
+
+# Custom function to compute 1D Earth Mover's Distance
+compute_emd_1d <- function(vec1, vec2) {
+  # Remove NAs
+  vec1 <- as.numeric(na.omit(vec1))
+  vec2 <- as.numeric(na.omit(vec2))
+  
+  # Ensure both vectors have the same length
+  if (length(vec1) != length(vec2)) {
+    return(NA)
+  }
+  
+  # Normalize both vectors to sum to 1 (as probability distributions)
+  vec1 <- vec1 / sum(vec1)
+  vec2 <- vec2 / sum(vec2)
+  
+  # Compute cumulative distributions
+  cdf1 <- cumsum(vec1)
+  cdf2 <- cumsum(vec2)
+  
+  # EMD in 1D is the sum of absolute differences of CDFs
+  emd <- sum(abs(cdf1 - cdf2))
+  
+  return(emd)
+}
+
+# Vector to store EMD results
+emd_values <- numeric(nrow(normalized_ctrl_df))
+
+# Loop through all proteins (rows)
+for (i in 1:nrow(normalized_ctrl_df)) {
+  # Extract fraction profiles (columns 2 to 26)
+  vec_ctrl <- as.numeric(normalized_ctrl_df[i, 2:26])
+  vec_rnase <- as.numeric(normalized_rnase_df[i, 2:26])
+  
+  # Compute 1D EMD
+  emd_values[i] <- compute_emd_1d(vec_ctrl, vec_rnase)
+}
+
+# Add EMD results as a new column to the data frame
+normalized_ctrl_df$EMD <- emd_values
+normalized_rnase_df$EMD <- emd_values  # Optional, for consistency (values are the same as for Ctrl)
+
+#EMD results can potentially range from 0 (Ctrl and RNase are identical) to 25 (Ctrl and RNase are as dissimilar as they can be)
+
+# depict results
+head(normalized_ctrl_df[, c(1, 27)])  # Show protein name and EMD
+
+```
+
+```{r}
+#define dataframe for all test scores of all proteines
+print(normalized_ctrl_df$EMD)
+test_scores_combined_df <- data.frame(
+  Protein = normalized_ctrl_df$Protein,
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance,
+  Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
+  amplitude_changes = amplitude_changes$changes_in25,
+  EMD = normalized_ctrl_df$EMD
+)
+  head(test_scores_combined_df)
+```
+
+
+```{r}
+# create dataframe positive control 
+# create vector with RNA-dependent proteins 
+positive_control <- c("RBM15_HUMAN", "HNRDL_HUMAN", "ELAV1_HUMAN","DIC_HUMAN","ARGL1_HUMAN", "FUS_HUMAN", "DDX20_HUMAN", "SFPQ_HUMAN", "ROA3_HUMAN", "ZFR_HUMAN", "CIRBP_HUMAN") 
+# extract corresponding proteins from test_scores_combined_df 
+df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
+# depict result
+print(df_positive_control)
+```
+
+
+```{r}
+# create dataframe negative control
+# create vector with RNA-independent proteins 
+negative_control <- c("ATP5L_HUMAN", "GAPD1_HUMAN", "GPT_HUMAN","COX7R_HUMAN","CYC_HUMAN", "IDH3A_HUMAN", "UTRO_HUMAN", "TPSN_HUMAN", "CPT2_HUMAN", "LTOR1_HUMAN")
+# extract corresponding proteins from test_scores_combined_df
+df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% negative_control, ] 
+# depict result
+print(df_negative_control)
+```
