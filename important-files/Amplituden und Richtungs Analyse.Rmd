@@ -329,6 +329,28 @@ abline(a = 0, b = 1, col = "grey",lty=2)
 ```
 
 ```{r}
+## right shift proteins
+# create dataframe with proteins and their shift direction
+shift_df <- data.frame(
+  Proteins = normalized_ctrl_df$Protein,
+  Shift = shift_result$Shift_Direction
+)
+
+# sort all right shift proteins in one dataframe
+right_shift_df <- shift_df[shift_df$Shift == "right shift", ]
+head(right_shift_df)
+
+dim(right_shift_df)
+```
+
+```{r}
+##prepare shift dataframe for linear regression
+# save rigth shift proteins as text file
+write.table(right_shift_df, file = "Right_Shift_Proteins.txt", sep = "\t", row.names = FALSE, quote = FALSE)
+
+```
+
+```{r}
 install.packages("emdist")  
 
 ```
