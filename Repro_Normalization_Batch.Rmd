@@ -478,6 +478,11 @@ normalized_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
 head(normalized_ctrl_df)
 head(normalized_rnase_df)
 
+#check if any NAs were created
+sum(is.na(normalized_ctrl_df))
+sum(is.na(normalized_rnase_df))
+
+
 ```
 
 ```{r}
