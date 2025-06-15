@@ -361,6 +361,15 @@ sum(is.na(final_smoothed_rnase))
 ```
 
 ```{r}
+#save dataframes for batch effect
+dir.create("data", showWarnings = FALSE)
+saveRDS(final_smoothed_ctrl, file = "data/final_smoothed_ctrl.rds")
+saveRDS(final_smoothed_rnase, file =  "data/final_smoothed_rnase.rds")
+```
+
+
+
+```{r}
 #normalize total amount per replicate to 100%
 
 calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
@@ -393,14 +402,13 @@ calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
 }
 
 # apply to our data
-percent_ctrl_df <- calc_fraction_percentages(normed_ctrl_df)
-percent_rnase_df <- calc_fraction_percentages(normed_rnase_df)
+percent_ctrl_df <- calc_fraction_percentages(final_smoothed_ctrl)
+percent_rnase_df <- calc_fraction_percentages(final_smoothed_rnase)
 
 # depict results
 head(percent_ctrl_df)
 head(percent_rnase_df)
   
-
 ```
 
 ```{r}
