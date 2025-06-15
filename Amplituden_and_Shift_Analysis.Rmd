@@ -462,6 +462,240 @@ percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
 ```
 
 ```{r}
+# determine global maxima from dataframes with still all 3 replicates in them
+
+# prepare data
+# remove protein-column
+percent_ctrl <- percent_ctrl_df[, -1]
+percent_rnase <- percent_rnase_df[, -1]
+
+# define replicates as steps by 3
+rep1_cols <- seq(1, ncol(percent_ctrl), by = 3)
+rep2_cols <- seq(2, ncol(percent_ctrl), by = 3)
+rep3_cols <- seq(3, ncol(percent_ctrl), by = 3)
+
+
+# formula for extracting global maxima and their position
+get_max_and_pos <- function(mat) {
+  max_vals <- apply(mat, 1, max, na.rm = TRUE)
+  max_pos <- apply(mat, 1, function(x) {
+    if (all(is.na(x))) NA else which.max(x)
+  })
+  list(value = max_vals, pos = max_pos)
+}
+
+# formula for extracting position as numeric fraction value
+extract_fraction_number <- function(name_vector) {
+  as.numeric(sub("Fraction(\\d+)_Rep\\d+", "\\1", name_vector))
+}
+
+# apply formulas on both treatments
+ctrl_r1 <- get_max_and_pos(percent_ctrl[, rep1_cols])
+ctrl_r2 <- get_max_and_pos(percent_ctrl[, rep2_cols])
+ctrl_r3 <- get_max_and_pos(percent_ctrl[, rep3_cols])
+
+rnase_r1 <- get_max_and_pos(percent_rnase[, rep1_cols])
+rnase_r2 <- get_max_and_pos(percent_rnase[, rep2_cols])
+rnase_r3 <- get_max_and_pos(percent_rnase[, rep3_cols])
+
+# define column names
+names_r1 <- colnames(percent_ctrl)[rep1_cols]
+names_r2 <- colnames(percent_ctrl)[rep2_cols]
+names_r3 <- colnames(percent_ctrl)[rep3_cols]
+
+# define protein names
+protein_names <- percent_ctrl_df[, 1]
+
+# save maxima results as dataframes
+global_max_ctrl_df <- data.frame(
+  Protein = protein_names,
+  Max_Rep1 = ctrl_r1$value,
+  Max_Rep2 = ctrl_r2$value,
+  Max_Rep3 = ctrl_r3$value
+)
+
+global_max_rnase_df <- data.frame(
+  Protein = protein_names,
+  Max_Rep1 = rnase_r1$value,
+  Max_Rep2 = rnase_r2$value,
+  Max_Rep3 = rnase_r3$value
+)
+
+# save fraction position as dataframes
+fraktion_pos_ctrl_df <- data.frame(
+  Protein = protein_names,
+  Max_Pos_Rep1 = extract_fraction_number(names_r1[ctrl_r1$pos]),
+  Max_Pos_Rep2 = extract_fraction_number(names_r2[ctrl_r2$pos]),
+  Max_Pos_Rep3 = extract_fraction_number(names_r3[ctrl_r3$pos])
+)
+
+fraktion_pos_rnase_df <- data.frame(
+  Protein = protein_names,
+  Max_Pos_Rep1 = extract_fraction_number(names_r1[rnase_r1$pos]),
+  Max_Pos_Rep2 = extract_fraction_number(names_r2[rnase_r2$pos]),
+  Max_Pos_Rep3 = extract_fraction_number(names_r3[rnase_r3$pos])
+)
+
+# depict results
+print(global_max_ctrl_df)
+print(fraktion_pos_ctrl_df)
+
+print(global_max_rnase_df)
+print(fraktion_pos_rnase_df)
+
+## NAs sind noch ein Problem ???
+```
+
+```{r}
+# t Test over all proteins for the positions of the global maxima
+# protein names
+protein_names <- fraktion_pos_ctrl_df$Protein
+
+# generate replicate columns
+replicate_cols <- c("Max_Pos_Rep1", "Max_Pos_Rep2", "Max_Pos_Rep3")
+
+# DataFrame for p-Values (per protein one value)
+p_values_df_global_positions <- data.frame(Protein = protein_names, pValue = NA_real_)
+
+for (i in seq_along(protein_names)) {
+  ctrl_vals <- as.numeric(fraktion_pos_ctrl_df[i, replicate_cols])
+  rnase_vals <- as.numeric(fraktion_pos_rnase_df[i, replicate_cols])
+  
+  # search for NAs
+  if (length(na.omit(ctrl_vals)) >= 2 && length(na.omit(rnase_vals)) >= 2) {
+    test_res <- try(t.test(ctrl_vals, rnase_vals, paired = TRUE), silent = TRUE)
+    if (!inherits(test_res, "try-error")) {
+      p_values_df_global_positions$pValue[i] <- test_res$p.value
+    }
+  }
+}
+
+print(p_values_df_global_positions)
+# still problems with NAs in dataframes !!!!!!!!!!
+
+```
+```{r}
+# t Test for every fraction over all proteins
+# protein names
+protein_names <- percent_ctrl_df[, 1]
+
+# define lenght of list
+num_fractions <- ncol(percent_ctrl)
+p_values_list <- vector("numeric", length = num_fractions)
+
+for (j in 1:num_fractions) {
+  ctrl_values <- percent_ctrl[, j]
+  rnase_values <- percent_rnase[, j]
+  
+  # extract only paires without NAs
+  valid_idx <- which(!is.na(ctrl_values) & !is.na(rnase_values))
+  
+  if (length(valid_idx) >= 2) {
+    test_res <- try(t.test(ctrl_values[valid_idx], rnase_values[valid_idx], paired = TRUE), silent = TRUE)
+    if (!inherits(test_res, "try-error")) {
+      p_values_list[j] <- test_res$p.value
+    } else {
+      p_values_list[j] <- NA
+    }
+  } else {
+    p_values_list[j] <- NA
+  }
+}
+
+# result as dataframe
+
+p_values_df_all_proteins <- data.frame(t(p_values_list))
+colnames(p_values_df_all_proteins) <- colnames(percent_ctrl)
+p_values_df_all_proteins$Protein <- "All_Proteins"
+
+# first column with protein names
+p_values_df_all_proteins <- p_values_df_all_proteins[, c("Protein", colnames(percent_ctrl))]
+
+print(p_values_df_all_proteins)
+
+```
+
+```{r}
+# wilcoxon test over all fractions
+num_fractions <- ncol(normalized_ctrl_df)
+p_values <- numeric(num_fractions)
+
+for (i in seq_len(num_fractions)) {
+  ctrl_vals <- normalized_ctrl_df[, i]
+  rnase_vals <- normalized_rnase_df[, i]
+  
+  valid_idx <- which(!is.na(ctrl_vals) & !is.na(rnase_vals))
+  
+  if (length(valid_idx) >= 2) {
+    test_res <- try(wilcox.test(ctrl_vals[valid_idx], rnase_vals[valid_idx], paired = TRUE), silent = TRUE)
+    if (!inherits(test_res, "try-error")) {
+      p_values[i] <- test_res$p.value
+    } else {
+      p_values[i] <- NA
+    }
+  } else {
+    p_values[i] <- NA
+  }
+}
+
+# p_values ist Vektor mit Länge = ncol(normalized_ctrl_df)
+# p_values_df mit Spaltennamen von normalized_ctrl_df
+
+p_values_df <- data.frame(t(p_values))
+colnames(p_values_df) <- colnames(normalized_ctrl_df)
+p_values_df$Test <- "Wilcoxon_pValue"
+
+# Um Spaltenreihenfolge zu ändern, so dass "Test" vorne steht:
+p_values_df <- p_values_df[, c("Test", colnames(normalized_ctrl_df))]
+
+print(p_values_df)
+
+```
+
+```{r}
+# wilcoxon test over all proteins
+# protein names extracted from first column
+protein_names <- normalized_ctrl_df[, 1]
+
+# remove protein names (first column)
+ctrl_values <- normalized_ctrl_df[, -1]
+rnase_values <- normalized_rnase_df[, -1]
+
+num_proteins <- nrow(ctrl_values)
+p_values_protein <- numeric(num_proteins)
+
+for (i in seq_len(num_proteins)) {
+  ctrl_vec <- as.numeric(ctrl_values[i, ])
+  rnase_vec <- as.numeric(rnase_values[i, ])
+  
+  # make shoure pairs both have values
+  valid_idx <- which(!is.na(ctrl_vec) & !is.na(rnase_vec))
+  
+  if (length(valid_idx) >= 2) {  # at least two paires needed
+    test_res <- try(wilcox.test(ctrl_vec[valid_idx], rnase_vec[valid_idx], paired = TRUE, exact = FALSE), silent = TRUE)
+    if (!inherits(test_res, "try-error")) {
+      p_values_protein[i] <- test_res$p.value
+    } else {
+      p_values_protein[i] <- NA
+    }
+  } else {
+    p_values_protein[i] <- NA
+  }
+}
+
+# save result as dataframe
+result_df <- data.frame(
+  Protein = protein_names,
+  Wilcoxon_pValue = p_values_protein
+)
+
+print(result_df)
+
+```
+
+
+
+```{r}
 # install and load package
 install.packages("DT")
 library(DT)
