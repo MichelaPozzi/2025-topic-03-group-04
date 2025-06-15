@@ -62,6 +62,11 @@ normalized_rnase_df <- readRDS("data/normalized_rnase_df.rds")
 # ->(Die als unabhängig definierten Proteine wurden in R-Deep als nicht RBPs gelistet und mit RNAIntra auf Interaktionen mit verschiedenen RNAs geprüft, unter Berücksichtigung ihrer Funktio und Lokalisation wurden sie von uns als negativ Kontrollen für RNA-unabhängige Proteine eingestuft)
 
 ```{r}
+head(normal)
+```
+
+
+```{r}
 #visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
 # Protein auswählen
 protein_id <- "SPB6_HUMAN"
@@ -164,44 +169,46 @@ head(df_peaks_RNAse)
 ```
 
 ```{r}
-#find global maxima
+# Funktion zum Finden des globalen Maximums (ggf. mittlerer Index bei mehreren)
 find_global_maxima <- function(x, threshold = 2) {
   max_val <- max(x)
   if (max_val >= threshold) {
-    which(x == max_val)
+    max_positions <- which(x == max_val)
+    if (length(max_positions) == 1) {
+      return(max_positions)
+    } else {
+      middle_index <- mean(range(max_positions))
+      return(middle_index)
+    }
   } else {
-    integer(0)  # keine Maxima, falls max < threshold
+    return(NA_real_)  # Kein gültiges Maximum
   }
 }
 
+# DataFrame-Verarbeitung
 process_df_global_maxima <- function(df, threshold = 2) {
   results <- lapply(1:nrow(df), function(i) {
     intensities <- as.numeric(df[i, 2:26])
     protein <- df[i, 1]
     maxima <- find_global_maxima(intensities, threshold)
-    list(Protein = protein, Global_Maxima = maxima)
+    list(Protein = protein, Global_Maximum = maxima)
   })
   
   df_maxima <- data.frame(
     Protein = sapply(results, `[[`, "Protein"),
-    Global_Maximum = sapply(results, function(x) {
-      if (length(x$Global_Maxima) == 0) {
-        NA_character_
-      } else {
-        paste(x$Global_Maxima, collapse = ",")
-      }
-    }),
+    Global_Maximum = sapply(results, `[[`, "Global_Maximum"),
     stringsAsFactors = FALSE
   )
   
   return(df_maxima)
 }
 
-#apply to dataframes
-global_ctrl <- process_df_global_maxima(normalized_ctrl_df, threshold =2)
-global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold =2)
+# Anwenden auf deine DataFrames
+global_ctrl <- process_df_global_maxima(normalized_ctrl_df, threshold = 2)
+global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold = 2)
 
 head(global_ctrl)
+
 ```
 
 ```{r}
@@ -443,19 +450,6 @@ head(normalized_ctrl_df[, c(1, 27)])  # Show protein name and EMD
 ```
 
 ```{r}
-#define dataframe for all test scores of all proteines
-print(normalized_ctrl_df$EMD)
-test_scores_combined_df <- data.frame(
-  Protein = normalized_ctrl_df$Protein,
-  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance,
-  Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
-  amplitude_changes = amplitude_changes$changes_in25,
-  EMD = normalized_ctrl_df$EMD
-)
-  head(test_scores_combined_df)
-```
-
-```{r}
 # load dataframe for t-test
 percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
 percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
@@ -574,8 +568,9 @@ print(p_values_df_global_positions)
 # still problems with NAs in dataframes !!!!!!!!!!
 
 ```
+
 ```{r}
-# t Test for every fraction over all proteins
+# t Test for every fraction over all proteins -> geht das überhaupt weil Daten normalverteilt sind??
 # protein names
 protein_names <- percent_ctrl_df[, 1]
 
@@ -653,7 +648,7 @@ print(p_values_df)
 ```
 
 ```{r}
-# wilcoxon test over all proteins
+# wilcoxon test over all proteins -> was ist der Unterschied zu chunk davor??
 # protein names extracted from first column
 protein_names <- normalized_ctrl_df[, 1]
 
@@ -691,6 +686,66 @@ result_df <- data.frame(
 
 print(result_df)
 
+```
+
+```{r}
+# Angenommen:
+# normalized_ctrl_df und normalized_rnase_df sind Dataframes mit 3680 Zeilen (Proteine)
+# erste Spalte = Proteinnamen, Spalten 2-26 = Fraktionen
+
+# Speicher für Ergebnisse
+protein_names <- normalized_ctrl_df[, 1]
+stat_values <- numeric(length(protein_names))
+p_values <- numeric(length(protein_names))
+
+# Schleife über alle Proteine (Zeilen)
+for (i in seq_along(protein_names)) {
+  ctrl_values <- as.numeric(normalized_ctrl_df[i, 2:26])
+  rnase_values <- as.numeric(normalized_rnase_df[i, 2:26])
+  
+  test_result <- wilcox.test(ctrl_values, rnase_values, alternative = "two.sided", paired = TRUE, exact = FALSE)
+  
+  stat_values[i] <- test_result$statistic
+  
+ 
+}
+
+# Ergebnis in einem Dataframe zusammenfassen
+Wilcoxon_df <- data.frame(
+  Protein = protein_names,
+  Wilcox_Statistic = stat_values
+)
+
+
+# Ausgabe
+head(Wilcoxon_df)
+
+```
+
+```{r}
+#calculate test statstic for testscore (max. 25%)
+#paired Wilcoxon test: W(min) = 0, W(max) = 325
+Wilcoxon_df$Wilcox_scaled <- (Wilcoxon_df$Wilcox_Statistic / 325) * 25
+
+#depict results
+head(Wilcoxon_df)
+```
+
+```{r}
+#define dataframe for all test scores of all proteines
+test_scores_combined_df <- data.frame(
+  Protein = normalized_ctrl_df$Protein,
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance,
+  Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
+  amplitude_changes = amplitude_changes$changes_in25,
+  EMD = normalized_ctrl_df$EMD,
+  Wilcoxon_df$Wilcox_scaled
+)
+#depict result
+  head(test_scores_combined_df)
+  
+#check that no NAs were created
+sum(is.na(test_scores_combined_df))
 ```
 
 
@@ -787,5 +842,9 @@ length(positive_control)
 df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
 # depict result
 print(df_positive_control)
+```
+
+```{r}
+
 ```
 
