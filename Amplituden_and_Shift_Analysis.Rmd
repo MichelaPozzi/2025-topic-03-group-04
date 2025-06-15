@@ -713,7 +713,7 @@ Wilcoxon_df <- data.frame(
 )
 
 
-# Ausgabe
+# depict result
 head(Wilcoxon_df)
 
 ```
@@ -879,10 +879,10 @@ boxplot(testscores ~ label, data = df_all)
 test_scores_combined_df$wahrscheinlichkeit <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 
-View(test_scores_combined_df)
+head(test_scores_combined_df)
 
 # Schwellenwert für hohe Wahrscheinlichkeit
-threshold <- 0.90
+threshold <- 0.95
 
 # Anzahl der Proteine mit vorhergesagter Wahrscheinlichkeit > threshold
 sum(test_scores_combined_df$wahrscheinlichkeit > threshold)
