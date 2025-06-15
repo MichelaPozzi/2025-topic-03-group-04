@@ -59,6 +59,95 @@ if (!require("BiocManager", quietly = TRUE))
 BiocManager::install(version = "3.21")
 ```
 
+###test nach replikaten 
+
+```{r}
+# Spaltennamen (ohne "Protein") extrahieren
+sample_cols <- colnames(percent_rnase_df)[-1]
+
+# Vektor mit sortierten Spaltennamen erstellen (erst alle Fraktionen für Rep1, dann Rep2, dann Rep3)
+sorted_cols <- character(0)
+for (rep in 1:3) {
+  rep_name <- paste0("Rep", rep)
+  for (fraction in 1:25) {
+    col_name <- paste0("Fraction", fraction, "_", rep_name)
+    sorted_cols <- c(sorted_cols, col_name)
+  }
+}
+
+# DataFrame umsortieren
+df_sorted <- percent_rnase_df[, c("Protein", sorted_cols)]
+head(df_sorted)
+```
+
+
+
+```{r}
+# Lade limma
+library(limma)
+
+# Batch-Vektor erstellen: 25 Fraktionen pro Replikat
+batch <- c(rep("Batch1", 25),  # Rep1
+           rep("Batch2", 25),  # Rep2
+           rep("Batch3", 25))  # Rep3
+batch <- factor(batch)
+
+# Expression-Matrix ohne Protein-Spalte (angenommen df_sorted ist dein sortierter DataFrame)
+Rexpr_matrix <- as.matrix(df_sorted[, -1])
+
+# Batch-Effekt entfernen
+Rexpr_corrected <- removeBatchEffect(expr_matrix, batch = batch)
+
+# Boxplot vor der Korrektur
+boxplot(Rexpr_matrix,
+        main = "Vor Batch-Korrektur",
+        las = 2,
+        ylab = "Expression",
+        col = rainbow(length(batch))[batch])
+
+# Boxplot nach der Korrektur
+boxplot(Rexpr_corrected,
+        main = "Nach Batch-Korrektur (limma)",
+        las = 2,
+        ylab = "Expression",
+        col = rainbow(length(batch))[batch])
+
+```
+
+```{r}
+
+# PCA-Analyse vorbereiten
+pca_before <- prcomp(t(Rexpr_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(Rexpr_corrected), scale. = TRUE)
+
+# Batch-Zuordnung erneut für Farben
+batch <- c(rep("Batch1", 25),  # Rep1
+           rep("Batch2", 25),  # Rep2
+           rep("Batch3", 25))  # Rep3
+batch <- factor(batch)
+
+show(batch)
+
+# Plot nebeneinander
+par(mfrow = c(1, 2))
+
+# PCA vor Korrektur
+plot(pca_before$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA vor Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# PCA nach Korrektur
+plot(pca_after$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA nach Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+```
 
 
 ```{r}
