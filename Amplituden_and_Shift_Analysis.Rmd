@@ -980,26 +980,33 @@ print(test_results_df)
 
 ```{r}
 # 1. Add labels to the datasets
-df_positive_control$label <- 1  # Positive control group is labeled as 1
-df_negative_control$label <- 0  # Negative control group is labeled as 0
+# 1. Add labels to the datasets
+df_positive_control$label <- 1  # Positive control group labeled as 1
+df_negative_control$label <- 0  # Negative control group labeled as 0
 
-# 2. Combine the datasets (only 'testscores' and 'label' columns)
+# 2. Combine the datasets and keep the relevant columns (features + label)
 df_all <- rbind(
-  df_positive_control[, c("testscores", "label")],
-  df_negative_control[, c("testscores", "label")]
+  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "label")],
+  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "label")]
 )
 
-# 3. Fit a logistic regression model
-logistic_model <- glm(label ~ testscores, data = df_all, family = binomial)
+# 3. Fit logistic regression model with multiple predictors
+logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic,
+                      data = df_all,
+                      family = binomial)
 
-# 4. Display model summary
+# 4. Display model summary to see weights (coefficients)
 summary(logistic_model)
 
-# 5. Create a boxplot to compare test scores by label
-boxplot(testscores ~ label, data = df_all,
+# 5. Create a combined weighted score using coefficients
+coeffs <- coef(logistic_model)[-1]  # exclude intercept
+df_all$weighted_score <- rowSums(sweep(df_all[, names(coeffs)], 2, coeffs, FUN = "*"))
+
+# 6. Boxplot of weighted scores by label
+boxplot(weighted_score ~ label, data = df_all,
         names = c("Negative", "Positive"),
-        xlab = "Class Label", ylab = "Test Scores",
-        main = "Distribution of Test Scores by Class")
+        xlab = "Class Label", ylab = "Weighted Score",
+        main = "Distribution of Weighted Scores by Class")
 
 ```
 
