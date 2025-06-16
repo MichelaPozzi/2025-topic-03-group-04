@@ -1018,10 +1018,52 @@ test_scores_combined_df$probability <- predict(logistic_model, newdata = test_sc
 head(test_scores_combined_df)
 
 # 3. Define a threshold for high predicted probability
-threshold <- 0.95
+threshold <- 0.7575896 
 
 # 4. Count how many proteins have a predicted probability above the threshold
 sum(test_scores_combined_df$probability > threshold)
 
 ```
+```{r}
+#how to select threshold
+# 1. Predict probabilities for the negative control
+neg_preds <- predict(logistic_model, newdata = df_negative_control, type = "response")
+
+# 2. Calculate Q3 (75th percentile) of the predicted scores for negative control
+q3_neg_preds <- quantile(neg_preds, 0.95, na.rm = TRUE)
+
+# 3. Set threshold just above Q3
+threshold <- q3_neg_preds + 1e-6  # small epsilon to avoid ties
+
+# 4. Predict probabilities for the full dataset
+all_preds <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+
+# 5. Select proteins with predicted probability above the threshold
+selected_proteins <- test_scores_combined_df[all_preds > threshold, ]
+
+# 6. Optional: Check how many were selected
+cat("Threshold (based on Q3 of negative controls):", threshold, "\n")
+cat("Number of proteins selected:", nrow(selected_proteins), "\n")
+
+```
+
+
+```{r}
+# 1. Mark reference proteins in the full dataset
+test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
+
+# 2. Make predictions using the logistic model
+predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+
+# 3. Apply threshold (e.g., 0.95) to get predicted positives
+selected_proteins <- test_scores_combined_df[predictions > 0.7575896, ]
+
+# 4. Count how many of the selected proteins are reference proteins
+table(selected_proteins$is_reference)
+
+# Optional: Extract the non-reference hits
+predicted_non_reference <- selected_proteins[!selected_proteins$is_reference, ]
+
+```
+
 
