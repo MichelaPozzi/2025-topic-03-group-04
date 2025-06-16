@@ -231,6 +231,31 @@ head(shift_result)
 ```
 
 ```{r}
+# Histogramm
+hist(abs(shift_result$Shift_Distance), breaks = 30, col = "lightblue",
+     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
+
+# Dichtekurve hinzufügen
+lines(density(shift_result$Shift_Distance), col = "red", lwd = 2)
+
+# Boxplot
+boxplot(shift_result$Shift_Distance, main = "Boxplot of Shift_Distance", col = "lightgreen",
+        ylab = "Shift_Distance")
+
+# Schiefe (Skewness) berechnen - manuell
+x <- shift_result$Shift_Distance
+n <- length(x)
+m3 <- sum((x - mean(x))^3) / n
+s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+skewness <- m3 / s3
+
+cat("Skewness:", skewness, "\n")
+
+median(shift_result$Shift_Distance)
+```
+
+
+```{r}
 get_global_amplitudes <- function(expression_df, global_ctrl) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
     # max_pos_str kann mehrere Maxima enthalten, z.B. "5,10"
@@ -326,6 +351,30 @@ head(amplitude_changes)
 amplitude_changes$changes <- amplitude_changes$loss + amplitude_changes$gain
 amplitude_changes$changes_in25 <- (amplitude_changes$changes/100)*25
 head(amplitude_changes)
+```
+
+```{r}
+# Histogramm
+hist(abs(amplitude_changes$changes_in25), breaks = 30, col = "lightblue",
+     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
+
+# Dichtekurve hinzufügen
+lines(density(amplitude_changes$changes_in25), col = "red", lwd = 2)
+
+# Boxplot
+boxplot(amplitude_changes$changes_in25, main = "Boxplot of Shift_Distance", col = "lightgreen",
+        ylab = "Shift_Distance")
+
+# Schiefe (Skewness) berechnen - manuell
+x <- amplitude_changes$changes_in25
+n <- length(x)
+m3 <- sum((x - mean(x))^3) / n
+s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+skewness <- m3 / s3
+
+cat("Skewness:", skewness, "\n")
+
+median(normalized_ctrl_df$EMD)
 ```
 
 
@@ -444,6 +493,30 @@ normalized_rnase_df$EMD <- emd_values  # Optional, for consistency (values are t
 head(normalized_ctrl_df[, c(1, 27)])  # Show protein name and EMD
 
 ```
+
+```{r}
+# Histogramm
+hist(abs(normalized_ctrl_df$EMD), breaks = 30, col = "lightblue",
+     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
+
+# Dichtekurve hinzufügen
+lines(density(normalized_ctrl_df$EMD), col = "red", lwd = 2)
+
+# Boxplot
+boxplot(normalized_ctrl_df$EMD, main = "Boxplot of Shift_Distance", col = "lightgreen",
+        ylab = "Shift_Distance")
+
+# Schiefe (Skewness) berechnen - manuell
+x <- normalized_ctrl_df$EMD
+n <- length(x)
+m3 <- sum((x - mean(x))^3) / n
+s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+skewness <- m3 / s3
+
+cat("Skewness:", skewness, "\n")
+
+```
+
 
 ```{r}
 # load dataframe for t-test
@@ -644,7 +717,7 @@ print(p_values_df)
 ```
 
 ```{r}
-# wilcoxon test over all proteins -> was ist der Unterschied zu chunk davor??
+# wilcoxon test over all proteins 
 # protein names extracted from first column
 protein_names <- normalized_ctrl_df[, 1]
 
@@ -685,16 +758,13 @@ print(result_df)
 ```
 
 ```{r}
-# Angenommen:
-# normalized_ctrl_df und normalized_rnase_df sind Dataframes mit 3680 Zeilen (Proteine)
-# erste Spalte = Proteinnamen, Spalten 2-26 = Fraktionen
-
-# Speicher für Ergebnisse
+#Wilcoxon test proteinwise -> test statistic is used for testscore
+# define variables used
 protein_names <- normalized_ctrl_df[, 1]
 stat_values <- numeric(length(protein_names))
 p_values <- numeric(length(protein_names))
 
-# Schleife über alle Proteine (Zeilen)
+# iterate over all proteins
 for (i in seq_along(protein_names)) {
   ctrl_values <- as.numeric(normalized_ctrl_df[i, 2:26])
   rnase_values <- as.numeric(normalized_rnase_df[i, 2:26])
@@ -706,7 +776,7 @@ for (i in seq_along(protein_names)) {
  
 }
 
-# Ergebnis in einem Dataframe zusammenfassen
+# save result as dataframe
 Wilcoxon_df <- data.frame(
   Protein = protein_names,
   Wilcox_Statistic = stat_values
@@ -728,14 +798,32 @@ head(Wilcoxon_df)
 ```
 
 ```{r}
+# Robust scaling function: (x - median) / IQR
+robust_scale <- function(x) {
+  med <- median(x, na.rm = TRUE)
+  iqr <- IQR(x, na.rm = TRUE)
+  scaled <- (x - med) / iqr
+  return(scaled)
+}
+
+# Apply robust scaling to each variable
+normalized_ctrl_df$EMD_scaled <- robust_scale(normalized_ctrl_df$EMD)
+shift_result$Shift_Distance_scaled <- robust_scale(abs(shift_result$Shift_Distance))
+amplitude_changes$changes_in25_scaled <- robust_scale(amplitude_changes$changes_in25)
+Wilcoxon_df$Wilcox_scaled_scaled <- robust_scale(Wilcoxon_df$Wilcox_scaled)
+
+```
+
+
+```{r}
 #define dataframe for all test scores of all proteines
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
-  Shift_Distance_ctrl_to_rnase = abs(shift_result$Shift_Distance),
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled,
   Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
-  amplitude_changes = amplitude_changes$changes_in25,
-  EMD = normalized_ctrl_df$EMD,
-  Wilcoxon_statistic = Wilcoxon_df$Wilcox_scaled
+  amplitude_changes = amplitude_changes$changes_in25_scaled,
+  EMD = normalized_ctrl_df$EMD_scaled,
+  Wilcoxon_statistic = Wilcoxon_df$Wilcox_scaled_scaled
 )
 #depict result
   head(test_scores_combined_df)
@@ -800,8 +888,10 @@ common_proteins_negative <- intersect(row_subset, ref_row)
 # depict vector with common proteins
 length(common_proteins_negative)
 
-# 400 zufällige Elemente aus 'mein_vektor' ziehen (ohne Zurücklegen)
-negative_control <- sample(common_proteins_negative, 550, replace = FALSE)
+# Randomly sample 550 elements from 'common_proteins_positive' 
+# (together with 550 positive control proteins, 1100 total — approx. 30% of all proteins,
+#  allowing a 30/70 model split)
+negative_control <- sample(common_proteins_negative, 550, replace = FALSE) #replace = FALSE -> no protein can be chosen twice
 
 length(negative_control)
 
@@ -834,10 +924,12 @@ ref_row <- normalized_ctrl_df[,1]
 # find common proteins
 common_proteins_positive <- intersect(row_subset, ref_row)
 
-# Ausgabe des Vektors mit gemeinsamen Proteinen
+# Output the number of common proteins
 length(common_proteins_positive)
 
-# 400 zufällige Elemente aus 'mein_vektor' ziehen (ohne Zurücklegen)
+# Randomly sample 550 elements from 'common_proteins_positive' 
+# (together with 550 negative control proteins, 1100 total — approx. 30% of all proteins,
+#  allowing a 30/70 model split)
 positive_control <- sample(common_proteins_positive, 550, replace = FALSE)
 
 length(positive_control)
@@ -855,37 +947,74 @@ print(max_positive)
 ```
 
 ```{r}
-# 1. Daten zusammenfügen und Label erstellen
-df_positive_control$label <- 1  # Positiv = 1
-df_negative_control$label <- 0  # Negativ = 0
+#check whether positive and negative control are reliable and whether they differ significantly 
+# Vector of column indices to test
+cols_to_test <- c(2,4,5,6,7)
 
+# Empty list to store test results
+test_results <- list()
+
+for (col in cols_to_test) {
+  # Extract the column from both dataframes
+  pos_values <- df_positive_control[[col]]
+  neg_values <- df_negative_control[[col]]
+  
+  # Perform Wilcoxon Rank Sum test (Mann-Whitney U test)
+  test <- wilcox.test(pos_values, neg_values)
+  
+  # Store the p-value with the column name as key
+  test_results[[colnames(df_positive_control)[col]]] <- test$p.value
+}
+
+# Create a data frame to display p-values
+test_results_df <- data.frame(
+  Column = names(test_results),
+  p_value = unlist(test_results)
+)
+
+# Print the results
+print(test_results_df)
+
+```
+
+
+```{r}
+# 1. Add labels to the datasets
+df_positive_control$label <- 1  # Positive control group is labeled as 1
+df_negative_control$label <- 0  # Negative control group is labeled as 0
+
+# 2. Combine the datasets (only 'testscores' and 'label' columns)
 df_all <- rbind(
   df_positive_control[, c("testscores", "label")],
   df_negative_control[, c("testscores", "label")]
 )
 
-# 2. Logistisches Modell fitten
+# 3. Fit a logistic regression model
 logistic_model <- glm(label ~ testscores, data = df_all, family = binomial)
 
-# 3. Modell zusammenfassen
+# 4. Display model summary
 summary(logistic_model)
 
-boxplot(testscores ~ label, data = df_all)
+# 5. Create a boxplot to compare test scores by label
+boxplot(testscores ~ label, data = df_all,
+        names = c("Negative", "Positive"),
+        xlab = "Class Label", ylab = "Test Scores",
+        main = "Distribution of Test Scores by Class")
 
 ```
 
 ```{r}
-# Vorhersagewahrscheinlichkeiten (RNA-Abhängigkeit) berechnen
-test_scores_combined_df$wahrscheinlichkeit <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+# 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
+test_scores_combined_df$probability <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-
+# 2. View the first few rows of the result
 head(test_scores_combined_df)
 
-# Schwellenwert für hohe Wahrscheinlichkeit
+# 3. Define a threshold for high predicted probability
 threshold <- 0.95
 
-# Anzahl der Proteine mit vorhergesagter Wahrscheinlichkeit > threshold
-sum(test_scores_combined_df$wahrscheinlichkeit > threshold)
+# 4. Count how many proteins have a predicted probability above the threshold
+sum(test_scores_combined_df$probability > threshold)
 
 ```
 
