@@ -276,6 +276,9 @@ for (r in 1:n_fractions) {
 head(norm_ctrl_mat)
 head(norm_rnase_mat)
 
+#check if any NAs were created
+sum(is.na(norm_ctrl_mat))
+sum(is.na(norm_rnase_mat))
 ```
 
 ```{r}
@@ -360,6 +363,8 @@ sum(is.na(final_smoothed_rnase))
 
 ```
 
+
+
 ```{r}
 #save dataframes for batch effect
 dir.create("data", showWarnings = FALSE)
@@ -367,32 +372,108 @@ saveRDS(final_smoothed_ctrl, file = "data/final_smoothed_ctrl.rds")
 saveRDS(final_smoothed_rnase, file =  "data/final_smoothed_rnase.rds")
 ```
 
+```{r}
+# check for any rows with rowSum == 0 (per replicate)
+check_zero_replicates_detailed <- function(df) {
+  # Remove first column (protein names)
+  data_only <- df[, -1]
+  protein_names <- df[, 1]
+  
+  # Initialize lists to store results
+  zero_count <- integer(nrow(data_only))
+  zero_replicates <- character(nrow(data_only))
+  
+  # Loop through each row (protein)
+  for (i in 1:nrow(data_only)) {
+    affected_reps <- c()  # Temporary holder for replicate names
+    
+    for (rep in 1:3) {
+      # Select columns for this replicate across all fractions
+      replicate_indices <- seq(from = rep, to = ncol(data_only), by = 3)
+      
+      # Calculate sum for this replicate
+      rep_sum <- sum(data_only[i, replicate_indices])
+      
+      # If sum is zero, store the replicate name
+      if (rep_sum == 0) {
+        affected_reps <- c(affected_reps, paste0("Replicate", rep))
+      }
+    }
+    
+    # Store number of zero replicates and their names
+    zero_count[i] <- length(affected_reps)
+    zero_replicates[i] <- if (length(affected_reps) > 0) paste(affected_reps, collapse = ", ") else NA
+  }
+  
+  # Create final summary data frame
+  summary_df <- data.frame(
+    Protein = protein_names,
+    Zero_Replicate_Count = zero_count,
+    Affected_Replicates = zero_replicates,
+    stringsAsFactors = FALSE
+  )
+  
+  # Optional: filter to only those with at least one zero replicate
+  summary_df <- summary_df[summary_df$Zero_Replicate_Count > 0, ]
+  
+  return(summary_df)
+}
+
+# Run for control
+ctrl_zero_summary <- check_zero_replicates_detailed(final_smoothed_ctrl)
+
+# Run for RNase
+rnase_zero_summary <- check_zero_replicates_detailed(final_smoothed_rnase)
+
+# View examples
+head(ctrl_zero_summary)
+head(rnase_zero_summary)
+
+
+```
 
 
 ```{r}
 #normalize total amount per replicate to 100%
-
-calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
+calc_fraction_percentages <- function(df, zero_info, n_fractions = 25, n_replicates = 3) {
   proteins <- df[, 1]
   percent_reps <- list()
   
   for (rep in 1:n_replicates) {
-    # select replicates that belong together (e.g. Rep1 of all fractions)
+    # Select replicate columns for all fractions (e.g., Rep1 of all fractions)
     cols <- seq(1 + rep, 1 + rep + (n_fractions - 1) * 3, by = 3)
     rep_data <- as.matrix(df[, cols])
     
-    row_sums <- rowSums(rep_data, na.rm = TRUE)
-    percent_data <- sweep(rep_data, 1, row_sums, FUN = "/") * 100
+    # Get logical vector: TRUE if replicate sum == 0 (should NOT be normalized)
+    rep_name <- paste0("Replicate", rep)
+    skip_replicate <- zero_info[[rep_name]] == TRUE  # original values are kept
+
     
+    # Calculate row sums
+    row_sums <- rowSums(rep_data, na.rm = TRUE)
+    
+    # Normalize only where rowSum != 0
+    percent_data <- rep_data  # start with original values
+    
+    # Normalize where allowed (i.e., rowSum != 0)
+    normalize_rows <- !skip_replicate
+    percent_data[normalize_rows, ] <- sweep(
+      rep_data[normalize_rows, ],
+      1,
+      row_sums[normalize_rows],
+      FUN = "/"
+    ) * 100
+    
+    # Create dataframe and set column names
     percent_df <- as.data.frame(percent_data)
     colnames(percent_df) <- paste0("Fraction", 1:n_fractions, "_Rep", rep)
     percent_reps[[rep]] <- percent_df
   }
   
-  # combine all replicates
+  # Combine all replicate dataframes
   combined_percent_df <- do.call(cbind, percent_reps)
   
-  # sort columns: first all replicates of first fraction, then fraction 2, etc.
+  # Reorder columns: Fraction1_Rep1, Fraction1_Rep2, Fraction1_Rep3, etc.
   sorted_cols <- unlist(lapply(1:n_fractions, function(frac) {
     paste0("Fraction", frac, "_Rep", 1:n_replicates)
   }))
@@ -401,14 +482,22 @@ calc_fraction_percentages <- function(df, n_fractions = 25, n_replicates = 3) {
   return(final_percent_df)
 }
 
-# apply to our data
-percent_ctrl_df <- calc_fraction_percentages(final_smoothed_ctrl)
-percent_rnase_df <- calc_fraction_percentages(final_smoothed_rnase)
 
-# depict results
+# Run the replicate-zero check
+ctrl_zero_info <- check_zero_replicates(final_smoothed_ctrl)
+rnase_zero_info <- check_zero_replicates(final_smoothed_rnase)
+
+# Run the adjusted percentage calculation
+percent_ctrl_df <- calc_fraction_percentages(final_smoothed_ctrl, ctrl_zero_info)
+percent_rnase_df <- calc_fraction_percentages(final_smoothed_rnase, rnase_zero_info)
+
+# View results
 head(percent_ctrl_df)
 head(percent_rnase_df)
-  
+
+#check for NAs
+sum(is.na(percent_ctrl_df))
+sum(is.na(percent_rnase_df))
 ```
 
 ```{r}
@@ -447,6 +536,9 @@ mean_rnase_df <- calculate_mean_per_fraction(percent_rnase_df)
 head(mean_ctrl_df)
 head(mean_rnase_df)
 
+#check if NAs were created
+sum(is.na(mean_ctrl_df))
+sum(is.na(mean_rnase_df))
 ```
 
 ```{r}
@@ -487,7 +579,7 @@ sum(is.na(normalized_rnase_df))
 
 ```{r}
 #for Ctrl
-# are there rows with sum == (starting with second column) for Ctrl
+# are there rows with sum == 0 (starting with second column) for Ctrl
 zeilensummen <- rowSums(normalized_ctrl_df[, -1])
 
 # boolean vector: TRUE for rows with sum == 0
