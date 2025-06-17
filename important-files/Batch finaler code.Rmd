@@ -37,7 +37,7 @@ head(final_smoothed_ctrl_df)
 ```
 
 
-##boxplot
+
 ```{r}
 # 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
 expr_matrix <- as.matrix(final_smoothed_ctrl_df[, -1])  
@@ -69,11 +69,6 @@ legend("topright",
        fill = batch_colors,
        title = "Batch")
 ```
-
-```{r}
-head(expr_matrix)
-```
-
 
 ```{r}
 library(limma)

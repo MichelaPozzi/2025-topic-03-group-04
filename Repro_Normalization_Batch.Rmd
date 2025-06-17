@@ -612,16 +612,14 @@ saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
 
 ###Batch Effect###
 
-##ctrl 
 
-
-##boxplot 
+##boxplot
 ```{r}
 # 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
-ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
+expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
 # 2. Sample-Namen extrahieren
-sample_names <- colnames(ctrl_expr_matrix)
+sample_names <- colnames(expr_matrix)
 
 # 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
@@ -632,7 +630,7 @@ batch_colors <- c("Rep1" = "red", "Rep2" = "green", "Rep3" = "blue")
 colors <- batch_colors[as.character(batch)]
 
 # 5. Boxplot zeichnen
-boxplot(ctrl_expr_matrix,
+boxplot(expr_matrix,
         main = "Expression nach Sample (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -649,15 +647,21 @@ legend("topright",
 ```
 
 ```{r}
-head(ctrl_expr_matrix)
+head(expr_matrix)
 ```
 
 
+
 ```{r}
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("limma")
+
 library(limma)
 
 # 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
-ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
+expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
 # 2. Sample-Namen extrahieren
 sample_names <- colnames(expr_matrix)
@@ -667,13 +671,13 @@ batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 
 # 4. Log2-Transformation (falls nötig, empfohlen wegen Skalenproblem)
-ctrl_expr_matrix_log <- log2(expr_matrix + 1)
+expr_matrix_log <- log2(expr_matrix + 1)
 
 # 5. Batch-Korrektur mit limma
-ctrl_expr_corrected <- removeBatchEffect(expr_matrix_log, batch = batch)
+expr_corrected <- removeBatchEffect(expr_matrix_log, batch = batch)
 
 # 5. Boxplot zeichnen vor korrektur 
-boxplot(ctrl_expr_matrix,
+boxplot(expr_matrix,
         main = "Expression vor Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -683,7 +687,7 @@ boxplot(ctrl_expr_matrix,
         cex.axis = 0.6)              # kleinere Achsenbeschriftung
 
 # Boxplot nach Korrektur 
-boxplot(ctrl_expr_corrected,
+boxplot(expr_corrected,
         main = "Expression nach Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -704,12 +708,12 @@ legend("topright",
 ## PCA
 ```{r}
 # PCA-Analyse vorbereiten
-pca_before <- prcomp(t(ctrl_expr_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(ctrl_expr_corrected), scale. = TRUE)
+pca_before <- prcomp(t(expr_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
-sample_names <- colnames(ctrl_expr_matrix)
+sample_names <- colnames(expr_matrix)
 
 # 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
@@ -748,12 +752,12 @@ select_top_var <- function(mat, top_n = 100) {
 }
 
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
-heat_before <- select_top_var(ctrl_expr_matrix, 100)
-heat_after  <- select_top_var(ctrl_expr_corrected, 100)
+heat_before <- select_top_var(expr_matrix, 100)
+heat_after  <- select_top_var(expr_corrected, 100)
 
 # Spaltenannotation nach Batch
 annotation_col <- data.frame(Batch = batch)
-rownames(annotation_col) <- colnames(ctrl_expr_matrix)
+rownames(annotation_col) <- colnames(expr_matrix)
 
 # Zwei Heatmaps nebeneinander
 par(mfrow = c(1, 2))
@@ -776,6 +780,7 @@ par(mfrow = c(1, 1))
 
 
 ```{r}
+<<<<<<< HEAD
 #protein name wieder rein
 ctrl_expr_corrected_df <- data.frame(
   Protein = final_smoothed_ctrl[, 1],  # ursprüngliche erste Spalte
@@ -963,3 +968,7 @@ rnase_expr_corrected_df <- data.frame(
 ```{r}
 head(rnase_expr_corrected)
 ```
+=======
+head(expr_corrected)
+```
+>>>>>>> 8df69fa32d4bdd17756416a34a948861f117f9b4
