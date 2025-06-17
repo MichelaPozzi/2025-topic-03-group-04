@@ -776,6 +776,17 @@ par(mfrow = c(1, 1))
 
 
 ```{r}
+#protein name wieder rein
+ctrl_expr_corrected_df <- data.frame(
+  Protein = final_smoothed_ctrl[, 1],  # ursprüngliche erste Spalte
+  rnase_expr_corrected,                # korrigierte Matrix
+  check.names = FALSE                  # verhindert Umbenennung von Spalten
+)
+
+colnames(ctrl_expr_corrected_df)
+```
+
+```{r}
 head(ctrl_expr_corrected)
 ```
 
@@ -939,9 +950,16 @@ pheatmap(heat_after,
 # Reset Layout
 par(mfrow = c(1, 1))
 ```
+```{r}
+#protein name wieder rein
+rnase_expr_corrected_df <- data.frame(
+  Protein = final_smoothed_rnase[, 1],  # ursprüngliche erste Spalte
+  rnase_expr_corrected,                # korrigierte Matrix
+  check.names = FALSE                  # verhindert Umbenennung von Spalten
+)
+```
 
 
 ```{r}
 head(rnase_expr_corrected)
 ```
-
