@@ -612,211 +612,167 @@ saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
 
 ###Batch Effect###
 
+
+##boxplot
 ```{r}
-install.packages("mixOmics") 
+# 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
+expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
+# 2. Sample-Namen extrahieren
+sample_names <- colnames(expr_matrix)
 
+# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+
+# 4. Farben zuordnen
+batch_colors <- c("Rep1" = "red", "Rep2" = "green", "Rep3" = "blue")
+colors <- batch_colors[as.character(batch)]
+
+# 5. Boxplot zeichnen
+boxplot(expr_matrix,
+        main = "Expression nach Sample (Batch gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,                      # X-Achse: senkrechte Labels
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+
+# 6. Legende hinzufügen
+legend("topright",
+       legend = names(batch_colors),
+       fill = batch_colors,
+       title = "Batch")
 ```
 
 ```{r}
-library(mixOmics)
-res.pca <- pca((normed_ctrl_df)[-1], ncomp = 10)
-plot(res.pca)  
-
-
-```
-```{r}
-#ohne transformation 
-batch.pca.before <- pca((normed_ctrl_df)[-1], ncomp = 3)
-library(ggplot2)
-
-# Extrahiere Scores (PCA-Komponenten)
-pca_scores <- as.data.frame(batch.pca.before$variates$X)
-
-ggplot(pca_scores, aes(x = PC1, y = PC2)) +
-  geom_point(size = 3, alpha = 0.8, color = "steelblue") +
-  labs(
-    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
-    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
-    title = "PCA Plot (Ungruppiert)"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(hjust = 0.5)
-  )
-```
-```{r}
-#nach fraktionen
-batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
-
-# Hole Sample-Namen
-sample_names <- colnames(normed_ctrl_df)[-1]
-
-# Extrahiere Fraction-Teil als Batch-Label
-fraction_labels <- sapply(strsplit(sample_names, "_"), `[`, 1)
-
-# Hole PCA-Sample-Scores
-pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
-
-# Anhängen der Batch-Labels
-pca_sample_scores$batch <- fraction_labels
-
-# Plot
-library(ggplot2)
-
-ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
-  geom_point(size = 3, alpha = 0.8) +
-  labs(
-    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
-    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
-    title = "PCA Plot (Samples, gefärbt nach Fraction-Batch)"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "right" ) +
-  guides(color = guide_legend(title = "Batch (Fraction)"))
-```
-```{r}
-#nach replikaten 
-# PCA durchführen (wie vorher)
-batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
-
-# Hole Sample-Namen (ohne die erste Spalte)
-sample_names <- colnames(normed_ctrl_df)[-1]
-
-# Extrahiere den Replikat-Teil als Label (zweiter Teil nach "_")
-replicate_labels <- sapply(strsplit(sample_names, "_"), `[`, 3) # 3 für rep, 1 für frak
-
-# Hole PCA-Sample-Scores
-pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
-
-# Anhängen der Replikat-Labels
-pca_sample_scores$replicate <- replicate_labels
-
-# Plot mit Färbung nach Replikaten
-library(ggplot2)
-
-ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = replicate)) +
-  geom_point(size = 3, alpha = 0.8) +
-  labs(
-    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
-    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
-    title = "PCA Plot (Samples, gefärbt nach Replikaten)"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "right") +
-  guides(color = guide_legend(title = "Replikat"))
-
-```
-```{r}
-#fraktion und rep 
-# Sample-Namen holen
-sample_names <- colnames(normed_ctrl_df)[-1]
-
-# Jeden Sample-Namen splitten bei "_"
-split_names <- strsplit(sample_names, "_")
-
-# Fraktion extrahieren (erster Teil)
-fractions <- sapply(split_names, `[`, 1)
-
-# Replikat extrahieren (zweiter Teil)
-replicates <- sapply(split_names, `[`, 3)
-
-# Neue Labels erstellen (z.B. "Fraction1_Rep1")
-combined_labels <- paste(fractions, replicates, sep = "_")
-
-# Beispiel Ausgabe
-print(combined_labels)
-
-# PCA wie gehabt
-batch.pca.before <- pca(t(normed_ctrl_df[-1]), ncomp = 3)
-
-# PCA-Scores als DataFrame
-pca_sample_scores <- as.data.frame(batch.pca.before$variates$X)
-
-# Kombinierte Labels anhängen
-pca_sample_scores$batch <- combined_labels
-
-# Plot mit kombinierten Labels als Farbe
-library(ggplot2)
-
-ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
-  geom_point(size = 3, alpha = 0.8) +
-  labs(
-    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
-    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
-    title = "PCA Plot (Samples, gefärbt nach Fraktion und Replikat)"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(plot.title = element_text(hjust = 0.5),
-        legend.position = "right") +
-  guides(color = guide_legend(title = "Fraktion_Replikat"))
-```
-
-
-```{r}
-ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = fraction, shape = treatment)) +
-  geom_point(size = 3, alpha = 0.8) +
-  labs(
-    x = paste0("PC1 (", round(batch.pca.before$explained_variance[1] * 100, 1), "%)"),
-    y = paste0("PC2 (", round(batch.pca.before$explained_variance[2] * 100, 1), "%)"),
-    title = "PCA Plot (Fraction, Farbe, Treatment geformt )"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(
-    plot.title = element_text(hjust = 0.5),
-    legend.position = "right"
-  ) +
-  guides(
-    color = guide_legend(title = "Fraction"),
-    shape = guide_legend(title = "Treatment")
-  )
-
-```
-
-
-```{r}
-#limma install
-
-install.packages("BiocManager")
-BiocManager::install("limma")
+head(expr_matrix)
 ```
 
 
 ```{r}
 library(limma)
-library(mixOmics) 
-library(ggplot2)
 
-# 1. Matrix vorbereiten
-expr_matrix <- as.matrix(normed_ctrl_df[,-1])  # ohne Feature-Namen
-rownames(expr_matrix) <- normed_ctrl_df[[1]]   # Zeilennamen setzen
+# 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
+expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
-# 2. Batch-Labels extrahieren 
+# 2. Sample-Namen extrahieren
 sample_names <- colnames(expr_matrix)
-batch <- sapply(strsplit(sample_names, "_"), `[`, 3) # 3 für replikate, 1 für fraktion
 
-# 3. Remove Batch Effect
-corrected_matrix <- removeBatchEffect(expr_matrix, batch = batch)
+# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 
-# 4. PCA auf korrigierter Matrix
-batch.pca.after <- pca(t(corrected_matrix), ncomp = 3)  # transponieren wegen Samples in Spalten
+# 4. Log2-Transformation (falls nötig, empfohlen wegen Skalenproblem)
+expr_matrix_log <- log2(expr_matrix + 1)
 
-# 5. Ergebnisse vorbereiten für Plot
-pca_sample_scores <- as.data.frame(batch.pca.after$variates$X)
-pca_sample_scores$batch <- batch
+# 5. Batch-Korrektur mit limma
+expr_corrected <- removeBatchEffect(expr_matrix_log, batch = batch)
 
-# 6. Plot
-ggplot(pca_sample_scores, aes(x = PC1, y = PC2, color = batch)) +
-  geom_point(size = 3, alpha = 0.8) +
-  labs(
-    x = paste0("PC1 (", round(batch.pca.after$explained_variance[1] * 100, 1), "%)"),
-    y = paste0("PC2 (", round(batch.pca.after$explained_variance[2] * 100, 1), "%)"),
-    title = "PCA Plot nach Batch-Korrektur (limma)"
-  ) +
-  theme_minimal(base_size = 14) +
-  theme(plot.title = element_text(hjust = 0.5)) +
-  guides(color = guide_legend(title = "Batch (Fraction)"))
+# 5. Boxplot zeichnen vor korrektur 
+boxplot(expr_matrix,
+        main = "Expression vor Korrektur (Batch gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,                      # X-Achse: senkrechte Labels
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+
+# Boxplot nach Korrektur 
+boxplot(expr_corrected,
+        main = "Expression nach Korrektur (Batch gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,                      # X-Achse: senkrechte Labels
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+
+
+# 6. Legende hinzufügen
+legend("topright",
+       legend = names(batch_colors),
+       fill = batch_colors,
+       title = "Batch")
 ```
 
+
+## PCA
+```{r}
+# PCA-Analyse vorbereiten
+pca_before <- prcomp(t(expr_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(expr_corrected), scale. = TRUE)
+
+# Batch-Zuordnung erneut für Farben
+# 2. Sample-Namen extrahieren
+sample_names <- colnames(expr_matrix)
+
+# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+# Plot nebeneinander
+par(mfrow = c(1, 2))
+
+# PCA vor Korrektur
+plot(pca_before$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA vor Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# PCA nach Korrektur
+plot(pca_after$x[, 1:2],
+     col = rainbow(length(levels(batch)))[batch],
+     pch = 19,
+     main = "PCA nach Batch-Korrektur")
+legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+```
+
+##heatmap
+```{r}
+# Optional: Wenn du pheatmap noch nicht hast
+install.packages("pheatmap")
+library(pheatmap)
+
+# Auswahl einer Teilmenge der Proteine (z. B. Top 100 variabelsten)
+select_top_var <- function(mat, top_n = 100) {
+  vars <- apply(mat, 1, var)
+  mat[order(vars, decreasing = TRUE)[1:top_n], ]
+}
+
+# Top 100 Gene mit höchster Varianz (vorher/nachher)
+heat_before <- select_top_var(expr_matrix, 100)
+heat_after  <- select_top_var(expr_corrected, 100)
+
+# Spaltenannotation nach Batch
+annotation_col <- data.frame(Batch = batch)
+rownames(annotation_col) <- colnames(expr_matrix)
+
+# Zwei Heatmaps nebeneinander
+par(mfrow = c(1, 2))
+
+pheatmap(heat_before,
+         main = "Heatmap vor Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE)
+
+pheatmap(heat_after,
+         main = "Heatmap nach Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE)
+
+# Reset Layout
+par(mfrow = c(1, 1))
+```
+
+
+```{r}
+head(expr_corrected)
+```
