@@ -950,13 +950,13 @@ sum(test_scores_combined_df$probability > threshold)
 ```{r}
 #how to select threshold
 # 1. Predict probabilities for the negative control
-neg_preds <- predict(logistic_model, newdata = df_negative_control, type = "response")
+pos_preds <- predict(logistic_model, newdata = df_positive_control, type = "response")
 
 # 2. Calculate Q3 (75th percentile) of the predicted scores for negative control
-q3_neg_preds <- quantile(neg_preds, 0.95, na.rm = TRUE)
+q3_pos_preds <- quantile(pos_preds, 0.25, na.rm = TRUE)
 
 # 3. Set threshold just above Q3
-threshold <- q3_neg_preds + 1e-6  # small epsilon to avoid ties
+threshold <- q3_pos_preds + 1e-6  # small epsilon to avoid ties
 
 # 4. Predict probabilities for the full dataset
 all_preds <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
@@ -979,7 +979,7 @@ test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.7575896, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
 
 # 4. Count how many of the selected proteins are reference proteins
 table(selected_proteins$is_reference)
@@ -987,6 +987,53 @@ table(selected_proteins$is_reference)
 # Optional: Extract the non-reference hits
 predicted_non_reference <- selected_proteins[!selected_proteins$is_reference, ]
 
+
+#how many proteins of negative control are found at this threshold
+# 1. Mark negative control proteins in the full dataset
+test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
+
+# 2. Make predictions using the existing logistic model
+predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+
+# 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
+selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
+
+# 4. Count how many of the selected proteins are from the negative control
+table(selected_proteins$is_negative)
+
+# Optional: Extract those negative control proteins among predicted positives
+predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
+
+# Optional: Extract predicted hits that are NOT from the negative control
+predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
+
 ```
 
+
+
+```{r}
+# filter proteins for significant right shift
+filtered_df <- test_scores_combined_df[test_scores_combined_df$Shift_direction_ctrl_to_rnase == "right shift" & test_scores_combined_df$probability >= q3_pos_preds, ] 
+
+# extract protein names from first column, save proteinnames as dataframe
+right_shift_proteins_df <- data.frame(Protein = filtered_df[[1]])
+
+# number of filtered proteins
+right_shift_count <- nrow(filtered_df)
+
+# depict results
+print(right_shift_proteins_df)
+
+print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥ 0.3899612:", right_shift_count))
+
+```
+
+
+```{r}####################################
+# Nur die Protein-Namen als Vektor
+protein_names <- right_shift_proteins_df$Protein
+
+# Schreibe sie zeilenweise in eine Textdatei
+writeLines(protein_names, "right_shift_proteins.txt")
+```
 
