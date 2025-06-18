@@ -653,6 +653,7 @@ head(ctrl_expr_matrix)
 
 
 ```{r}
+
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
@@ -972,5 +973,181 @@ head(rnase_expr_corrected)
 ```
 =======
 head(expr_corrected)
+
+##SVA
+```{r}
+# Lade benötigte Libraries
+library(sva)
+library(stringr)
+library(limma)
+
+# 1) Expressionsmatrix (ohne Protein-Spalte)
+expression_matrix <- as.matrix(final_smoothed_ctrl[, -1])
+rownames(expression_matrix) <- final_smoothed_ctrl$Protein
+
+# 2) Metadaten (sampleInfo) aus Spaltennamen erzeugen
+samples <- colnames(expression_matrix)
+
+# Extrahiere "Fraction" und "Replicate" Informationen aus Spaltennamen
+fraction <- str_extract(samples, "Fraction\\d+")
+replicate <- str_extract(samples, "Rep\\d+")
+
+# sampleInfo DataFrame erstellen
+sampleInfo <- data.frame(
+  fraction = factor(fraction),
+  replicate = factor(replicate)
+)
+
+# 3) Designmatrix für das Modell erstellen
+mod <- model.matrix(~ fraction + replicate, data = sampleInfo)
+mod0 <- model.matrix(~ 1, data = sampleInfo)  # Nullmodell ohne Prädiktoren
+
+# 4) SVA durchführen
+sva_res <- sva(expression_matrix, mod, mod0)
+
+# 5) Designmatrix um die gefundenen Surrogate Variablen (SVs) erweitern
+mod_sv <- cbind(mod, sva_res$sv)
+
+# 6) OPTIONAL: Wenn du einen bekannten Batch hast, kannst du alternativ ComBat verwenden
+# Beispiel (nur wenn du 'batch' hast):
+# batch <- sampleInfo$batch_variable
+# expression_corrected <- ComBat(dat = expression_matrix, batch = batch, mod = mod)
+
+# 7) Korrektur mit Surrogate Variablen durch lineare Regression (empfohlen bei unbekanntem Batch)
+# Fit des linearen Modells mit Surrogate Variablen
+fit <- lmFit(expression_matrix, mod_sv)
+fit <- eBayes(fit)
+
+# Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
+corrected_expr <- residuals(fit, expression_matrix)
+
+# 'corrected_expr' enthält die bereinigten Expressionswerte
+
 ```
->>>>>>> 8df69fa32d4bdd17756416a34a948861f117f9b4
+
+
+```{r}
+
+# Batch-Vektor: z.B. basierend auf 'Rep' in den Spaltennamen
+batch <- factor(str_extract(colnames(expression_matrix), "Rep\\d+"))
+
+# Farben je Batch
+batch_levels <- levels(batch)
+batch_colors <- rainbow(length(batch_levels))
+names(batch_colors) <- batch_levels
+colors <- batch_colors[batch]
+
+```
+
+##boxplot
+
+
+```{r}
+# 1. Boxplot vor Korrektur
+boxplot(expression_matrix,
+        main = "Expression vor Korrektur (Replicate gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)
+
+# 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
+boxplot(corrected_expr,
+        main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)
+
+# 3. Legende
+legend("topright",
+       legend = names(batch_colors),
+       fill = batch_colors,
+       title = "Replicate")
+
+```
+##PCA
+```{r}
+
+# 1) PCA vorbereiten
+pca_before <- prcomp(t(expression_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(corrected_expr), scale. = TRUE)
+
+# 2) Batch-Zuordnung erneut für Farben
+sample_names <- colnames(expression_matrix)
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+
+# 3) Farben definieren für die Replikate
+batch_colors <- rainbow(length(levels(batch)))
+
+# 4) PCA-Plot: nebeneinander
+par(mfrow = c(1, 2))  # Zwei Plots nebeneinander
+
+# --- PCA vor Korrektur ---
+plot(pca_before$x[, 1:2],
+     col = batch_colors[batch],
+     pch = 19,
+     main = "PCA vor Batch-Korrektur",
+     xlab = "PC1", ylab = "PC2")
+legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
+
+# --- PCA nach Korrektur ---
+plot(pca_after$x[, 1:2],
+     col = batch_colors[batch],
+     pch = 19,
+     main = "PCA nach SVA-Korrektur",
+     xlab = "PC1", ylab = "PC2")
+legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
+
+# 5) Layout zurücksetzen
+par(mfrow = c(1, 1))
+
+```
+
+##Heatmap
+```{r}
+# 1) Falls noch nicht installiert:
+# install.packages("pheatmap")
+library(pheatmap)
+
+# 2) Hilfsfunktion: Top-N variabelste Proteine auswählen
+select_top_var <- function(mat, top_n = 100) {
+  vars <- apply(mat, 1, var)
+  mat[order(vars, decreasing = TRUE)[1:top_n], ]
+}
+
+# 3) Top 100 variabelsten Proteine extrahieren
+heat_before <- select_top_var(expression_matrix, 100)
+heat_after  <- select_top_var(corrected_expr, 100)
+
+# 4) Spaltenannotation: Replikate als Batch
+annotation_col <- data.frame(Batch = batch)
+rownames(annotation_col) <- colnames(expression_matrix)
+
+# 5) Heatmaps zeichnen (jeweils mit Annotation)
+# Hinweis: pheatmap unterstützt kein par(mfrow), daher separate Plots empfohlen
+
+# --- Heatmap vor Korrektur ---
+pheatmap(heat_before,
+         main = "Heatmap vor Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE,
+         fontsize_col = 6)
+
+# --- Heatmap nach Korrektur ---
+pheatmap(heat_after,
+         main = "Heatmap nach SVA-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE,
+         fontsize_col = 6)
+
+```
+
+
