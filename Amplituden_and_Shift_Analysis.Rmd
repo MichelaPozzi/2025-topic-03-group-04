@@ -987,7 +987,29 @@ table(selected_proteins$is_reference)
 # Optional: Extract the non-reference hits
 predicted_non_reference <- selected_proteins[!selected_proteins$is_reference, ]
 
+
+#how many proteins of negative control are found at this threshold
+# 1. Mark negative control proteins in the full dataset
+test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
+
+# 2. Make predictions using the existing logistic model
+predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+
+# 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
+selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
+
+# 4. Count how many of the selected proteins are from the negative control
+table(selected_proteins$is_negative)
+
+# Optional: Extract those negative control proteins among predicted positives
+predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
+
+# Optional: Extract predicted hits that are NOT from the negative control
+predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
+
 ```
+
+
 
 ```{r}
 # filter proteins for significant right shift
