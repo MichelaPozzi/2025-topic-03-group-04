@@ -1017,3 +1017,233 @@ protein_names <- right_shift_proteins_df$Protein
 writeLines(protein_names, "right_shift_proteins.txt")
 ```
 
+
+###Fortsetzung: Visualisierung
+
+```{r}
+#Positiv Kontrolle visualisiert
+# 10 Proteine mit der höchsten Probability extrahieren
+top10_proteins_df <- test_scores_combined_df[order(-test_scores_combined_df$probability), ][1:10, ]
+print(top10_proteins_df)
+
+##Positiv control check
+common_proteins <- intersect(top10_proteins_df$Protein, df_positive_control[[1]])
+df_common <- data.frame(Protein = common_proteins)
+print(df_common)
+
+protein_of_interest <- "RLA1_HUMAN"
+
+# 2. Fraktionsdaten extrahieren
+ctrl_profile <- normalized_ctrl_df[normalized_ctrl_df[[1]] == protein_of_interest, 2:26]
+rnase_profile <- normalized_rnase_df[normalized_rnase_df[[1]] == protein_of_interest, 2:26]
+
+fractions <- 1:25
+
+ctrl_y <- as.numeric(ctrl_profile)
+rnase_y <- as.numeric(rnase_profile)
+
+# Glätten der Linien mit spline()
+ctrl_spline <- spline(fractions, ctrl_y, n = 200)
+rnase_spline <- spline(fractions, rnase_y, n = 200)
+
+# Grafikfenster öffnen (optional, für sauberen Plot)
+dev.new(width = 7, height = 5)
+
+# Plot für Control (glatt)
+plot(ctrl_spline$x, ctrl_spline$y,
+     type = "l",
+     col = "lightblue",
+     lwd = 2,
+     ylim = range(c(ctrl_y, rnase_y)),
+     xlab = "Fraktion",
+     ylab = "Intensität",
+     main = paste("Smoothed Fraktionsprofil für", protein_of_interest),
+     cex.lab = 1.3,       # größere Achsentitel
+     cex.main = 1.5,      # größerer Haupttitel
+     cex.axis = 1.1,      # größere Achsenbeschriftungen
+     bty = "n"            # kein Rahmen um den Plot
+)
+
+# Glatte RNase-Linie hinzufügen
+lines(rnase_spline$x, rnase_spline$y,
+      col = "pink",
+      lwd = 2)
+
+# Originalpunkte als Marker
+points(fractions, ctrl_y, col = "lightblue", pch = 16)
+points(fractions, rnase_y, col = "pink", pch = 17)
+
+# Gitternetz hinzufügen
+grid(col = "lightgray", lty = "dotted", lwd = 1)
+
+# Legende
+legend("topright",
+       legend = c("Control", "RNase"),
+       col = c("lightblue", "pink"),
+       lwd = 2,
+       pch = c(16, 17),
+       bty = "n",           
+       cex = 1.1            
+)
+
+```
+
+
+```{r}
+
+##Visualization negative control
+bottom10_proteins_df <- test_scores_combined_df[order(test_scores_combined_df$probability), ][1:10, ]
+print(bottom10_proteins_df)
+
+protein_of_interest <- "APC16_HUMAN"
+
+# 2. Fraktionsdaten extrahieren
+ctrl_profile <- normalized_ctrl_df[normalized_ctrl_df[[1]] == protein_of_interest, 2:26]
+rnase_profile <- normalized_rnase_df[normalized_rnase_df[[1]] == protein_of_interest, 2:26]
+
+fractions <- 1:25
+
+ctrl_y <- as.numeric(ctrl_profile)
+rnase_y <- as.numeric(rnase_profile)
+
+# Glätten der Linien mit spline()
+ctrl_spline <- spline(fractions, ctrl_y, n = 200)
+rnase_spline <- spline(fractions, rnase_y, n = 200)
+
+# Grafikfenster öffnen (optional, für sauberen Plot)
+dev.new(width = 7, height = 5)
+
+# Plot für Control (glatt)
+plot(ctrl_spline$x, ctrl_spline$y,
+     type = "l",
+     col = "lightblue",
+     lwd = 2,
+     ylim = range(c(ctrl_y, rnase_y)),
+     xlab = "Fraktion",
+     ylab = "Intensität",
+     main = paste("Smoothed Fraktionsprofil für", protein_of_interest),
+     cex.lab = 1.3,       # größere Achsentitel
+     cex.main = 1.5,      # größerer Haupttitel
+     cex.axis = 1.1,      # größere Achsenbeschriftungen
+     bty = "n"            # kein Rahmen um den Plot
+)
+
+# Glatte RNase-Linie hinzufügen
+lines(rnase_spline$x, rnase_spline$y,
+      col = "pink",
+      lwd = 2)
+
+# Originalpunkte als Marker
+points(fractions, ctrl_y, col = "lightblue", pch = 16)
+points(fractions, rnase_y, col = "pink", pch = 17)
+
+# Gitternetz hinzufügen
+grid(col = "lightgray", lty = "dotted", lwd = 1)
+
+# Legende
+legend("topright",
+       legend = c("Control", "RNase"),
+       col = c("lightblue", "pink"),
+       lwd = 2,
+       pch = c(16, 17),
+       bty = "n",           
+       cex = 1.1            
+)
+
+```
+
+```{r}
+###Violinplot
+proteins <- c("RLA1_HUMAN", "APC16_HUMAN", "CH033_HUMAN")
+
+# Plot-Vorbereitung
+n <- length(proteins)
+x_positions <- seq(1, by = 1, length.out = n)
+
+# Y-Achse vorbereiten
+all_values <- c()
+for (p in proteins) {
+  v1 <- as.numeric(normalized_ctrl_df[normalized_ctrl_df[[1]] == p, 2:26])
+  v2 <- as.numeric(normalized_rnase_df[normalized_rnase_df[[1]] == p, 2:26])
+  all_values <- c(all_values, v1, v2)
+}
+
+# Basisplot
+plot(NA,
+     xlim = c(0.5, n + 0.5),
+     ylim = range(all_values, na.rm = TRUE),
+     xaxt = "n",
+     xlab = "",
+     ylab = "Intensität",
+     main = "Symmetrische Violinplots")
+
+axis(1, at = x_positions, labels = proteins, las = 2)
+
+# Violinplots zeichnen
+for (i in seq_along(proteins)) {
+  protein <- proteins[i]
+  x <- x_positions[i]
+
+  ctrl_vals <- as.numeric(normalized_ctrl_df[normalized_ctrl_df[[1]] == protein, 2:26])
+  rnase_vals <- as.numeric(normalized_rnase_df[normalized_rnase_df[[1]] == protein, 2:26])
+  
+  # Nur wenn mindestens 2 Werte vorhanden sind
+  if (sum(!is.na(ctrl_vals)) < 2 || sum(!is.na(rnase_vals)) < 2) {
+    next
+  }
+
+  # Dichten berechnen
+  dens_ctrl <- tryCatch(density(ctrl_vals, na.rm = TRUE), error = function(e) NULL)
+  dens_rnase <- tryCatch(density(rnase_vals, na.rm = TRUE), error = function(e) NULL)
+  
+  # Sicherstellen, dass beide Dichten gültig sind
+  if (is.null(dens_ctrl) || is.null(dens_rnase)) {
+    next
+  }
+  
+  # Sicherstellen, dass x/y-Vektoren gleich lang sind
+  if (length(dens_ctrl$x) != length(dens_ctrl$y) || length(dens_rnase$x) != length(dens_rnase$y)) {
+    next
+  }
+
+  # Skalierung
+  max_y <- max(c(dens_ctrl$y, dens_rnase$y))
+  scale_factor <- 0.4 / max_y
+
+  # Violine: Control (links)
+x_left  <- x - dens_ctrl$y * scale_factor
+y_vals  <- dens_ctrl$x
+polygon(
+  x = c(x_left, rev(x_left)),
+  y = c(y_vals, rev(y_vals)),
+  col = "lightblue", border = "blue"
+)
+
+# Violine: RNase (rechts)
+x_right <- x + dens_rnase$y * scale_factor
+y_vals2 <- dens_rnase$x
+polygon(
+  x = c(x_right, rev(x_right)),
+  y = c(y_vals2, rev(y_vals2)),
+  col = "lightpink", border="red"
+)
+
+  # Medianlinien
+  med_ctrl <- median(ctrl_vals, na.rm = TRUE)
+  med_rnase <- median(rnase_vals, na.rm = TRUE)
+
+  lines(c(x - 0.2, x), rep(med_ctrl, 2), col = "blue", lty = 2)
+  lines(c(x, x + 0.2), rep(med_rnase, 2), col = "red", lty = 2)
+}
+
+# Legende
+legend("topright",
+       legend = c("Control", "RNase"),
+       fill = c("lightblue", "lightpink"),
+       border = c("blue", "red"),
+       bty="n")
+
+```
+
+
+
