@@ -911,7 +911,6 @@ print(test_results_df)
 
 ```{r}
 # 1. Add labels to the datasets
-# 1. Add labels to the datasets
 df_positive_control$label <- 1  # Positive control group labeled as 1
 df_negative_control$label <- 0  # Negative control group labeled as 0
 
@@ -942,44 +941,16 @@ boxplot(weighted_score ~ label, data = df_all,
 ```
 
 ```{r}
+#apply model to our data
 # 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
 test_scores_combined_df$probability <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 2. View the first few rows of the result
 head(test_scores_combined_df)
-
-# 3. Define a threshold for high predicted probability
-threshold <- 0.3899612 
-
-# 4. Count how many proteins have a predicted probability above the threshold
-sum(test_scores_combined_df$probability > threshold)
-
-```
-```{r}
-#how to select threshold
-# 1. Predict probabilities for the negative control
-pos_preds <- predict(logistic_model, newdata = df_positive_control, type = "response")
-
-# 2. Calculate Q3 (75th percentile) of the predicted scores for negative control
-q3_pos_preds <- quantile(pos_preds, 0.25, na.rm = TRUE)
-
-# 3. Set threshold just above Q3
-threshold <- q3_pos_preds + 1e-6  # small epsilon to avoid ties
-
-# 4. Predict probabilities for the full dataset
-all_preds <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
-
-# 5. Select proteins with predicted probability above the threshold
-selected_proteins <- test_scores_combined_df[all_preds > threshold, ]
-
-# 6. Optional: Check how many were selected
-cat("Threshold (based on Q3 of negative controls):", threshold, "\n")
-cat("Number of proteins selected:", nrow(selected_proteins), "\n")
-
 ```
 
-
 ```{r}
+#thresold is selected at FDR = 10%
 # 1. Mark reference proteins in the full dataset
 test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
 
@@ -987,7 +958,9 @@ test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.583, ]
+selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
+
 
 # 4. Count how many of the selected proteins are reference proteins
 table(selected_proteins$is_reference)
@@ -1004,19 +977,18 @@ test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_n
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
-selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.583, ]
 
 # 4. Count how many of the selected proteins are from the negative control
 table(selected_proteins$is_negative)
 
-# Optional: Extract those negative control proteins among predicted positives
+# Extract those negative control proteins among predicted positives
 predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 
-# Optional: Extract predicted hits that are NOT from the negative control
+# Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 
 ```
-
 
 
 ```{r}
