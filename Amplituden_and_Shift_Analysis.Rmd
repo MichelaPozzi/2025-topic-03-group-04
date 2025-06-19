@@ -958,7 +958,7 @@ test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.583, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
 selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
 
 
@@ -977,7 +977,7 @@ test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_n
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
-selected_proteins <- test_scores_combined_df[predictions > 0.583, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
 
 # 4. Count how many of the selected proteins are from the negative control
 table(selected_proteins$is_negative)
@@ -989,7 +989,6 @@ predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 
 ```
-
 
 ```{r}
 # filter proteins for significant right shift
