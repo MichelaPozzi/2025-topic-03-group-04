@@ -242,7 +242,7 @@ lines(density(shift_result$Shift_Distance), col = "red", lwd = 2)
 boxplot(shift_result$Shift_Distance, main = "Boxplot of Shift_Distance", col = "lightgreen",
         ylab = "Shift_Distance")
 
-# Schiefe (Skewness) berechnen - manuell
+# Schiefe (Skewness) berechnen - manuell -> für Skewness > 1 -> robust scaling möglich
 x <- shift_result$Shift_Distance
 n <- length(x)
 m3 <- sum((x - mean(x))^3) / n
@@ -252,6 +252,25 @@ skewness <- m3 / s3
 cat("Skewness:", skewness, "\n")
 
 median(shift_result$Shift_Distance)
+```
+
+```{r}
+# Robust scaling function: (x - median) / IQR
+robust_scale <- function(x) {
+  med <- median(x, na.rm = TRUE)
+  iqr <- IQR(x, na.rm = TRUE)
+  scaled <- (x - med) / iqr
+  return(scaled)
+}
+
+# Apply robust scaling to each variable
+shift_result$Shift_Distance_scaled <- robust_scale(abs(shift_result$Shift_Distance))
+
+```
+
+```{r}
+# scale to 20%
+shift_result$Shift_Distance_scaled_20 <- (shift_result$Shift_Distance_scaled/25)*20
 ```
 
 
@@ -349,24 +368,22 @@ head(amplitude_changes)
 ```{r}
 ###Addition of all amplitude changes
 amplitude_changes$changes <- amplitude_changes$loss + amplitude_changes$gain
-amplitude_changes$changes_in25 <- (amplitude_changes$changes/100)*25
-head(amplitude_changes)
 ```
 
 ```{r}
 # Histogramm
-hist(abs(amplitude_changes$changes_in25), breaks = 30, col = "lightblue",
+hist(abs(amplitude_changes$changes), breaks = 30, col = "lightblue",
      main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
 
 # Dichtekurve hinzufügen
-lines(density(amplitude_changes$changes_in25), col = "red", lwd = 2)
+lines(density(amplitude_changes$changes), col = "red", lwd = 2)
 
 # Boxplot
-boxplot(amplitude_changes$changes_in25, main = "Boxplot of Shift_Distance", col = "lightgreen",
+boxplot(amplitude_changes$changes, main = "Boxplot of Shift_Distance", col = "lightgreen",
         ylab = "Shift_Distance")
 
 # Schiefe (Skewness) berechnen - manuell
-x <- amplitude_changes$changes_in25
+x <- amplitude_changes$changes
 n <- length(x)
 m3 <- sum((x - mean(x))^3) / n
 s3 <- (sum((x - mean(x))^2) / n)^(3/2)
@@ -374,7 +391,16 @@ skewness <- m3 / s3
 
 cat("Skewness:", skewness, "\n")
 
-median(normalized_ctrl_df$EMD)
+median(amplitude_changes$changes)
+```
+
+```{r}
+#robust scaling
+amplitude_changes$changes_scaled <- robust_scale(amplitude_changes$changes)
+
+#scale to 20%
+amplitude_changes$changes_scaled_20<- (amplitude_changes$changes_scaled/100)*20
+head(amplitude_changes$changes_scaled_20)
 ```
 
 
@@ -413,21 +439,6 @@ plot(
 # Diagonale Referenzlinie y = x
 abline(a = 0, b = 1, col = "grey",lty=2)
 
-```
-
-```{r}
-## right shift proteins
-# create dataframe with proteins and their shift direction
-shift_df <- data.frame(
-  Proteins = normalized_ctrl_df$Protein,
-  Shift = shift_result$Shift_Direction
-)
-
-# sort all right shift proteins in one dataframe
-right_shift_df <- shift_df[shift_df$Shift == "right shift", ]
-head(right_shift_df)
-
-dim(right_shift_df)
 ```
 
 ```{r}#
@@ -515,6 +526,15 @@ skewness <- m3 / s3
 
 cat("Skewness:", skewness, "\n")
 
+```
+
+```{r}
+#robust scaling
+normalized_ctrl_df$EMD_scaled <- robust_scale(normalized_ctrl_df$EMD)
+
+#scale to 20%
+normalized_ctrl_df$EMD_scaled_20 <- (normalized_ctrl_df$EMD_scaled/25)*20
+head(normalized_ctrl_df$EMD_scaled_20)
 ```
 
 
@@ -610,73 +630,73 @@ print(fraktion_pos_rnase_df)
 ```
 
 ```{r}
-# t Test over all proteins for the positions of the global maxima
-# protein names
-protein_names <- fraktion_pos_ctrl_df$Protein
+#paired Wilxocon test to compare the global maxima positions between control und rnase
+# Prepare vectors to store results
+p_values <- numeric(nrow(fraktion_pos_ctrl_df))       # p-values
+test_statistics <- numeric(nrow(fraktion_pos_ctrl_df))  # test statistic (W)
 
-# generate replicate columns
-replicate_cols <- c("Max_Pos_Rep1", "Max_Pos_Rep2", "Max_Pos_Rep3")
-
-# DataFrame for p-Values (per protein one value)
-p_values_df_global_positions <- data.frame(Protein = protein_names, pValue = NA_real_)
-
-for (i in seq_along(protein_names)) {
-  ctrl_vals <- as.numeric(fraktion_pos_ctrl_df[i, replicate_cols])
-  rnase_vals <- as.numeric(fraktion_pos_rnase_df[i, replicate_cols])
+# Loop through each protein (each row)
+for (i in 1:nrow(fraktion_pos_ctrl_df)) {
+  # Extract numeric values from columns 2 to 4 for both conditions
+  ctrl_values <- as.numeric(fraktion_pos_ctrl_df[i, 2:4])
+  rnase_values <- as.numeric(fraktion_pos_rnase_df[i, 2:4])
   
-  # search for NAs
-  if (length(na.omit(ctrl_vals)) >= 2 && length(na.omit(rnase_vals)) >= 2) {
-    test_res <- try(t.test(ctrl_vals, rnase_vals, paired = TRUE), silent = TRUE)
-    if (!inherits(test_res, "try-error")) {
-      p_values_df_global_positions$pValue[i] <- test_res$p.value
-    }
+  # Check if all paired values are identical
+  if (all(ctrl_values == rnase_values)) {
+    # No difference → Wilcoxon test not defined
+    p_values[i] <- 1
+    test_statistics[i] <- 0  # or NA, depending on your needs
+  } else {
+    # Run paired Wilcoxon test
+    test_result <- wilcox.test(ctrl_values, rnase_values, paired = TRUE, exact = FALSE)
+    
+    # Store results
+    p_values[i] <- test_result$p.value
+    test_statistics[i] <- test_result$statistic
   }
 }
 
-print(p_values_df_global_positions)
-# still problems with NAs in dataframes !!!!!!!!!!
+# Combine results into a dataframe with protein names
+Wilcoxon_Pos_Max <- data.frame(
+  Protein = fraktion_pos_ctrl_df[[1]],
+  P_value = p_values,
+  Wilcoxon_statistic = test_statistics
+)
+
+# View first few results
+head(Wilcoxon_Pos_Max)
+```
+
+```{r}
+# Histogramm
+hist(abs(Wilcoxon_Pos_Max$Wilcoxon_statistic), breaks = 30, col = "lightblue",
+     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
+
+# Dichtekurve hinzufügen
+lines(density(Wilcoxon_Pos_Max$Wilcoxon_statistic), col = "red", lwd = 2)
+
+# Boxplot
+boxplot(Wilcoxon_Pos_Max$Wilcoxon_statistic, main = "Boxplot of Shift_Distance", col = "lightgreen",
+        ylab = "Shift_Distance")
+
+# Schiefe (Skewness) berechnen - manuell
+x <- Wilcoxon_Pos_Max$Wilcoxon_statistic
+n <- length(x)
+m3 <- sum((x - mean(x))^3) / n
+s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+skewness <- m3 / s3
+
+cat("Skewness:", skewness, "\n")
 
 ```
 
 ```{r}
-# t Test for every fraction over all proteins -> geht das überhaupt weil Daten normalverteilt sind??
-# protein names
-protein_names <- percent_ctrl_df[, 1]
+#robust scaling
+Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled<- robust_scale(Wilcoxon_Pos_Max$Wilcoxon_statistic)
 
-# define lenght of list
-num_fractions <- ncol(percent_ctrl)
-p_values_list <- vector("numeric", length = num_fractions)
-
-for (j in 1:num_fractions) {
-  ctrl_values <- percent_ctrl[, j]
-  rnase_values <- percent_rnase[, j]
-  
-  # extract only paires without NAs
-  valid_idx <- which(!is.na(ctrl_values) & !is.na(rnase_values))
-  
-  if (length(valid_idx) >= 2) {
-    test_res <- try(t.test(ctrl_values[valid_idx], rnase_values[valid_idx], paired = TRUE), silent = TRUE)
-    if (!inherits(test_res, "try-error")) {
-      p_values_list[j] <- test_res$p.value
-    } else {
-      p_values_list[j] <- NA
-    }
-  } else {
-    p_values_list[j] <- NA
-  }
-}
-
-# result as dataframe
-
-p_values_df_all_proteins <- data.frame(t(p_values_list))
-colnames(p_values_df_all_proteins) <- colnames(percent_ctrl)
-p_values_df_all_proteins$Protein <- "All_Proteins"
-
-# first column with protein names
-p_values_df_all_proteins <- p_values_df_all_proteins[, c("Protein", colnames(percent_ctrl))]
-
-print(p_values_df_all_proteins)
-
+#scale to 20%
+Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/6)*20
+head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20)
 ```
 
 
@@ -711,30 +731,17 @@ head(Wilcoxon_df)
 
 ```
 
+
 ```{r}
-#calculate test statstic for testscore (max. 25%)
+#robust scaling
+Wilcoxon_df$Wilcox_Statistic_scaled <- robust_scale(Wilcoxon_df$Wilcox_Statistic)
+
+#calculate test statstic for testscore (max. 20%)
 #paired Wilcoxon test: W(min) = 0, W(max) = 325
-Wilcoxon_df$Wilcox_scaled <- (Wilcoxon_df$Wilcox_Statistic / 325) * 25
+Wilcoxon_df$Wilcox_Statistic_scaled_20 <- (Wilcoxon_df$Wilcox_Statistic_scaled / 325) * 20
 
 #depict results
-head(Wilcoxon_df)
-```
-
-```{r}
-# Robust scaling function: (x - median) / IQR
-robust_scale <- function(x) {
-  med <- median(x, na.rm = TRUE)
-  iqr <- IQR(x, na.rm = TRUE)
-  scaled <- (x - med) / iqr
-  return(scaled)
-}
-
-# Apply robust scaling to each variable
-normalized_ctrl_df$EMD_scaled <- robust_scale(normalized_ctrl_df$EMD)
-shift_result$Shift_Distance_scaled <- robust_scale(abs(shift_result$Shift_Distance))
-amplitude_changes$changes_in25_scaled <- robust_scale(amplitude_changes$changes_in25)
-Wilcoxon_df$Wilcox_scaled_scaled <- robust_scale(Wilcoxon_df$Wilcox_scaled)
-
+head(Wilcoxon_df$Wilcox_Statistic_scaled_20)
 ```
 
 
@@ -742,11 +749,12 @@ Wilcoxon_df$Wilcox_scaled_scaled <- robust_scale(Wilcoxon_df$Wilcox_scaled)
 #define dataframe for all test scores of all proteines
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
-  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled,
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_20,
   Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
-  amplitude_changes = amplitude_changes$changes_in25_scaled,
-  EMD = normalized_ctrl_df$EMD_scaled,
-  Wilcoxon_statistic = Wilcoxon_df$Wilcox_scaled_scaled
+  amplitude_changes = amplitude_changes$changes_scaled_20,
+  EMD = normalized_ctrl_df$EMD_scaled_20,
+  Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_20,
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20
 )
 #depict result
   head(test_scores_combined_df)
@@ -757,7 +765,7 @@ sum(is.na(test_scores_combined_df))
 
 ```{r}
 #calculate final testscores
-test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6)])
+test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6,7)])
 
 #depict result
 head(test_scores_combined_df)
@@ -872,7 +880,7 @@ print(max_positive)
 ```{r}
 #check whether positive and negative control are reliable and whether they differ significantly 
 # Vector of column indices to test
-cols_to_test <- c(2,4,5,6,7)
+cols_to_test <- c(2,4,5,6,7,8)
 
 # Empty list to store test results
 test_results <- list()
@@ -903,18 +911,17 @@ print(test_results_df)
 
 ```{r}
 # 1. Add labels to the datasets
-# 1. Add labels to the datasets
 df_positive_control$label <- 1  # Positive control group labeled as 1
 df_negative_control$label <- 0  # Negative control group labeled as 0
 
 # 2. Combine the datasets and keep the relevant columns (features + label)
 df_all <- rbind(
-  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "label")],
-  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "label")]
+  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Wilcoxon_statistic_Max", "label")],
+  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Wilcoxon_statistic_Max", "label")]
 )
 
 # 3. Fit logistic regression model with multiple predictors
-logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic,
+logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic + Wilcoxon_statistic_Max,
                       data = df_all,
                       family = binomial)
 
@@ -934,44 +941,16 @@ boxplot(weighted_score ~ label, data = df_all,
 ```
 
 ```{r}
+#apply model to our data
 # 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
 test_scores_combined_df$probability <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 2. View the first few rows of the result
 head(test_scores_combined_df)
-
-# 3. Define a threshold for high predicted probability
-threshold <- 0.7575896 
-
-# 4. Count how many proteins have a predicted probability above the threshold
-sum(test_scores_combined_df$probability > threshold)
-
-```
-```{r}
-#how to select threshold
-# 1. Predict probabilities for the negative control
-pos_preds <- predict(logistic_model, newdata = df_positive_control, type = "response")
-
-# 2. Calculate Q3 (75th percentile) of the predicted scores for negative control
-q3_pos_preds <- quantile(pos_preds, 0.25, na.rm = TRUE)
-
-# 3. Set threshold just above Q3
-threshold <- q3_pos_preds + 1e-6  # small epsilon to avoid ties
-
-# 4. Predict probabilities for the full dataset
-all_preds <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
-
-# 5. Select proteins with predicted probability above the threshold
-selected_proteins <- test_scores_combined_df[all_preds > threshold, ]
-
-# 6. Optional: Check how many were selected
-cat("Threshold (based on Q3 of negative controls):", threshold, "\n")
-cat("Number of proteins selected:", nrow(selected_proteins), "\n")
-
 ```
 
-
 ```{r}
+#thresold is selected at FDR = 10%
 # 1. Mark reference proteins in the full dataset
 test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
 
@@ -979,7 +958,9 @@ test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
+selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
+
 
 # 4. Count how many of the selected proteins are reference proteins
 table(selected_proteins$is_reference)
@@ -996,20 +977,18 @@ test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_n
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
-selected_proteins <- test_scores_combined_df[predictions > 0.3899612, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
 
 # 4. Count how many of the selected proteins are from the negative control
 table(selected_proteins$is_negative)
 
-# Optional: Extract those negative control proteins among predicted positives
+# Extract those negative control proteins among predicted positives
 predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 
-# Optional: Extract predicted hits that are NOT from the negative control
+# Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 
 ```
-
-
 
 ```{r}
 # filter proteins for significant right shift
@@ -1036,4 +1015,234 @@ protein_names <- right_shift_proteins_df$Protein
 # Schreibe sie zeilenweise in eine Textdatei
 writeLines(protein_names, "right_shift_proteins.txt")
 ```
+
+
+###Fortsetzung: Visualisierung
+
+```{r}
+#Positiv Kontrolle visualisiert
+# 10 Proteine mit der höchsten Probability extrahieren
+top10_proteins_df <- test_scores_combined_df[order(-test_scores_combined_df$probability), ][1:10, ]
+print(top10_proteins_df)
+
+##Positiv control check
+common_proteins <- intersect(top10_proteins_df$Protein, df_positive_control[[1]])
+df_common <- data.frame(Protein = common_proteins)
+print(df_common)
+
+protein_of_interest <- "RLA1_HUMAN"
+
+# 2. Fraktionsdaten extrahieren
+ctrl_profile <- normalized_ctrl_df[normalized_ctrl_df[[1]] == protein_of_interest, 2:26]
+rnase_profile <- normalized_rnase_df[normalized_rnase_df[[1]] == protein_of_interest, 2:26]
+
+fractions <- 1:25
+
+ctrl_y <- as.numeric(ctrl_profile)
+rnase_y <- as.numeric(rnase_profile)
+
+# Glätten der Linien mit spline()
+ctrl_spline <- spline(fractions, ctrl_y, n = 200)
+rnase_spline <- spline(fractions, rnase_y, n = 200)
+
+# Grafikfenster öffnen (optional, für sauberen Plot)
+dev.new(width = 7, height = 5)
+
+# Plot für Control (glatt)
+plot(ctrl_spline$x, ctrl_spline$y,
+     type = "l",
+     col = "lightblue",
+     lwd = 2,
+     ylim = range(c(ctrl_y, rnase_y)),
+     xlab = "Fraktion",
+     ylab = "Intensität",
+     main = paste("Smoothed Fraktionsprofil für", protein_of_interest),
+     cex.lab = 1.3,       # größere Achsentitel
+     cex.main = 1.5,      # größerer Haupttitel
+     cex.axis = 1.1,      # größere Achsenbeschriftungen
+     bty = "n"            # kein Rahmen um den Plot
+)
+
+# Glatte RNase-Linie hinzufügen
+lines(rnase_spline$x, rnase_spline$y,
+      col = "pink",
+      lwd = 2)
+
+# Originalpunkte als Marker
+points(fractions, ctrl_y, col = "lightblue", pch = 16)
+points(fractions, rnase_y, col = "pink", pch = 17)
+
+# Gitternetz hinzufügen
+grid(col = "lightgray", lty = "dotted", lwd = 1)
+
+# Legende
+legend("topright",
+       legend = c("Control", "RNase"),
+       col = c("lightblue", "pink"),
+       lwd = 2,
+       pch = c(16, 17),
+       bty = "n",           
+       cex = 1.1            
+)
+
+```
+
+
+```{r}
+
+##Visualization negative control
+bottom10_proteins_df <- test_scores_combined_df[order(test_scores_combined_df$probability), ][1:10, ]
+print(bottom10_proteins_df)
+
+protein_of_interest <- "APC16_HUMAN"
+
+# 2. Fraktionsdaten extrahieren
+ctrl_profile <- normalized_ctrl_df[normalized_ctrl_df[[1]] == protein_of_interest, 2:26]
+rnase_profile <- normalized_rnase_df[normalized_rnase_df[[1]] == protein_of_interest, 2:26]
+
+fractions <- 1:25
+
+ctrl_y <- as.numeric(ctrl_profile)
+rnase_y <- as.numeric(rnase_profile)
+
+# Glätten der Linien mit spline()
+ctrl_spline <- spline(fractions, ctrl_y, n = 200)
+rnase_spline <- spline(fractions, rnase_y, n = 200)
+
+# Grafikfenster öffnen (optional, für sauberen Plot)
+dev.new(width = 7, height = 5)
+
+# Plot für Control (glatt)
+plot(ctrl_spline$x, ctrl_spline$y,
+     type = "l",
+     col = "lightblue",
+     lwd = 2,
+     ylim = range(c(ctrl_y, rnase_y)),
+     xlab = "Fraktion",
+     ylab = "Intensität",
+     main = paste("Smoothed Fraktionsprofil für", protein_of_interest),
+     cex.lab = 1.3,       # größere Achsentitel
+     cex.main = 1.5,      # größerer Haupttitel
+     cex.axis = 1.1,      # größere Achsenbeschriftungen
+     bty = "n"            # kein Rahmen um den Plot
+)
+
+# Glatte RNase-Linie hinzufügen
+lines(rnase_spline$x, rnase_spline$y,
+      col = "pink",
+      lwd = 2)
+
+# Originalpunkte als Marker
+points(fractions, ctrl_y, col = "lightblue", pch = 16)
+points(fractions, rnase_y, col = "pink", pch = 17)
+
+# Gitternetz hinzufügen
+grid(col = "lightgray", lty = "dotted", lwd = 1)
+
+# Legende
+legend("topright",
+       legend = c("Control", "RNase"),
+       col = c("lightblue", "pink"),
+       lwd = 2,
+       pch = c(16, 17),
+       bty = "n",           
+       cex = 1.1            
+)
+
+```
+
+```{r}
+###Violinplot
+proteins <- c("RLA1_HUMAN", "APC16_HUMAN", "CH033_HUMAN")
+
+# Plot-Vorbereitung
+n <- length(proteins)
+x_positions <- seq(1, by = 1, length.out = n)
+
+# Y-Achse vorbereiten
+all_values <- c()
+for (p in proteins) {
+  v1 <- as.numeric(normalized_ctrl_df[normalized_ctrl_df[[1]] == p, 2:26])
+  v2 <- as.numeric(normalized_rnase_df[normalized_rnase_df[[1]] == p, 2:26])
+  all_values <- c(all_values, v1, v2)
+}
+
+# Basisplot
+plot(NA,
+     xlim = c(0.5, n + 0.5),
+     ylim = range(all_values, na.rm = TRUE),
+     xaxt = "n",
+     xlab = "",
+     ylab = "Intensität",
+     main = "Symmetrische Violinplots")
+
+axis(1, at = x_positions, labels = proteins, las = 2)
+
+# Violinplots zeichnen
+for (i in seq_along(proteins)) {
+  protein <- proteins[i]
+  x <- x_positions[i]
+
+  ctrl_vals <- as.numeric(normalized_ctrl_df[normalized_ctrl_df[[1]] == protein, 2:26])
+  rnase_vals <- as.numeric(normalized_rnase_df[normalized_rnase_df[[1]] == protein, 2:26])
+  
+  # Nur wenn mindestens 2 Werte vorhanden sind
+  if (sum(!is.na(ctrl_vals)) < 2 || sum(!is.na(rnase_vals)) < 2) {
+    next
+  }
+
+  # Dichten berechnen
+  dens_ctrl <- tryCatch(density(ctrl_vals, na.rm = TRUE), error = function(e) NULL)
+  dens_rnase <- tryCatch(density(rnase_vals, na.rm = TRUE), error = function(e) NULL)
+  
+  # Sicherstellen, dass beide Dichten gültig sind
+  if (is.null(dens_ctrl) || is.null(dens_rnase)) {
+    next
+  }
+  
+  # Sicherstellen, dass x/y-Vektoren gleich lang sind
+  if (length(dens_ctrl$x) != length(dens_ctrl$y) || length(dens_rnase$x) != length(dens_rnase$y)) {
+    next
+  }
+
+  # Skalierung
+  max_y <- max(c(dens_ctrl$y, dens_rnase$y))
+  scale_factor <- 0.4 / max_y
+
+  # Violine: Control (links)
+x_left  <- x - dens_ctrl$y * scale_factor
+y_vals  <- dens_ctrl$x
+polygon(
+  x = c(x_left, rev(x_left)),
+  y = c(y_vals, rev(y_vals)),
+  col = "lightblue", border = "blue"
+)
+
+# Violine: RNase (rechts)
+x_right <- x + dens_rnase$y * scale_factor
+y_vals2 <- dens_rnase$x
+polygon(
+  x = c(x_right, rev(x_right)),
+  y = c(y_vals2, rev(y_vals2)),
+  col = "lightpink", border="red"
+)
+
+  # Medianlinien
+  med_ctrl <- median(ctrl_vals, na.rm = TRUE)
+  med_rnase <- median(rnase_vals, na.rm = TRUE)
+
+  lines(c(x - 0.2, x), rep(med_ctrl, 2), col = "blue", lty = 2)
+  lines(c(x, x + 0.2), rep(med_rnase, 2), col = "red", lty = 2)
+}
+
+# Legende
+legend("topright",
+       legend = c("Control", "RNase"),
+       fill = c("lightblue", "lightpink"),
+       border = c("blue", "red"),
+       bty="n")
+
+```
+
+
 

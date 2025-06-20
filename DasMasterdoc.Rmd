@@ -743,7 +743,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
 heat_before <- select_top_var(expr_matrix, 100)
-heat_after  <- select_top_var(expr_corrected, 100)
+heat_after  <- select_top_var(ctrl_expr_corrected, 100)
 
 # Spaltenannotation nach Batch
 annotation_col <- data.frame(Batch = batch)
@@ -774,7 +774,7 @@ par(mfrow = c(1, 1))
 #protein name wieder rein
 ctrl_expr_corrected_df <- data.frame(
   Protein = final_smoothed_ctrl[, 1],  # ursprüngliche erste Spalte
-  rnase_expr_corrected,                # korrigierte Matrix
+ctrl_expr_corrected,                # korrigierte Matrix
   check.names = FALSE                  # verhindert Umbenennung von Spalten
 )
 
@@ -782,7 +782,7 @@ colnames(ctrl_expr_corrected_df)
 ```
 
 ```{r}
-head(ctrl_expr_corrected)
+head(ctrl_expr_corrected_df)
 ```
 
 ##rnase 
@@ -958,7 +958,7 @@ rnase_expr_corrected_df <- data.frame(
 
 
 ```{r}
-head(rnase_expr_corrected)
+head(rnase_expr_corrected_df)
 ```
 =======
 head(expr_corrected)
