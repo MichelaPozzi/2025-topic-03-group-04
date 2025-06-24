@@ -1689,31 +1689,40 @@ print(fraktion_pos_rnase_df)
 ```
 
 ```{r}
-# t Test over all proteins for the positions of the global maxima
-# protein names
-protein_names <- fraktion_pos_ctrl_df$Protein
+# Prepare vectors to store results
+p_values <- numeric(nrow(fraktion_pos_ctrl_df))       # p-values
+test_statistics <- numeric(nrow(fraktion_pos_ctrl_df))  # test statistic (W)
 
-# generate replicate columns
-replicate_cols <- c("Max_Pos_Rep1", "Max_Pos_Rep2", "Max_Pos_Rep3")
-
-# DataFrame for p-Values (per protein one value)
-p_values_df_global_positions <- data.frame(Protein = protein_names, pValue = NA_real_)
-
-for (i in seq_along(protein_names)) {
-  ctrl_vals <- as.numeric(fraktion_pos_ctrl_df[i, replicate_cols])
-  rnase_vals <- as.numeric(fraktion_pos_rnase_df[i, replicate_cols])
+# Loop through each protein (each row)
+for (i in 1:nrow(fraktion_pos_ctrl_df)) {
+  # Extract numeric values from columns 2 to 4 for both conditions
+  ctrl_values <- as.numeric(fraktion_pos_ctrl_df[i, 2:4])
+  rnase_values <- as.numeric(fraktion_pos_rnase_df[i, 2:4])
   
-  # search for NAs
-  if (length(na.omit(ctrl_vals)) >= 2 && length(na.omit(rnase_vals)) >= 2) {
-    test_res <- try(t.test(ctrl_vals, rnase_vals, paired = TRUE), silent = TRUE)
-    if (!inherits(test_res, "try-error")) {
-      p_values_df_global_positions$pValue[i] <- test_res$p.value
-    }
+  # Check if all paired values are identical
+  if (all(ctrl_values == rnase_values)) {
+    # No difference → Wilcoxon test not defined
+    p_values[i] <- 1
+    test_statistics[i] <- 0  # or NA, depending on your needs
+  } else {
+    # Run paired Wilcoxon test
+    test_result <- wilcox.test(ctrl_values, rnase_values, paired = TRUE, exact = FALSE)
+    
+    # Store results
+    p_values[i] <- test_result$p.value
+    test_statistics[i] <- test_result$statistic
   }
 }
 
-print(p_values_df_global_positions)
-# still problems with NAs in dataframes !!!!!!!!!!
+# Combine results into a dataframe with protein names
+results_df <- data.frame(
+  Protein = fraktion_pos_ctrl_df[[1]],
+  P_value = p_values,
+  Wilcoxon_statistic = test_statistics
+)
+
+# View first few results
+head(results_df)
 
 ```
 
