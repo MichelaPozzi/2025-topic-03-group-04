@@ -1246,3 +1246,17 @@ legend("topright",
 
 
 
+
+```{r}
+##Prototyp Einlesen Datei mit pI für lineare Regression
+url <- "https://raw.githubusercontent.com/MichelaPozzi/2025-topic-03-group-04/main/Table_HS_RBP.txt"
+lines <- readLines(url, encoding = "UTF-8")
+header <- unlist(strsplit(lines[6], ","))
+data <- read.csv(text = lines[7:length(lines)], header = FALSE, sep = ",", stringsAsFactors = FALSE)
+colnames(data) <- header
+
+# Speichere als CSV
+write.csv(data, "Table_HS_RBP.csv", row.names = FALSE)
+
+```
+
