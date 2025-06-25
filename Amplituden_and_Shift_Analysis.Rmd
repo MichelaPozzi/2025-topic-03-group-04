@@ -544,6 +544,71 @@ percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
 percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
 ```
 
+
+```{r}
+# center of mass
+# function for calculating center of mass
+center_of_mass <- function(values) {
+  fracs <- seq_along(values)
+  if (sum(values, na.rm = TRUE) == 0) return(NA)
+  sum(fracs * values, na.rm = TRUE) / sum(values, na.rm = TRUE)
+}
+
+# remove column with protein names
+fractions_control <- normalized_ctrl_df[, 2:26]
+fractions_rnase   <- normalized_rnase_df[, 2:26]
+
+# calculate center of mass
+com_control <- apply(fractions_control, 1, center_of_mass)
+com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
+
+# define dataframe with resulst and difference between both treatments
+center_of_mass_df <- data.frame(
+  Protein     = normalized_ctrl_df[[1]],  # Name aus erster Spalte
+  COM_Control = com_control,
+  COM_RNase   = com_rnase,
+  Delta_COM   = com_rnase - com_control  # Differenz berechnen
+)
+
+# View first few results
+head(center_of_mass_df)
+```
+```{r}
+max_delta <- max(center_of_mass_df$Delta_COM, na.rm = TRUE)
+print(max_delta)
+```
+
+```{r}
+#skewness of center of mass
+# extract values
+x <- center_of_mass_df$Delta_COM
+
+# calculate skewness (Fisher-Pearson Skewness)
+n <- length(x)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
+skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
+
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Histogram of Delta_COM",
+     xlab = "Delta Center of Mass", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
+
+```
+
+```{r}
+#robust scaling
+center_of_mass_df$COM_scaled <- robust_scale(center_of_mass_df$Delta_COM)
+
+#scale to 20% (max_delta = 10.9376)
+center_of_mass_df$COM_scaled_20 <- (center_of_mass_df$COM_scaled/max_delta) * 20
+head(center_of_mass_df$COM_scaled_20)
+```
+
 ```{r}
 # determine global maxima from dataframes with still all 3 replicates in them
 
@@ -626,7 +691,6 @@ print(fraktion_pos_ctrl_df)
 print(global_max_rnase_df)
 print(fraktion_pos_rnase_df)
 
-## NAs sind noch ein Problem ???
 ```
 
 ```{r}
@@ -687,7 +751,6 @@ s3 <- (sum((x - mean(x))^2) / n)^(3/2)
 skewness <- m3 / s3
 
 cat("Skewness:", skewness, "\n")
-
 ```
 
 ```{r}
@@ -753,8 +816,9 @@ test_scores_combined_df <- data.frame(
   Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
   amplitude_changes = amplitude_changes$changes_scaled_20,
   EMD = normalized_ctrl_df$EMD_scaled_20,
-  Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_20,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20
+  Center_of_Mass = center_of_mass_df$COM_scaled_20,
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20,
+  Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_20
 )
 #depict result
   head(test_scores_combined_df)
@@ -763,9 +827,10 @@ test_scores_combined_df <- data.frame(
 sum(is.na(test_scores_combined_df))
 ```
 
+
 ```{r}
 #calculate final testscores
-test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6,7)])
+test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6,7,8)])
 
 #depict result
 head(test_scores_combined_df)
@@ -916,12 +981,12 @@ df_negative_control$label <- 0  # Negative control group labeled as 0
 
 # 2. Combine the datasets and keep the relevant columns (features + label)
 df_all <- rbind(
-  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Wilcoxon_statistic_Max", "label")],
-  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Wilcoxon_statistic_Max", "label")]
+  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "Wilcoxon_statistic", "label")],
+  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "Wilcoxon_statistic", "label")]
 )
 
 # 3. Fit logistic regression model with multiple predictors
-logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic + Wilcoxon_statistic_Max,
+logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Center_of_Mass + Wilcoxon_statistic + Wilcoxon_statistic_Max,
                       data = df_all,
                       family = binomial)
 
@@ -958,7 +1023,7 @@ test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
+selected_proteins <- test_scores_combined_df[predictions > 0.619, ]
 selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
 
 
@@ -976,8 +1041,8 @@ test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_n
 # 2. Make predictions using the existing logistic model
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
-selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
+# 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
+selected_proteins <- test_scores_combined_df[predictions > 0.619, ]
 
 # 4. Count how many of the selected proteins are from the negative control
 table(selected_proteins$is_negative)
@@ -991,24 +1056,65 @@ predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 ```
 
 ```{r}
-# filter proteins for significant right shift
-filtered_df <- test_scores_combined_df[test_scores_combined_df$Shift_direction_ctrl_to_rnase == "right shift" & test_scores_combined_df$probability >= q3_pos_preds, ] 
+#calculate threshold automatically
+# 1. Vorhersagen erzeugen
+test_scores_combined_df$predicted_prob <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# extract protein names from first column, save proteinnames as dataframe
-right_shift_proteins_df <- data.frame(Protein = filtered_df[[1]])
+# 2. Referenzmarkierungen setzen
+test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
 
-# number of filtered proteins
-right_shift_count <- nrow(filtered_df)
+# 3. Thresholds evaluieren
+thresholds <- seq(0, 1, by = 0.001)
+fdr_values <- sapply(thresholds, function(thresh) {
+  selected <- test_scores_combined_df[test_scores_combined_df$predicted_prob > thresh, ]
+  if (nrow(selected) == 0) return(NA)
+  
+  false_positives <- sum(selected$is_negative, na.rm = TRUE)
+  all_positives   <- nrow(selected)
+  fdr <- false_positives / all_positives
+  return(fdr)
+})
 
-# depict results
-print(right_shift_proteins_df)
+# 4. Threshold bei FDR ≤ 10% finden
+target_fdr <- 0.10
+valid_thresholds <- thresholds[which(fdr_values <= target_fdr)]
+optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) else NA
 
-print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥ 0.3899612:", right_shift_count))
+cat("Threshold bei FDR ≤ 10%:", optimal_threshold, "\n")
+
+#visualize FDR
+plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
+     xlab = "Prediction Threshold", ylab = "FDR",
+     main = "FDR vs Threshold")
+abline(h = 0.1, col = "violet", lty = 2)
+abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
 
 
-```{r}####################################
+
+```{r}
+# filter proteins for significant right shift with defined threshold
+filtered_df <- test_scores_combined_df[
+  test_scores_combined_df$Shift_direction_ctrl_to_rnase == "right shift" &
+  test_scores_combined_df$probability >= optimal_threshold, 
+]
+
+# Extract protein names from first column, save as dataframe
+right_shift_proteins_df <- data.frame(Protein = filtered_df[[1]])
+
+# Number of filtered proteins
+right_shift_count <- nrow(filtered_df)
+
+# Depict results
+print(right_shift_proteins_df)
+print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
+
+
+```
+
+
+```{r}#
 # Nur die Protein-Namen als Vektor
 protein_names <- right_shift_proteins_df$Protein
 
@@ -1248,15 +1354,65 @@ legend("topright",
 
 
 ```{r}
-##Prototyp Einlesen Datei mit pI für lineare Regression
-url <- "https://raw.githubusercontent.com/MichelaPozzi/2025-topic-03-group-04/main/Table_HS_RBP.txt"
-lines <- readLines(url, encoding = "UTF-8")
-header <- unlist(strsplit(lines[6], ","))
-data <- read.csv(text = lines[7:length(lines)], header = FALSE, sep = ",", stringsAsFactors = FALSE)
-colnames(data) <- header
+### Einlesen von Table_RBPs
 
-# Speichere als CSV
-write.csv(data, "Table_HS_RBP.csv", row.names = FALSE)
+# 1. Datei komplett als Text einlesen
+raw <- readLines("data/Table_HS_RBP.txt")
+
+# 2. Ab Zeile 7 extrahieren (Header + Daten)
+raw_data <- raw[7:length(raw)]
+
+# 3. Entferne alle \" (Backslash-Anführungszeichen)
+clean_data <- gsub('\\"', '', raw_data)
+
+# 4. Schreibe die bereinigten Zeilen in eine temporäre Datei
+writeLines(clean_data, "cleaned_table.txt")
+
+# 5. Lese die bereinigte Datei als richtige Tabelle ein
+Table_HS_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_RBP)
+
+```
+
+
+```{r}
+##Prototyp Einlesen Datei mit pI für lineare Regression
+# 1. Datei komplett als Text einlesen
+raw <- readLines("data/Table_HS_Non_RBP.txt")
+
+# 2. Ab Zeile 7 extrahieren (Header + Daten)
+raw_data <- raw[7:length(raw)]
+
+# 3. Entferne alle \" (Backslash-Anführungszeichen)
+clean_data <- gsub('\\"', '', raw_data)
+
+# 4. Schreibe die bereinigten Zeilen in eine temporäre Datei
+writeLines(clean_data, "cleaned_table.txt")
+
+# 5. Lese die bereinigte Datei als richtige Tabelle ein
+Table_HS_Non_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_Non_RBP)
+
+```
+
+
+```{r}
+proteins_right_shift <- right_shift_proteins_df$Protein
+proteins_rbp <- Table_HS_RBP$Entry_Name
+proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
+
+is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
+
+# Test
+all(is_in_rbp_or_nonrbp)#
 
 ```
 

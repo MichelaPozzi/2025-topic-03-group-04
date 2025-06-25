@@ -598,6 +598,47 @@ saveRDS(normalized_ctrl_df, file = "data/normalized_ctrl_df.rds")
 saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
 ```
 
+##Visualization
+
+```{r}
+# Protein auswählen
+protein_id <- "SPB6_HUMAN"
+
+# Zeile finden, die dem Protein entspricht (zur Sicherheit, falls nicht Zeile 4)
+protein_row <- which(normalized_ctrl_df[, 1] == protein_id)
+
+# Normierte Intensitäten für beide Bedingungen extrahieren
+intensities_ctrl <- as.numeric(normalized_ctrl_df[protein_row, 2:26])
+intensities_rnase <- as.numeric(normalized_rnase_df[protein_row, 2:26])
+fraktionen <- 1:25
+
+# Plot: leere Zeichenfläche vorbereiten
+plot(fraktionen, intensities_ctrl, type = "n",
+     xlab = "Fraktion (1–25)", ylab = "Proteinmenge",
+     main = paste("Vergleich: Kontrolle vs. RNase für", protein_id),
+     ylim = c(0, max(c(intensities_ctrl, intensities_rnase)) * 1.1))
+
+# Kontrolle: Fläche & Linie
+polygon(c(fraktionen, rev(fraktionen)),
+        c(rep(0, length(fraktionen)), rev(intensities_ctrl)),
+        col = rgb(0.4, 0.4, 1, 0.3), border = NA)  # halbtransparentes Blau
+lines(fraktionen, intensities_ctrl, col = "lavender", lwd = 2)
+
+# RNase: Fläche & Linie
+# RNase: Fläche & Linie
+polygon(c(fraktionen, rev(fraktionen)),
+        c(rep(0, length(fraktionen)), rev(intensities_rnase)),
+        col = rgb(0, 0.4, 1, 0.3), border = NA)  # jetzt halbtransparentes Blau
+lines(fraktionen, intensities_rnase, col = "lightblue", lwd = 2)
+
+# Legende hinzufügen
+legend("topright",
+       legend = c("Kontrolle", "RNase"),
+       col = c("lavender", "lightblue"),
+       lwd = 2,
+       bg = "white")
+
+```
 
 ###Batch Effect###
 
