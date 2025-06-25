@@ -910,12 +910,12 @@ df_negative_control$label <- 0  # Negative control group labeled as 0
 
 # 2. Combine the datasets and keep the relevant columns (features + label)
 df_all <- rbind(
-  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Wilcoxon_statistic_Max", "label")],
-  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Wilcoxon_statistic_Max", "label")]
+  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Center_of_Mass", "label")],
+  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Wilcoxon_statistic", "Center_of_Mass", "label")]
 )
 
 # 3. Fit logistic regression model with multiple predictors
-logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic + Wilcoxon_statistic_Max,
+logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic + Center_of_Mass,
                       data = df_all,
                       family = binomial)
 
@@ -970,7 +970,7 @@ test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_n
 # 2. Make predictions using the existing logistic model
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# 3. Apply threshold (z. B. gleich wie oben: 0.3899612)
+# 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
 selected_proteins <- test_scores_combined_df[predictions > 0.44, ]
 
 # 4. Count how many of the selected proteins are from the negative control
