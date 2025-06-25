@@ -630,73 +630,67 @@ print(fraktion_pos_rnase_df)
 ```
 
 ```{r}
-#paired Wilxocon test to compare the global maxima positions between control und rnase
-# Prepare vectors to store results
-p_values <- numeric(nrow(fraktion_pos_ctrl_df))       # p-values
-test_statistics <- numeric(nrow(fraktion_pos_ctrl_df))  # test statistic (W)
-
-# Loop through each protein (each row)
-for (i in 1:nrow(fraktion_pos_ctrl_df)) {
-  # Extract numeric values from columns 2 to 4 for both conditions
-  ctrl_values <- as.numeric(fraktion_pos_ctrl_df[i, 2:4])
-  rnase_values <- as.numeric(fraktion_pos_rnase_df[i, 2:4])
-  
-  # Check if all paired values are identical
-  if (all(ctrl_values == rnase_values)) {
-    # No difference → Wilcoxon test not defined
-    p_values[i] <- 1
-    test_statistics[i] <- 0  # or NA, depending on your needs
-  } else {
-    # Run paired Wilcoxon test
-    test_result <- wilcox.test(ctrl_values, rnase_values, paired = TRUE, exact = FALSE)
-    
-    # Store results
-    p_values[i] <- test_result$p.value
-    test_statistics[i] <- test_result$statistic
-  }
+# center of mass
+# function for calculating center of mass
+center_of_mass <- function(values) {
+  fracs <- seq_along(values)
+  if (sum(values, na.rm = TRUE) == 0) return(NA)
+  sum(fracs * values, na.rm = TRUE) / sum(values, na.rm = TRUE)
 }
 
-# Combine results into a dataframe with protein names
-Wilcoxon_Pos_Max <- data.frame(
-  Protein = fraktion_pos_ctrl_df[[1]],
-  P_value = p_values,
-  Wilcoxon_statistic = test_statistics
+# remove column with protein names
+fractions_control <- normalized_ctrl_df[, 2:26]
+fractions_rnase   <- normalized_rnase_df[, 2:26]
+
+# calculate center of mass
+com_control <- apply(fractions_control, 1, center_of_mass)
+com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
+
+# define dataframe with resulst and difference between both treatments
+center_of_mass_df <- data.frame(
+  Protein     = normalized_ctrl_df[[1]],  # Name aus erster Spalte
+  COM_Control = com_control,
+  COM_RNase   = com_rnase,
+  Delta_COM   = com_rnase - com_control  # Differenz berechnen
 )
 
 # View first few results
-head(Wilcoxon_Pos_Max)
+head(center_of_mass_df)
+```
+```{r}
+max_delta <- max(center_of_mass_df$Delta_COM, na.rm = TRUE)
+print(max_delta)
 ```
 
 ```{r}
-# Histogramm
-hist(abs(Wilcoxon_Pos_Max$Wilcoxon_statistic), breaks = 30, col = "lightblue",
-     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
+#skewness of center of mass
+# extract values
+x <- center_of_mass_df$Delta_COM
 
-# Dichtekurve hinzufügen
-lines(density(Wilcoxon_Pos_Max$Wilcoxon_statistic), col = "red", lwd = 2)
-
-# Boxplot
-boxplot(Wilcoxon_Pos_Max$Wilcoxon_statistic, main = "Boxplot of Shift_Distance", col = "lightgreen",
-        ylab = "Shift_Distance")
-
-# Schiefe (Skewness) berechnen - manuell
-x <- Wilcoxon_Pos_Max$Wilcoxon_statistic
+# calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
-m3 <- sum((x - mean(x))^3) / n
-s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
 skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
 
-cat("Skewness:", skewness, "\n")
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Histogram of Delta_COM",
+     xlab = "Delta Center of Mass", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
 
 ```
 
 ```{r}
 #robust scaling
-Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled<- robust_scale(Wilcoxon_Pos_Max$Wilcoxon_statistic)
+center_of_mass_df$COM_scaled <- robust_scale(center_of_mass_df$Delta_COM)
 
-#scale to 20%
-Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/6)*20
-head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20)
+#scale to 20% (max_delta = 10.9376)
+center_of_mass_df$COM_scaled_20 <- (center_of_mass_df$COM_scaled/max_delta) * 20
+head(center_of_mass_df$COM_scaled_20)
 ```
 
 
@@ -754,7 +748,7 @@ test_scores_combined_df <- data.frame(
   amplitude_changes = amplitude_changes$changes_scaled_20,
   EMD = normalized_ctrl_df$EMD_scaled_20,
   Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_20,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20
+  Center_of_Mass = center_of_mass_df$COM_scaled_20
 )
 #depict result
   head(test_scores_combined_df)
