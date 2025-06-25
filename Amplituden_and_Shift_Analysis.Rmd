@@ -1354,15 +1354,65 @@ legend("topright",
 
 
 ```{r}
-##Prototyp Einlesen Datei mit pI für lineare Regression
-url <- "https://raw.githubusercontent.com/MichelaPozzi/2025-topic-03-group-04/main/Table_HS_RBP.txt"
-lines <- readLines(url, encoding = "UTF-8")
-header <- unlist(strsplit(lines[6], ","))
-data <- read.csv(text = lines[7:length(lines)], header = FALSE, sep = ",", stringsAsFactors = FALSE)
-colnames(data) <- header
+### Einlesen von Table_RBPs
 
-# Speichere als CSV
-write.csv(data, "Table_HS_RBP.csv", row.names = FALSE)
+# 1. Datei komplett als Text einlesen
+raw <- readLines("data/Table_HS_RBP.txt")
+
+# 2. Ab Zeile 7 extrahieren (Header + Daten)
+raw_data <- raw[7:length(raw)]
+
+# 3. Entferne alle \" (Backslash-Anführungszeichen)
+clean_data <- gsub('\\"', '', raw_data)
+
+# 4. Schreibe die bereinigten Zeilen in eine temporäre Datei
+writeLines(clean_data, "cleaned_table.txt")
+
+# 5. Lese die bereinigte Datei als richtige Tabelle ein
+Table_HS_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_RBP)
+
+```
+
+
+```{r}
+##Prototyp Einlesen Datei mit pI für lineare Regression
+# 1. Datei komplett als Text einlesen
+raw <- readLines("data/Table_HS_Non_RBP.txt")
+
+# 2. Ab Zeile 7 extrahieren (Header + Daten)
+raw_data <- raw[7:length(raw)]
+
+# 3. Entferne alle \" (Backslash-Anführungszeichen)
+clean_data <- gsub('\\"', '', raw_data)
+
+# 4. Schreibe die bereinigten Zeilen in eine temporäre Datei
+writeLines(clean_data, "cleaned_table.txt")
+
+# 5. Lese die bereinigte Datei als richtige Tabelle ein
+Table_HS_Non_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_Non_RBP)
+
+```
+
+
+```{r}
+proteins_right_shift <- right_shift_proteins_df$Protein
+proteins_rbp <- Table_HS_RBP$Entry_Name
+proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
+
+is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
+
+# Test
+all(is_in_rbp_or_nonrbp)#
 
 ```
 
