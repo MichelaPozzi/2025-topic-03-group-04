@@ -604,39 +604,52 @@ saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
 # Protein auswählen
 protein_id <- "SPB6_HUMAN"
 
-# Zeile finden, die dem Protein entspricht (zur Sicherheit, falls nicht Zeile 4)
+# Zeile finden, die dem Protein entspricht
 protein_row <- which(normalized_ctrl_df[, 1] == protein_id)
 
-# Normierte Intensitäten für beide Bedingungen extrahieren
+# Normierte Intensitäten extrahieren
 intensities_ctrl <- as.numeric(normalized_ctrl_df[protein_row, 2:26])
 intensities_rnase <- as.numeric(normalized_rnase_df[protein_row, 2:26])
 fraktionen <- 1:25
 
-# Plot: leere Zeichenfläche vorbereiten
+# Plot vorbereiten (ohne automatische x-Achse)
 plot(fraktionen, intensities_ctrl, type = "n",
      xlab = "Fraktion (1–25)", ylab = "Proteinmenge",
      main = paste("Vergleich: Kontrolle vs. RNase für", protein_id),
-     ylim = c(0, max(c(intensities_ctrl, intensities_rnase)) * 1.1))
+     ylim = c(0, max(c(intensities_ctrl, intensities_rnase)) * 1.1),
+     xaxt = "n")  # <- x-Achse deaktivieren
 
-# Kontrolle: Fläche & Linie
+# Eigene x-Achse: Alle Fraktionen anzeigen
+axis(1, at = 1:25)
+
+# Gitterlinien
+grid(col = "lightgray", lty = "dotted")
+
+# Kontrolle: Lavendel-Ton
+ctrl_fill_color <- rgb(0.7, 0.6, 1, 0.3)
+ctrl_line_color <- rgb(0.7, 0.6, 1)
+
 polygon(c(fraktionen, rev(fraktionen)),
         c(rep(0, length(fraktionen)), rev(intensities_ctrl)),
-        col = rgb(0.4, 0.4, 1, 0.3), border = NA)  # halbtransparentes Blau
-lines(fraktionen, intensities_ctrl, col = "lavender", lwd = 2)
+        col = ctrl_fill_color, border = NA)
+lines(fraktionen, intensities_ctrl, col = ctrl_line_color, lwd = 2)
 
-# RNase: Fläche & Linie
-# RNase: Fläche & Linie
+# RNase: Blau-Ton
+rnase_fill_color <- rgb(0, 0.4, 1, 0.3)
+rnase_line_color <- rgb(0, 0.4, 1)
+
 polygon(c(fraktionen, rev(fraktionen)),
         c(rep(0, length(fraktionen)), rev(intensities_rnase)),
-        col = rgb(0, 0.4, 1, 0.3), border = NA)  # jetzt halbtransparentes Blau
-lines(fraktionen, intensities_rnase, col = "lightblue", lwd = 2)
+        col = rnase_fill_color, border = NA)
+lines(fraktionen, intensities_rnase, col = rnase_line_color, lwd = 2)
 
-# Legende hinzufügen
+# Legende
 legend("topright",
        legend = c("Kontrolle", "RNase"),
-       col = c("lavender", "lightblue"),
+       col = c(ctrl_line_color, rnase_line_color),
        lwd = 2,
        bg = "white")
+
 
 ```
 
@@ -1967,7 +1980,6 @@ test_scores_combined_df <- data.frame(
 sum(is.na(test_scores_combined_df))
 ```
 
-
 ```{r}
 #calculate final testscores
 test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6,7,8)])
@@ -2252,8 +2264,6 @@ print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_thr
 
 
 ```
-
-
 ```{r}#
 # Nur die Protein-Namen als Vektor
 protein_names <- right_shift_proteins_df$Protein
@@ -2556,6 +2566,15 @@ all(is_in_rbp_or_nonrbp)#
 
 ```
 
+```{r}
+#Dataframes speichern für lineare regression
+dir.create("data", showWarnings = FALSE)
+saveRDS(test_scores_combined_df, file = "data/test_scores_combined_df.rds")
+saveRDS(Table_HS_RBP, file =  "data/Table_HS_RBP.rds")
+saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
+```
+
+
 ######PART 3
 ###Data reduction PCA
 ```{r}
@@ -2719,6 +2738,95 @@ plot(first_two_components)
 
 #####PART 4: Linear regression
 ```{r}
+# 1. Nur relevante Spalten aus RBP- und Non-RBP-Tabellen auswählen
+rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
+non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
+
+# 2. Zusammenführen beider Tabellen
+Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
+
+# 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
+merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
+                   by.x = "Protein", by.y = "Entry_Name",
+                   all.x = TRUE)  # alle aus test_scores_combined_df behalten
+
+head(merged_df)
+```
+
+```{r}
+# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
+df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
+
+# Regression: testscores ~ pI + Mass_kDa
+model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
+
+summary(model)
+
+```
+
+```{r}
+install.packages("scatterplot3d")  # falls noch nicht installiert
+library(scatterplot3d)
+
+# 3D-Streudiagramm
+s3d <- scatterplot3d(df_complete$pI, df_complete$Mass_kDa, df_complete$probability,
+                     xlab = "pI", ylab = "Masse (kDa)", zlab = "Probability",
+                     pch = 16, highlight.3d = TRUE, type = "p", angle = 55)
+
+# Koordinaten der Regressionsfläche berechnen
+plane <- predict(model, 
+                 newdata = data.frame(pI = df_complete$pI, 
+                                      Mass_kDa = df_complete$Mass_kDa))
+
+# Fläche einzeichnen
+s3d$plane3d(model)
+```
+
+```{r}
+install.packages("plotly")
+library(plotly)
+
+# Gitter für die Regressionsfläche
+pI_seq <- seq(min(df_complete$pI), max(df_complete$pI), length.out = 30)
+Mass_seq <- seq(min(df_complete$Mass_kDa), max(df_complete$Mass_kDa), length.out = 30)
+grid <- expand.grid(pI = pI_seq, Mass_kDa = Mass_seq)
+grid$predicted <- predict(model, newdata = grid)
+
+# 3D-Plot mit lila eingefärbten Datenpunkten nach RBP oder Non-RBP -> macht vielleicht nach einem anderen Parameter mehr Sinn
+#Einteilung der Proteine anhand von threshold in RBPs und Non-RBPs
+# Klassifikation basierend auf optimal_threshold
+# 1. Klassifikation hinzufügen, falls noch nicht passiert
+df_complete$predicted_RBP <- ifelse(df_complete$probability >= optimal_threshold,
+                                    "RBP", "Non-RBP")
+
+# 2. Plotly-Plot
+plot_ly() %>%
+  # Datenpunkte: Farbe nach RBP-Klassifikation (nicht Wert)
+  add_markers(data = df_complete,
+              x = ~pI,
+              y = ~Mass_kDa,
+              z = ~probability,
+              color = ~predicted_RBP,             # ← Klassifikation statt Wert
+              colors = c("RBP" = "purple", 
+                         "Non-RBP" = "lightgray"), # ← 2 Farben für Klassen
+              marker = list(size = 4),
+              name = "Klassifikation",
+              showlegend = TRUE) %>%
+  # Regressionsfläche (weiterhin violett)
+  add_surface(x = ~pI_seq,
+              y = ~Mass_seq,
+              z = matrix(grid$predicted, nrow = 30),
+              opacity = 0.5,
+              colorscale = "Purples",
+              showscale = FALSE,  # Skala nur für Fläche
+              name = "Regressionsfläche") %>%
+  # Achsenbeschriftungen
+  layout(scene = list(
+    xaxis = list(title = "pI"),
+    yaxis = list(title = "Masse (kDa)"),
+    zaxis = list(title = "Probability")
+  ),
+  legend = list(title = list(text = "<b>RBP-Klassifikation</b>")))
 
 ```
 
