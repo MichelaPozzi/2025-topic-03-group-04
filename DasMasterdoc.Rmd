@@ -1010,6 +1010,8 @@ head(expr_corrected)
 
 ##SVA
 ```{r}
+install.packages("sva")
+
 # Lade benötigte Libraries
 library(sva)
 library(stringr)
@@ -1229,7 +1231,7 @@ plot(fraktionen, intensities, type = "n",
 ```
 
 ```{r}
-#find all maxima
+#find all maxima - brauchen wir diesen Chunk??????
 # recognize peaks with diff()
 find_peaks_diff <- function(x, threshold = 2) {
   n <- length(x)
@@ -1355,27 +1357,24 @@ head(shift_result)
 ```
 
 ```{r}
-# Histogramm
-hist(abs(shift_result$Shift_Distance), breaks = 30, col = "lightblue",
-     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
-
-# Dichtekurve hinzufügen
-lines(density(shift_result$Shift_Distance), col = "red", lwd = 2)
-
-# Boxplot
-boxplot(shift_result$Shift_Distance, main = "Boxplot of Shift_Distance", col = "lightgreen",
-        ylab = "Shift_Distance")
-
-# Schiefe (Skewness) berechnen - manuell -> für Skewness > 1 -> robust scaling möglich
+#skewness of Shift Distance
+# extract values
 x <- shift_result$Shift_Distance
+
+# calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
-m3 <- sum((x - mean(x))^3) / n
-s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
 skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
 
-cat("Skewness:", skewness, "\n")
-
-median(shift_result$Shift_Distance)
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Histogram of shift distance",
+     xlab = "shift distance", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
 ```
 
 ```{r}
@@ -1497,27 +1496,24 @@ amplitude_changes$changes <- amplitude_changes$loss + amplitude_changes$gain
 ```
 
 ```{r}
-# Histogramm
-hist(abs(amplitude_changes$changes), breaks = 30, col = "lightblue",
-     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
-
-# Dichtekurve hinzufügen
-lines(density(amplitude_changes$changes), col = "red", lwd = 2)
-
-# Boxplot
-boxplot(amplitude_changes$changes, main = "Boxplot of Shift_Distance", col = "lightgreen",
-        ylab = "Shift_Distance")
-
-# Schiefe (Skewness) berechnen - manuell
+#skewness of amplitude changes
+# extract values
 x <- amplitude_changes$changes
+
+# calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
-m3 <- sum((x - mean(x))^3) / n
-s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
 skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
 
-cat("Skewness:", skewness, "\n")
-
-median(amplitude_changes$changes)
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Histogram of amplitude changes",
+     xlab = "amplitude changes", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
 ```
 
 ```{r}
@@ -1632,26 +1628,24 @@ head(normalized_ctrl_df[, c(1, 27)])  # Show protein name and EMD
 ```
 
 ```{r}
-# Histogramm
-hist(abs(normalized_ctrl_df$EMD), breaks = 30, col = "lightblue",
-     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
-
-# Dichtekurve hinzufügen
-lines(density(normalized_ctrl_df$EMD), col = "red", lwd = 2)
-
-# Boxplot
-boxplot(normalized_ctrl_df$EMD, main = "Boxplot of Shift_Distance", col = "lightgreen",
-        ylab = "Shift_Distance")
-
-# Schiefe (Skewness) berechnen - manuell
+#skewness of EMD
+# extract values
 x <- normalized_ctrl_df$EMD
+
+# calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
-m3 <- sum((x - mean(x))^3) / n
-s3 <- (sum((x - mean(x))^2) / n)^(3/2)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
 skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
 
-cat("Skewness:", skewness, "\n")
-
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Histogram of EMD",
+     xlab = "EMD value", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
 ```
 
 ```{r}
@@ -1858,25 +1852,24 @@ head(Wilcoxon_Pos_Max)
 ```
 
 ```{r}
-# Histogramm
-hist(abs(Wilcoxon_Pos_Max$Wilcoxon_statistic), breaks = 30, col = "lightblue",
-     main = "Histogram of Shift_Distance", xlab = "Shift_Distance", freq = FALSE)
-
-# Dichtekurve hinzufügen
-lines(density(Wilcoxon_Pos_Max$Wilcoxon_statistic), col = "red", lwd = 2)
-
-# Boxplot
-boxplot(Wilcoxon_Pos_Max$Wilcoxon_statistic, main = "Boxplot of Shift_Distance", col = "lightgreen",
-        ylab = "Shift_Distance")
-
-# Schiefe (Skewness) berechnen - manuell
+#skewness of Wilcoxon-statistic Position of maxima
+# extract values
 x <- Wilcoxon_Pos_Max$Wilcoxon_statistic
-n <- length(x)
-m3 <- sum((x - mean(x))^3) / n
-s3 <- (sum((x - mean(x))^2) / n)^(3/2)
-skewness <- m3 / s3
 
-cat("Skewness:", skewness, "\n")
+# calculate skewness (Fisher-Pearson Skewness)
+n <- length(x)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
+skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
+
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Wilcoxon-statistic Position of maxima",
+     xlab = "Wilcoxon-statistic Position of maxima", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
 ```
 
 ```{r}
@@ -1918,6 +1911,27 @@ Wilcoxon_df <- data.frame(
 # depict result
 head(Wilcoxon_df)
 
+```
+
+```{r}
+#skewness of Wilcoxon-statistic proteinwise
+# extract values
+x <- Wilcoxon_df$Wilcox_Statistic
+
+# calculate skewness (Fisher-Pearson Skewness)
+n <- length(x)
+m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
+s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
+skewness <- m3 / s3
+print(paste("Skewness:", round(skewness, 4)))
+
+# plot histogram
+hist(x, breaks = 50, col = "lavender", main = "Wilcoxon-statistic proteinwise",
+     xlab = "Wilcoxon-statistic proteinwise", border = "white")
+abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
+text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
+     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
+     col = "violet", pos = 4)
 ```
 
 
@@ -1962,7 +1976,7 @@ test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,
 head(test_scores_combined_df)
 ```
 
-
+####create dataframes with reference proteins
 
 ```{r}
 # install and load package
@@ -2701,5 +2715,10 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
 ```{r}
 first_two_components <- Ctrl_data$x[,1:2]
 plot(first_two_components)
+```
+
+#####PART 4: Linear regression
+```{r}
+
 ```
 
