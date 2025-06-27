@@ -1402,14 +1402,23 @@ head(Table_HS_Non_RBP)
 
 
 ```{r}
-proteins_right_shift <- right_shift_proteins_df$Protein
+all_proteins <- test_scores_combined_df$Protein
 proteins_rbp <- Table_HS_RBP$Entry_Name
 proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
 
-is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
+is_in_rbp_or_nonrbp <-all_proteins %in% proteins_rbp | all_proteins %in% proteins_non_rbp
 
 # Test
-all(is_in_rbp_or_nonrbp)#
+all(is_in_rbp_or_nonrbp)
+# Bedingung wie bisher
+is_in_rbp_or_nonrbp <- all_proteins %in% proteins_rbp | all_proteins %in% proteins_non_rbp
+
+# Hole die fehlenden Proteine
+missing_proteins <- all_proteins[!is_in_rbp_or_nonrbp]
+
+# Zeige sie an
+print(missing_proteins)
+
 
 ```
 
