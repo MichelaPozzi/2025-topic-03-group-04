@@ -1421,4 +1421,36 @@ print(missing_proteins)
 
 
 ```
+```{r}
+#prepare data for linear regression
+Table_HS_RBP_short <- Table_HS_RBP[, 1:12]
+Table_HS_Non_RBP_short <- Table_HS_Non_RBP[, 1:12]
+Table_all_data <- rbind(Table_HS_RBP_short, Table_HS_Non_RBP_short)
+
+remove_list <- c("PBIR3_HUMAN", "SCD_HUMAN", "EMC5_HUMAN", "MRP8_HUMAN")
+cleaned_test_scores <- test_scores_combined_df[!(test_scores_combined_df$Protein %in% remove_list), ]
+# Tabelle neu sortieren nach Protein-Reihenfolge in cleaned_test_scores
+Table_all_data_sorted <- Table_all_data[match(cleaned_test_scores$Protein, Table_all_data$Protein), ]
+head(Table_all_data_sorted)
+```
+
+```{r}
+#fehler prüfung 
+# Anzahl fehlender Werte
+sum(is.na(cleaned_test_scores$probability))
+sum(is.na(Table_all_data_sorted$pI))
+
+```
+
+
+```{r}
+#linear regression 
+cor.test(cleaned_test_scores$probability, Table_all_data_sorted$pI, method = "spearman")
+
+```
+
+
+
+
+
 
