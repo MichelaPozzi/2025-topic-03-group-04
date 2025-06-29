@@ -68,18 +68,17 @@ sum(is.na(A549_NS))
 ##Data cleanup##
 
 ```{r}
-# Alle Spaltennamen abrufen
+# all columns
 col_names <- colnames(A549_NS)
 
-# Spalten für Ctrl und RNase erkennen (inkl. Protein_Name behalten)
+# identify rnase and control columns 
 ctrl_cols <- c("Protein_Name", grep("Ctrl", col_names, value = TRUE))
 rnase_cols <- c("Protein_Name", grep("RNase", col_names, value = TRUE))
 
-# Dataframes erstellen
+# create dataframe
 df_ctrl <- A549_NS[, ctrl_cols, drop = FALSE]
 df_rnase <- A549_NS[, rnase_cols, drop = FALSE]
 
-# Vorschau anzeigen
 head(df_ctrl)
 head(df_rnase)
 
@@ -89,7 +88,7 @@ head(df_rnase)
 ####Reproducibility####
 
 ```{r}
-#Reproducabilty der Control Messung
+# Reproducabilty of control measurments -> create dataframe for analysis of the replicates
 ctrl_correlations <- data.frame(
   fraction = character(),
   ctrl1_vs_ctrl2 = numeric(),
@@ -98,7 +97,7 @@ ctrl_correlations <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Schleife über alle 25 Fraktionen
+# loop over all fractions
 for (i in 0:24) {
   start_col <- 2 + i * 3 
   end_col <- start_col + 2
@@ -113,14 +112,13 @@ for (i in 0:24) {
   ))
 }
 
-# Ergebnis ansehen
+# show result
 View(ctrl_correlations)
 plot(ctrl_correlations) 
 ```
 
 ```{r}
-#Reproducabilty der RNase Messungen
-
+# Reproducabilty of rnase measurements 
 rnase_correlations <- data.frame(
   fraction = character(),
   rnase1_vs_rnase2 = numeric(),
@@ -129,7 +127,7 @@ rnase_correlations <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# Schleife über alle 25 Fraktionen
+# loop over all fractions
 for (i in 0:24) {
   start_col <- 2 + i * 3 
   end_col <- start_col + 2
@@ -143,7 +141,8 @@ for (i in 0:24) {
     rnase2_vs_rnase3 = cor_matrix["rnase2", "rnase3"]
   ))
 }
-#Ergebnisse
+
+# show results
 View(rnase_correlations)
 plot(rnase_correlations)
 ```
@@ -2468,7 +2467,7 @@ writeLines(protein_names, "right_shift_proteins.txt")
 ```
 
 
-###Fortsetzung: Visualisierung
+###Continuation: Visialization
 
 ```{r}
 #Positiv Kontrolle visualisiert
@@ -2606,11 +2605,11 @@ legend("topright",
 ###Violinplot
 proteins <- c("RLA1_HUMAN", "APC16_HUMAN", "CH033_HUMAN")
 
-# Plot-Vorbereitung
+# Plotpreperation
 n <- length(proteins)
 x_positions <- seq(1, by = 1, length.out = n)
 
-# Y-Achse vorbereiten
+# Y-axes
 all_values <- c()
 for (p in proteins) {
   v1 <- as.numeric(normalized_ctrl_df[normalized_ctrl_df[[1]] == p, 2:26])
@@ -2629,7 +2628,7 @@ plot(NA,
 
 axis(1, at = x_positions, labels = proteins, las = 2)
 
-# Violinplots zeichnen
+# plot
 for (i in seq_along(proteins)) {
   protein <- proteins[i]
   x <- x_positions[i]
@@ -2637,30 +2636,29 @@ for (i in seq_along(proteins)) {
   ctrl_vals <- as.numeric(normalized_ctrl_df[normalized_ctrl_df[[1]] == protein, 2:26])
   rnase_vals <- as.numeric(normalized_rnase_df[normalized_rnase_df[[1]] == protein, 2:26])
   
-  # Nur wenn mindestens 2 Werte vorhanden sind
+  
   if (sum(!is.na(ctrl_vals)) < 2 || sum(!is.na(rnase_vals)) < 2) {
     next
   }
 
-  # Dichten berechnen
+  # calculate density and check validity
   dens_ctrl <- tryCatch(density(ctrl_vals, na.rm = TRUE), error = function(e) NULL)
   dens_rnase <- tryCatch(density(rnase_vals, na.rm = TRUE), error = function(e) NULL)
   
-  # Sicherstellen, dass beide Dichten gültig sind
   if (is.null(dens_ctrl) || is.null(dens_rnase)) {
     next
   }
   
-  # Sicherstellen, dass x/y-Vektoren gleich lang sind
+  # check length of both x- and y-vector -> have to be the same length
   if (length(dens_ctrl$x) != length(dens_ctrl$y) || length(dens_rnase$x) != length(dens_rnase$y)) {
     next
   }
 
-  # Skalierung
+  # scaling
   max_y <- max(c(dens_ctrl$y, dens_rnase$y))
   scale_factor <- 0.4 / max_y
 
-  # Violine: Control (links)
+  # Violine: Control on left
 x_left  <- x - dens_ctrl$y * scale_factor
 y_vals  <- dens_ctrl$x
 polygon(
@@ -2669,7 +2667,7 @@ polygon(
   col = "lightblue", border = "blue"
 )
 
-# Violine: RNase (rechts)
+# Violine: RNase on right
 x_right <- x + dens_rnase$y * scale_factor
 y_vals2 <- dens_rnase$x
 polygon(
@@ -2678,7 +2676,7 @@ polygon(
   col = "lightpink", border="red"
 )
 
-  # Medianlinien
+  # add median line
   med_ctrl <- median(ctrl_vals, na.rm = TRUE)
   med_rnase <- median(rnase_vals, na.rm = TRUE)
 
@@ -2686,7 +2684,6 @@ polygon(
   lines(c(x, x + 0.2), rep(med_rnase, 2), col = "red", lty = 2)
 }
 
-# Legende
 legend("topright",
        legend = c("Control", "RNase"),
        fill = c("lightblue", "lightpink"),
@@ -2699,21 +2696,16 @@ legend("topright",
 
 
 ```{r}
-### Einlesen von Table_RBPs
+### read Table_RBPs
 
-# 1. Datei komplett als Text einlesen
+# read table
 raw <- readLines("data/Table_HS_RBP.txt")
-
-# 2. Ab Zeile 7 extrahieren (Header + Daten)
+# extract everything below row 7
 raw_data <- raw[7:length(raw)]
 
-# 3. Entferne alle \" (Backslash-Anführungszeichen)
+# clean the table
 clean_data <- gsub('\\"', '', raw_data)
-
-# 4. Schreibe die bereinigten Zeilen in eine temporäre Datei
 writeLines(clean_data, "cleaned_table.txt")
-
-# 5. Lese die bereinigte Datei als richtige Tabelle ein
 Table_HS_RBP = read.delim("cleaned_table.txt",
                     sep = "\t",
                     header = TRUE,
@@ -2725,20 +2717,16 @@ head(Table_HS_RBP)
 
 
 ```{r}
-##Prototyp Einlesen Datei mit pI für lineare Regression
-# 1. Datei komplett als Text einlesen
-raw <- readLines("data/Table_HS_Non_RBP.txt")
+# read Table_Non_RBP
 
-# 2. Ab Zeile 7 extrahieren (Header + Daten)
+# whole table
+raw <- readLines("data/Table_HS_Non_RBP.txt")
+# extract everything below row 7
 raw_data <- raw[7:length(raw)]
 
-# 3. Entferne alle \" (Backslash-Anführungszeichen)
+# clean the table 
 clean_data <- gsub('\\"', '', raw_data)
-
-# 4. Schreibe die bereinigten Zeilen in eine temporäre Datei
 writeLines(clean_data, "cleaned_table.txt")
-
-# 5. Lese die bereinigte Datei als richtige Tabelle ein
 Table_HS_Non_RBP = read.delim("cleaned_table.txt",
                     sep = "\t",
                     header = TRUE,
@@ -2750,13 +2738,13 @@ head(Table_HS_Non_RBP)
 
 
 ```{r}
+# check if all our proteins are included in the tables 
 proteins_right_shift <- right_shift_proteins_df$Protein
 proteins_rbp <- Table_HS_RBP$Entry_Name
 proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
 
 is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
 
-# Test
 all(is_in_rbp_or_nonrbp)#
 
 ```
