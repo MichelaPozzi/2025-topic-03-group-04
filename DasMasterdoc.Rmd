@@ -1018,7 +1018,6 @@ rnase_expr_corrected_df <- data.frame(
 head(rnase_expr_corrected_df)
 ```
 
-head(expr_corrected)
 
 ##SVA
 
@@ -1027,10 +1026,10 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install("sva")
-````##
+```
 
 
-##ctrl
+##control
 ```{r}
 install.packages("sva")
 
