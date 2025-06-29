@@ -2458,6 +2458,172 @@ print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_thr
 
 
 ```
+
+```{r}
+# Define protein name
+protein_name <- "1433B_HUMAN"
+
+# Check if protein exists in both datasets (columns 1 to 26 only)
+subset_ctrl <- normalized_ctrl_df[,1:26]
+subset_rnase <- normalized_rnase_df[,1:26]
+
+if (!(protein_name %in% subset_ctrl$Protein) |
+    !(protein_name %in% subset_rnase$Protein)) {
+  stop("Protein not found in one or both datasets (rows 1 to 26).")
+}
+
+# Extract only data for the given protein from rows 1–26
+ctrl_data <- subset_ctrl[subset_ctrl$Protein == protein_name, ]
+rnase_data <- subset_rnase[subset_rnase$Protein == protein_name, ]
+
+# Add condition labels
+ctrl_data$Condition <- "Control"
+rnase_data$Condition <- "RNase"
+
+# Combine both into one data frame for plotting
+combined_df <- rbind(ctrl_data, rnase_data)
+
+# Get probability and RBP classification
+prob <- test_scores_combined_df$probability[test_scores_combined_df$Protein == protein_name]
+is_rbp <- ifelse(prob > optimal_threshold, "RBP", "Non-RBP")
+
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+
+# Pivot from wide to long format (gather Fraction1 to Fraction26)
+long_df <- pivot_longer(
+  combined_df,
+  cols = starts_with("Fraction"),
+  names_to = "Fraction",
+  values_to = "Intensity"
+)
+
+# Convert Fraction names to numeric (e.g., "Fraction1" -> 1)
+long_df$Fraction <- as.numeric(gsub("Fraction", "", long_df$Fraction))
+
+# Get predicted probability and classification
+prob <- test_scores_combined_df$probability[test_scores_combined_df$Protein == protein_name]
+is_rbp <- ifelse(prob > optimal_threshold, "RBP", "Non-RBP")
+
+#Plot
+ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condition)) +
+  # Fläche unter der Kurve einfärben (aber nicht in der Legende anzeigen)
+  geom_area(alpha = 0.3, position = "identity", show.legend = FALSE) +
+  # Linie zeichnen (erscheint in der Legende)
+  geom_line(linewidth = 1) +
+  # Farben manuell setzen
+  scale_color_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
+  scale_fill_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
+  labs(
+    title = paste("Profile for Protein:", protein_name),
+    subtitle = paste0("Predicted Probability: ", round(prob, 3),
+                      " | Classified as: ", is_rbp),
+    x = "Fraction",
+    y = "Normalized Amount Of Protein",
+    color = "Condition"  # Legend title
+  ) +
+  theme_minimal()
+
+```
+
+```{r}#
+install.packages("shiny")
+```
+
+```{r}
+#macht quasi dasselbe wie der chunk obendrüber aber hat anschaulichere Eingabemöglichkeit für Protein of interest
+library(shiny)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+ui <- fluidPage(
+  titlePanel("Protein Profile Viewer"),
+  sidebarLayout(
+    sidebarPanel(
+      textInput("protein_name", "Enter Protein Name:", ""),
+      actionButton("plot_button", "Plot")
+    ),
+    mainPanel(
+      plotOutput("proteinPlot")
+    )
+  )
+)
+
+server <- function(input, output, session) {
+  
+  observeEvent(input$plot_button, {
+    protein_name <- input$protein_name
+    
+    if (!exists("normalized_ctrl_df") || !exists("normalized_rnase_df") || 
+    !exists("test_scores_combined_df") || !exists("optimal_threshold")) {
+  output$proteinPlot <- renderPlot(NULL)
+  showNotification("One or more required data objects are missing.", type = "error")
+  return()
+}
+    
+    # Select columns 1 (name) and 2:26 (Fraction1 to Fraction25)
+    ctrl <- normalized_ctrl_df[, c(1, 2:26)]
+    rnase <- normalized_rnase_df[, c(1, 2:26)]
+    
+    # Filter for selected protein
+    ctrl_data <- ctrl %>% filter(Protein == protein_name)
+    rnase_data <- rnase %>% filter(Protein == protein_name)
+    
+    if (nrow(ctrl_data) == 0 | nrow(rnase_data) == 0) {
+      output$proteinPlot <- renderPlot(NULL)
+      showNotification("Protein not found in Control or RNase dataset.", type = "error")
+      return()
+    }
+    
+    # Label condition
+    ctrl_data$Condition <- "Control"
+    rnase_data$Condition <- "RNase"
+    
+    # Combine and reshape
+    combined <- bind_rows(ctrl_data, rnase_data)
+    long_df <- combined %>%
+      pivot_longer(cols = starts_with("Fraction"),
+                   names_to = "Fraction", values_to = "Intensity") %>%
+      mutate(Fraction = as.numeric(gsub("Fraction", "", Fraction)))
+    
+    # Get model probability and RBP classification
+    prob <- test_scores_combined_df$probability[test_scores_combined_df$Protein == protein_name]
+    if (length(prob) == 0) prob <- NA
+    classification <- ifelse(!is.na(prob) & prob > optimal_threshold, "RBP", "Non-RBP")
+    
+    output$proteinPlot <- renderPlot({
+      ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condition)) +
+        geom_area(alpha = 0.3, position = "identity", show.legend = FALSE) +
+        geom_line(linewidth = 1) +
+        scale_color_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
+        scale_fill_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
+        scale_x_continuous(breaks = seq(5, 25, by = 5), limits = c(1, 25)) +
+        labs(
+          title = paste("Profile for Protein:", protein_name),
+          subtitle = paste0("Predicted Probability: ", round(prob, 3),
+                            " | Classified as: ", classification),
+          x = "Fraction",
+          y = "Normalized Intensity",
+          color = "Condition"
+        ) +
+        theme_minimal() +
+        theme(panel.grid.major.x = element_blank(),
+              panel.grid.minor.x = element_blank())
+    })
+  })
+}
+
+shinyApp(ui, server)
+
+
+
+
+
+```
+
+
 ```{r}#
 # Nur die Protein-Namen als Vektor
 protein_names <- right_shift_proteins_df$Protein
@@ -3304,4 +3470,15 @@ print(t_test_result)
 
 ```
 
+```{r}
+#check whether mass differs significantly between RBPs and Non-RBPs
+
+# Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
+t_test_result <- t.test(
+  df_complete$Mass_kDa[df_complete$RBP_group == "RBP"],
+  df_complete$Mass_kDa[df_complete$RBP_group == "Non-RBP"],
+)
+
+print(t_test_result)
+```
 
