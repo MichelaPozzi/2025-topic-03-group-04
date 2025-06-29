@@ -2692,72 +2692,6 @@ legend("topright",
 
 ```
 
-
-
-
-```{r}
-### read Table_RBPs
-
-# read table
-raw <- readLines("data/Table_HS_RBP.txt")
-# extract everything below row 7
-raw_data <- raw[7:length(raw)]
-
-# clean the table
-clean_data <- gsub('\\"', '', raw_data)
-writeLines(clean_data, "cleaned_table.txt")
-Table_HS_RBP = read.delim("cleaned_table.txt",
-                    sep = "\t",
-                    header = TRUE,
-                    stringsAsFactors = FALSE,
-                    check.names = FALSE)
-head(Table_HS_RBP)
-
-```
-
-
-```{r}
-# read Table_Non_RBP
-
-# whole table
-raw <- readLines("data/Table_HS_Non_RBP.txt")
-# extract everything below row 7
-raw_data <- raw[7:length(raw)]
-
-# clean the table 
-clean_data <- gsub('\\"', '', raw_data)
-writeLines(clean_data, "cleaned_table.txt")
-Table_HS_Non_RBP = read.delim("cleaned_table.txt",
-                    sep = "\t",
-                    header = TRUE,
-                    stringsAsFactors = FALSE,
-                    check.names = FALSE)
-head(Table_HS_Non_RBP)
-
-```
-
-
-```{r}
-# check if all our proteins are included in the tables 
-proteins_right_shift <- right_shift_proteins_df$Protein
-proteins_rbp <- Table_HS_RBP$Entry_Name
-proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
-
-is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
-
-all(is_in_rbp_or_nonrbp)#
-
-```
-
-```{r}
-#Dataframes speichern für lineare regression
-dir.create("data", showWarnings = FALSE)
-saveRDS(test_scores_combined_df, file = "data/test_scores_combined_df.rds")
-saveRDS(Table_HS_RBP, file =  "data/Table_HS_RBP.rds")
-saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
-```
-
-
 ######PART 3
 ###Data reduction PCA
 
@@ -3184,6 +3118,77 @@ plot(first_two_components)
 
 
 #####PART 4: Linear regression
+```{r}
+### read Table_RBPs
+
+# read table
+raw <- readLines("data/Table_HS_RBP.txt")
+# extract everything below row 7
+raw_data <- raw[7:length(raw)]
+
+# clean the table
+clean_data <- gsub('\\"', '', raw_data)
+writeLines(clean_data, "cleaned_table.txt")
+Table_HS_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_RBP)
+
+```
+
+
+```{r}
+# read Table_Non_RBP
+
+# whole table
+raw <- readLines("data/Table_HS_Non_RBP.txt")
+# extract everything below row 7
+raw_data <- raw[7:length(raw)]
+
+# clean the table 
+clean_data <- gsub('\\"', '', raw_data)
+writeLines(clean_data, "cleaned_table.txt")
+Table_HS_Non_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_Non_RBP)
+
+```
+
+
+```{r}
+# check if all our proteins are included in the tables 
+proteins_right_shift <- right_shift_proteins_df$Protein
+proteins_rbp <- Table_HS_RBP$Entry_Name
+proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
+
+is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
+
+all(is_in_rbp_or_nonrbp)#
+
+```
+
+```{r}
+# determine correlation between components for linear regression
+cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
+cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "spearman")
+cor(df_complete$Mass_kDa, df_complete$pI, method = "spearman")
+
+```
+
+```{r}
+#Dataframes speichern für lineare regression
+dir.create("data", showWarnings = FALSE)
+saveRDS(test_scores_combined_df, file = "data/test_scores_combined_df.rds")
+saveRDS(Table_HS_RBP, file =  "data/Table_HS_RBP.rds")
+saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
+```
+
+
 ```{r}
 # 1. Nur relevante Spalten aus RBP- und Non-RBP-Tabellen auswählen
 rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
