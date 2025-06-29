@@ -3482,3 +3482,24 @@ t_test_result <- t.test(
 print(t_test_result)
 ```
 
+```{r}
+# create boxplot
+boxplot(pI ~ RBP_group,
+        data = df_complete,
+        col = c("lightblue", "lavender"),
+        main = "compare pI\nbetween RBP and Non-RBP",
+        xlab = "group",
+        ylab = "isoelectric point (pI)")
+
+# calculate mean
+mean_rbp <- mean(df_complete$pI[df_complete$RBP_group == "RBP"])
+mean_nonrbp <- mean(df_complete$pI[df_complete$RBP_group == "Non-RBP"])
+
+# depict mean in plot
+points(c(1, 2), c(mean_rbp, mean_nonrbp), pch = 19, col = "coral")
+
+# Oadd legend
+legend("topright", legend = c("Mean"), col = "coral", pch = 19)
+
+```
+
