@@ -655,7 +655,7 @@ legend("topright",
 
 ###Batch Effect###
 
-
+##CONTROL
 ##boxplot
 ```{r}
 # 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
@@ -702,7 +702,7 @@ BiocManager::install("limma")
 
 ```##
 
-
+##limma
 ```{r}
 
 
@@ -751,7 +751,7 @@ legend("topright",
        fill = batch_colors,
        title = "Batch")
 ```
-##limma
+
 
 ## PCA
 ```{r}
@@ -843,7 +843,7 @@ colnames(ctrl_expr_corrected_df)
 head(ctrl_expr_corrected_df)
 ```
 
-##rnase 
+##RNASE
 
 ##boxplot 
 ```{r}
@@ -1022,6 +1022,8 @@ head(rnase_expr_corrected_df)
 head(expr_corrected)
 
 ##SVA
+
+##ctrl
 ```{r}
 install.packages("sva")
 
@@ -1031,31 +1033,31 @@ library(stringr)
 library(limma)
 
 # 1) Expressionsmatrix (ohne Protein-Spalte)
-expression_matrix <- as.matrix(final_smoothed_ctrl[, -1])
-rownames(expression_matrix) <- final_smoothed_ctrl$Protein
+ctrl_expression_matrix <- as.matrix(final_smoothed_ctrl[, -1])
+rownames(ctrl_expression_matrix) <- final_smoothed_ctrl$Protein
 
 # 2) Metadaten (sampleInfo) aus Spaltennamen erzeugen
-samples <- colnames(expression_matrix)
+ctrl_samples <- colnames(ctrl_expression_matrix)
 
 # Extrahiere "Fraction" und "Replicate" Informationen aus Spaltennamen
-fraction <- str_extract(samples, "Fraction\\d+")
-replicate <- str_extract(samples, "Rep\\d+")
+fraction <- str_extract(ctrl_samples, "Fraction\\d+")
+replicate <- str_extract(ctrl_samples, "Rep\\d+")
 
 # sampleInfo DataFrame erstellen
-sampleInfo <- data.frame(
+C_sampleInfo <- data.frame(
   fraction = factor(fraction),
   replicate = factor(replicate)
 )
 
 # 3) Designmatrix für das Modell erstellen
-mod <- model.matrix(~ fraction + replicate, data = sampleInfo)
-mod0 <- model.matrix(~ 1, data = sampleInfo)  # Nullmodell ohne Prädiktoren
+mod <- model.matrix(~ fraction + replicate, data = C_sampleInfo)
+mod0 <- model.matrix(~ 1, data = C_sampleInfo)  # Nullmodell ohne Prädiktoren
 
 # 4) SVA durchführen
-sva_res <- sva(expression_matrix, mod, mod0)
+sva_res_ctrl <- sva(ctrl_expression_matrix, mod, mod0)
 
 # 5) Designmatrix um die gefundenen Surrogate Variablen (SVs) erweitern
-mod_sv <- cbind(mod, sva_res$sv)
+mod_sv <- cbind(mod, sva_res_ctrl$sv)
 
 # 6) OPTIONAL: Wenn du einen bekannten Batch hast, kannst du alternativ ComBat verwenden
 # Beispiel (nur wenn du 'batch' hast):
@@ -1064,11 +1066,11 @@ mod_sv <- cbind(mod, sva_res$sv)
 
 # 7) Korrektur mit Surrogate Variablen durch lineare Regression (empfohlen bei unbekanntem Batch)
 # Fit des linearen Modells mit Surrogate Variablen
-fit <- lmFit(expression_matrix, mod_sv)
+fit <- lmFit(ctrl_expression_matrix, mod_sv)
 fit <- eBayes(fit)
 
 # Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
-corrected_expr_ctrl <- residuals(fit, expression_matrix)
+corrected_expr_ctrl <- residuals(fit, ctrl_expression_matrix)
 
 # 'corrected_expr' enthält die bereinigten Expressionswerte
 
@@ -1078,7 +1080,7 @@ corrected_expr_ctrl <- residuals(fit, expression_matrix)
 ```{r}
 
 # Batch-Vektor: z.B. basierend auf 'Rep' in den Spaltennamen
-batch <- factor(str_extract(colnames(expression_matrix), "Rep\\d+"))
+batch <- factor(str_extract(colnames(ctrl_expression_matrix), "Rep\\d+"))
 
 # Farben je Batch
 batch_levels <- levels(batch)
@@ -1093,7 +1095,7 @@ colors <- batch_colors[batch]
 
 ```{r}
 # 1. Boxplot vor Korrektur
-boxplot(expression_matrix,
+boxplot(ctrl_expression_matrix,
         main = "Expression vor Korrektur (Replicate gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -1119,15 +1121,16 @@ legend("topright",
        title = "Replicate")
 
 ```
+
 ##PCA
 ```{r}
 
 # 1) PCA vorbereiten
-pca_before <- prcomp(t(expression_matrix), scale. = TRUE)
+pca_before <- prcomp(t(ctrl_expression_matrix), scale. = TRUE)
 pca_after  <- prcomp(t(corrected_expr_ctrl), scale. = TRUE)
 
 # 2) Batch-Zuordnung erneut für Farben
-sample_names <- colnames(expression_matrix)
+sample_names <- colnames(ctrl_expression_matrix)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 
@@ -1171,12 +1174,12 @@ select_top_var <- function(mat, top_n = 100) {
 }
 
 # 3) Top 100 variabelsten Proteine extrahieren
-heat_before <- select_top_var(expression_matrix, 100)
-heat_after  <- select_top_var(corrected_expr, 100)
+heat_before <- select_top_var(ctrl_expression_matrix, 100)
+heat_after  <- select_top_var(corrected_exp_ctrl, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
-rownames(annotation_col) <- colnames(expression_matrix)
+rownames(annotation_col) <- colnames(ctrl_expression_matrix)
 
 # 5) Heatmaps zeichnen (jeweils mit Annotation)
 # Hinweis: pheatmap unterstützt kein par(mfrow), daher separate Plots empfohlen
@@ -1198,7 +1201,199 @@ pheatmap(heat_after,
          fontsize_col = 6)
 
 ```
+ 
+```{r}
+head(ctrl_sva_df)
+```
+ 
+##RNASE
 
+```{r}
+
+install.packages("sva")
+
+# Lade benötigte Libraries
+library(sva)
+library(stringr)
+library(limma)
+
+# 1) Expressionsmatrix (ohne Protein-Spalte)
+rnase_expression_matrix <- as.matrix(final_smoothed_rnase[, -1])
+rownames(rnase_expression_matrix) <- final_smoothed_rnase$Protein
+
+# 2) Metadaten (sampleInfo) aus Spaltennamen erzeugen
+rnase_samples <- colnames(rnase_expression_matrix)
+
+# Extrahiere "Fraction" und "Replicate" Informationen aus Spaltennamen
+rnase_fraction <- str_extract(rnase_samples, "Fraction\\d+")
+rnase_replicate <- str_extract(rnase_samples, "Rep\\d+")
+
+# sampleInfo DataFrame erstellen
+sampleInfo_R <- data.frame(
+  rnase_fraction = factor(frnase_fraction),
+  rnase_fraction = factor(rnase_fraction)
+)
+
+# 3) Designmatrix für das Modell erstellen
+mod <- model.matrix(~ fraction + replicate, data = sampleInfo_R)
+mod0 <- model.matrix(~ 1, data = sampleInfo_R)  # Nullmodell ohne Prädiktoren
+
+# 4) SVA durchführen
+sva_res_rnase <- sva(rnase_expression_matrix, mod, mod0)
+
+# 5) Designmatrix um die gefundenen Surrogate Variablen (SVs) erweitern
+R_mod_sv <- cbind(mod, sva_res_rnase$sv)
+
+# 6) OPTIONAL: Wenn du einen bekannten Batch hast, kannst du alternativ ComBat verwenden
+# Beispiel (nur wenn du 'batch' hast):
+# batch <- sampleInfo$batch_variable
+# expression_corrected <- ComBat(dat = expression_matrix, batch = batch, mod = mod)
+
+# 7) Korrektur mit Surrogate Variablen durch lineare Regression (empfohlen bei unbekanntem Batch)
+# Fit des linearen Modells mit Surrogate Variablen
+fit <- lmFit(rnase_expression_matrix, mod_sv)
+fit <- eBayes(fit)
+
+# Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
+corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
+
+# 'corrected_expr' enthält die bereinigten Expressionswerte
+
+```
+
+
+```{r}
+
+# Batch-Vektor: z.B. basierend auf 'Rep' in den Spaltennamen
+batch <- factor(str_extract(colnames(rnase_expression_matrix), "Rep\\d+"))
+
+# Farben je Batch
+batch_levels <- levels(batch)
+batch_colors <- rainbow(length(batch_levels))
+names(batch_colors) <- batch_levels
+colors <- batch_colors[batch]
+
+```
+
+##boxplot
+
+
+```{r}
+# 1. Boxplot vor Korrektur
+boxplot(rnase_expression_matrix,
+        main = "Expression vor Korrektur (Replicate gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)
+
+# 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
+boxplot(corrected_expr_rnase,
+        main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6)
+
+# 3. Legende
+legend("topright",
+       legend = names(batch_colors),
+       fill = batch_colors,
+       title = "Replicate")
+
+```
+
+
+##PCA
+```{r}
+
+# 1) PCA vorbereiten
+pca_before <- prcomp(t(rnase_expression_matrix), scale. = TRUE)
+pca_after  <- prcomp(t(corrected_expr_rnase), scale. = TRUE)
+
+# 2) Batch-Zuordnung erneut für Farben
+sample_names <- colnames(rnase_expression_matrix)
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+
+# 3) Farben definieren für die Replikate
+batch_colors <- rainbow(length(levels(batch)))
+
+# 4) PCA-Plot: nebeneinander
+par(mfrow = c(1, 2))  # Zwei Plots nebeneinander
+
+# --- PCA vor Korrektur ---
+plot(pca_before$x[, 1:2],
+     col = batch_colors[batch],
+     pch = 19,
+     main = "PCA vor Batch-Korrektur",
+     xlab = "PC1", ylab = "PC2")
+legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
+
+# --- PCA nach Korrektur ---
+plot(pca_after$x[, 1:2],
+     col = batch_colors[batch],
+     pch = 19,
+     main = "PCA nach SVA-Korrektur",
+     xlab = "PC1", ylab = "PC2")
+legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
+
+# 5) Layout zurücksetzen
+par(mfrow = c(1, 1))
+
+```
+
+##Heatmap
+```{r}
+# 1) Falls noch nicht installiert:
+# install.packages("pheatmap")
+library(pheatmap)
+
+# 2) Hilfsfunktion: Top-N variabelste Proteine auswählen
+select_top_var <- function(mat, top_n = 100) {
+  vars <- apply(mat, 1, var)
+  mat[order(vars, decreasing = TRUE)[1:top_n], ]
+}
+
+# 3) Top 100 variabelsten Proteine extrahieren
+heat_before <- select_top_var(rnase_expression_matrix, 100)
+heat_after  <- select_top_var(corrected_expr_rnase, 100)
+
+# 4) Spaltenannotation: Replikate als Batch
+annotation_col <- data.frame(Batch = batch)
+rownames(annotation_col) <- colnames(rnase_expression_matrix)
+
+# 5) Heatmaps zeichnen (jeweils mit Annotation)
+# Hinweis: pheatmap unterstützt kein par(mfrow), daher separate Plots empfohlen
+
+# --- Heatmap vor Korrektur ---
+pheatmap(heat_before,
+         main = "Heatmap vor Batch-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE,
+         fontsize_col = 6)
+
+# --- Heatmap nach Korrektur ---
+pheatmap(heat_after,
+         main = "Heatmap nach SVA-Korrektur",
+         annotation_col = annotation_col,
+         show_rownames = FALSE,
+         cluster_cols = TRUE,
+         fontsize_col = 6)
+
+```
+ 
+```{r}
+head(rnase_sva_df)
+```
+ 
+
+ 
 ######PART 2
 ###Data analysis
 ```{r}
@@ -2577,62 +2772,46 @@ saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
 
 ######PART 3
 ###Data reduction PCA
+
+###Control
+###pca selbst  
 ```{r}
-#pca trial 
- ctrl_sva_df <- corrected_expr_ctrl[,2:ncol(normalized_rnase_df)]
+ctrl_sva_df <- corrected_expr_ctrl[,2:ncol(corrected_expr_ctrl)]
 str(ctrl_sva_df)
 
-```
-
-```{r}
 apply(ctrl_sva_df, 2, mean)
-```
 
-```{r}
-apply(ctrl_sva_df, 2, sd)
-```
-
-```{r}
 Ctrl_pca <- prcomp(ctrl_sva_df, center = TRUE, scale = TRUE)
 
 names(Ctrl_pca)
-```
 
-```{r}
 Ctrl_pca$rotation
-```
 
-
-```{r}
 Ctrl_pca$sdev
-```
 
-```{r}
 Ctrl_pca_var <- RNA_pca$sdev^2 # eigenvalues 
 Ctrl_pca_var
-```
 
-```{r}
 Ctrl_pca_ve <- round(Ctrl_pca_var / sum(Ctrl_pca_var)*100,2) # wert in prozent auf zwei dezimal 
 Ctrl_pca_ve
-```
-```{r}
+
 sort(Ctrl_pca_ve,decreasing=TRUE)
 ```
 
+###prozentplot 
 ```{r}
 barplot(Ctrl_pca_ve)
 ```
 
-
-
-
+###weirder plot 
 ```{r}
 biplot(Ctrl_pca, scale = 0, cex = 0.4)
 ```
 
+###cluster bestimmung 
 
-```{r}
+```{r} 
+#elbow 
 wss <- sapply(1:25, function(k){
   kmeans(Ctrl_pca$x, centers = k, nstart = 25)$tot.withinss
 })
@@ -2643,9 +2822,9 @@ plot(1:25, wss, type = "b", pch = 19,
      main = "Elbow-Methode zur Bestimmung von k") 
 ```
 
-##silhouette 
-
 ```{r}
+#Silhouette 
+
 library(cluster)
 library(factoextra)
 
@@ -2679,8 +2858,8 @@ sil <- silhouette(km_best$cluster, dist(df))
 fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
                 main = paste("Silhouettenplot für k =", best_k))
 
-```
 
+```
 
 ```{r}
 library(cluster)
@@ -2702,7 +2881,7 @@ plot(2:10, sil_width, type = "b", pch = 19,
       main = "Silhouettenanalyse zur Bestimmung von k")
 ```
 
-
+###kmeans 
 ```{r}
 kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
 ```
@@ -2712,8 +2891,6 @@ kmeans_result$cluster
 kmeans_result$centers     
 kmeans_result$tot.withinss
 ```
-
-
 
 
 ```{r}
@@ -2735,6 +2912,288 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
 first_two_components <- Ctrl_data$x[,1:2]
 plot(first_two_components)
 ```
+
+###RNASE
+###pca selbst  
+```{r}
+rnase_sva_df <- corrected_expr_rnase[,2:ncol(corrected_expr_rnase)]
+str(rnase_sva_df)
+
+apply(rnase_sva_df, 2, mean)
+
+rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+
+names(rnase_pca)
+
+rnase_pca$rotation
+
+rnase_pca$sdev
+
+rnase_pca_var <- rnase_pca$sdev^2 # eigenvalues 
+rnase_pca_var
+
+rnase_pca_ve <- round(rnase_pca_var / sum(rnase_pca_var)*100,2) # wert in prozent auf zwei dezimal 
+rnase_pca_ve
+
+sort(rnase_pca_ve,decreasing=TRUE)
+```
+
+###prozentplot 
+```{r}
+barplot(rnase_pca_ve)
+```
+
+###weirder plot 
+```{r}
+biplot(rnase_pca, scale = 0, cex = 0.4)
+```
+
+###cluster bestimmung 
+
+```{r} 
+#elbow 
+wss <- sapply(1:25, function(k){
+  kmeans(rnase_pca$x, centers = k, nstart = 25)$tot.withinss
+})
+
+plot(1:25, wss, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Totale Within-Cluster-Varianz",
+     main = "Elbow-Methode zur Bestimmung von k") 
+```
+
+```{r}
+#Silhouette 
+
+library(cluster)
+library(factoextra)
+
+# Deine PCA-Daten
+df <- rnase_pca$x
+
+# Silhouettenmittelwerte für verschiedene k berechnen
+silhouette_score <- function(k){
+  km <- kmeans(df, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(df))
+  mean(ss[, 3])
+}
+
+k_values <- 2:10
+avg_sil <- sapply(k_values, silhouette_score)
+
+# Plot zur Auswahl des besten k
+plot(k_values, avg_sil, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Durchschnittliche Silhouettenbreite",
+     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
+
+# Bestes k ermitteln
+best_k <- k_values[which.max(avg_sil)]
+
+# KMeans & Silhouette für bestes k
+km_best <- kmeans(df, centers = best_k, nstart = 25)
+sil <- silhouette(km_best$cluster, dist(df))
+
+# Silhouettenplot anzeigen wie im Beispielbild
+fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
+                main = paste("Silhouettenplot für k =", best_k))
+
+
+```
+
+```{r}
+library(cluster)
+
+# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
+pca_data <- rnase_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
+
+sil_width <- numeric(9)
+
+for(k in 2:10) {
+  km <- kmeans(pca_data, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(pca_data))  # dist() NUR auf pca_data
+  sil_width[k - 1] <- mean(ss[, 3])
+}
+
+plot(2:10, sil_width, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Durchschnittliche Silhouettenbreite",
+      main = "Silhouettenanalyse zur Bestimmung von k")
+```
+
+###kmeans 
+```{r}
+kmeans_result <- kmeans(rnase_pca$x, centers = 2, nstart = 25)
+```
+
+```{r}
+kmeans_result$cluster    
+kmeans_result$centers     
+kmeans_result$tot.withinss
+```
+
+
+```{r}
+rnase_data <- as.data.frame(rnase_pca$x)
+rnase_data$cluster <- as.factor(kmeans_result$cluster)
+
+library(ggplot2)
+
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)") +
+  theme_minimal() +
+  scale_color_manual(values = rainbow(2))
+```
+
+```{r}
+first_two_components <- rnase_data$x[,1:2]
+plot(first_two_components)
+```
+
+###right shift
+###pca selbst  
+```{r}
+rsp_sva_df <- right_shift_proteins_df[,2:ncol(right_shift_proteins_df)]
+str(rsp_sva_df)
+
+apply(rsp_sva_df, 2, mean)
+
+rsp_pca <- prcomp(rsp_sva_df, center = TRUE, scale = TRUE)
+
+names(rsp_pca)
+
+rsp_pca$rotation
+
+rsp_pca$sdev
+
+rsp_pca_var <- rsp_pca$sdev^2 # eigenvalues 
+rsp_pca_var
+
+rsp_pca_ve <- round(rsp_pca_var / sum(rsp_pca_var)*100,2) # wert in prozent auf zwei dezimal 
+rsp_pca_ve
+
+sort(rsp_pca_ve,decreasing=TRUE)
+```
+
+###prozentplot 
+```{r}
+barplot(rsp_pca_ve)
+```
+
+###weirder plot 
+```{r}
+biplot(rsp_pca, scale = 0, cex = 0.4)
+```
+
+###cluster bestimmung 
+
+```{r} 
+#elbow 
+wss <- sapply(1:25, function(k){
+  kmeans(rsp_pca$x, centers = k, nstart = 25)$tot.withinss
+})
+
+plot(1:25, wss, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Totale Within-Cluster-Varianz",
+     main = "Elbow-Methode zur Bestimmung von k") 
+```
+
+```{r}
+#Silhouette 
+
+library(cluster)
+library(factoextra)
+
+# Deine PCA-Daten
+df <- rsp_pca$x
+
+# Silhouettenmittelwerte für verschiedene k berechnen
+silhouette_score <- function(k){
+  km <- kmeans(df, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(df))
+  mean(ss[, 3])
+}
+
+k_values <- 2:10
+avg_sil <- sapply(k_values, silhouette_score)
+
+# Plot zur Auswahl des besten k
+plot(k_values, avg_sil, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Durchschnittliche Silhouettenbreite",
+     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
+
+# Bestes k ermitteln
+best_k <- k_values[which.max(avg_sil)]
+
+# KMeans & Silhouette für bestes k
+km_best <- kmeans(df, centers = best_k, nstart = 25)
+sil <- silhouette(km_best$cluster, dist(df))
+
+# Silhouettenplot anzeigen wie im Beispielbild
+fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
+                main = paste("Silhouettenplot für k =", best_k))
+
+
+```
+
+```{r}
+library(cluster)
+
+# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
+pca_data <- rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
+
+sil_width <- numeric(9)
+
+for(k in 2:10) {
+  km <- kmeans(pca_data, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(pca_data))  # dist() NUR auf pca_data
+  sil_width[k - 1] <- mean(ss[, 3])
+}
+
+plot(2:10, sil_width, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Durchschnittliche Silhouettenbreite",
+      main = "Silhouettenanalyse zur Bestimmung von k")
+```
+
+###kmeans 
+```{r}
+kmeans_result <- kmeans(rsp_pca$x, centers = 2, nstart = 25)
+```
+
+```{r}
+kmeans_result$cluster    
+kmeans_result$centers     
+kmeans_result$tot.withinss
+```
+
+
+```{r}
+rsp_data <- as.data.frame(rsp_pca$x)
+rsp_data$cluster <- as.factor(kmeans_result$cluster)
+
+library(ggplot2)
+
+ggplot(rsp_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)") +
+  theme_minimal() +
+  scale_color_manual(values = rainbow(2))
+```
+
+```{r}
+first_two_components <- rsp_data$x[,1:2]
+plot(first_two_components)
+```
+
+
 
 #####PART 4: Linear regression
 ```{r}
