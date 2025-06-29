@@ -1022,6 +1022,14 @@ head(expr_corrected)
 
 ##SVA
 
+```{r}##
+if (!require("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+BiocManager::install("sva")
+````##
+
+
 ##ctrl
 ```{r}
 install.packages("sva")
@@ -2862,7 +2870,7 @@ legend("topright",
 ###Data reduction PCA
 
 ###Control
-###pca selbst  
+###pca   
 ```{r}
 ctrl_sva_df <- corrected_expr_ctrl[,2:ncol(corrected_expr_ctrl)]
 str(ctrl_sva_df)
