@@ -792,7 +792,7 @@ par(mfrow = c(1, 1))
 install.packages("pheatmap")
 library(pheatmap)
 
-# Auswahl einer Teilmenge der Proteine (z. B. Top 100 variabelsten)
+# Auswahl einer Teilmenge der Proteine (z.B. Top 100 variabelsten)
 select_top_var <- function(mat, top_n = 100) {
   vars <- apply(mat, 1, var)
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
