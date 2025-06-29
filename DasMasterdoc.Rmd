@@ -3198,6 +3198,7 @@ merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
                    all.x = TRUE)  # alle aus test_scores_combined_df behalten
 
 head(merged_df)
+dim(merged_df)
 ```
 
 ```{r}
@@ -3276,4 +3277,26 @@ plot_ly() %>%
   legend = list(title = list(text = "<b>RBP-Klassifikation</b>")))
 
 ```
+
+```{r}
+#hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
+
+# Group proteins based on optimal threshold:
+df_complete$RBP_group <- ifelse(df_complete$probability > optimal_threshold,
+                               "RBP", "Non-RBP")
+
+# Optional: check mean pI values per group to confirm
+aggregate(pI ~ RBP_group, data = df_complete, mean)
+
+# Perform one-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
+t_test_result <- t.test(
+  df_complete$pI[df_complete$RBP_group == "RBP"],
+  df_complete$pI[df_complete$RBP_group == "Non-RBP"],
+  alternative = "greater"
+)
+
+print(t_test_result)
+
+```
+
 
