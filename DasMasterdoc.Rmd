@@ -47,12 +47,12 @@ print(zip_contents)
 
 csv_file <- unzip(temp_file, files = zip_contents$Name[1], exdir = tempdir())
 A549_NS <- read.csv(csv_file, sep = ";")
-View(A549_NS)
+print(A549_NS)
 ```
 
 ```{r}
 #data exploration
-View(A549_NS)
+print(A549_NS)
 
 #number of rows and columns
 nrow(A549_NS)
@@ -113,7 +113,7 @@ for (i in 0:24) {
 }
 
 # show result
-View(ctrl_correlations)
+print(ctrl_correlations)
 plot(ctrl_correlations) 
 ```
 
@@ -143,7 +143,7 @@ for (i in 0:24) {
 }
 
 # show results
-View(rnase_correlations)
+print(rnase_correlations)
 plot(rnase_correlations)
 ```
 
@@ -1209,7 +1209,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(corrected_exp_ctrl)
+head(corrected_expr_ctrl)
 ```
  
 ##RNASE
@@ -1395,7 +1395,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(corrected_exp_rnase)
+head(corrected_expr_rnase)
 ```
  
 
@@ -2996,7 +2996,7 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
 ```
 
 ```{r}
-first_two_components <- Ctrl_data$x[,1:2]
+first_two_components <- Ctrl_data[,1:2]
 plot(first_two_components)
 ```
 
@@ -3136,7 +3136,7 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
 ```
 
 ```{r}
-first_two_components <- rnase_data$x[,1:2]
+first_two_components <- rnase_data[,1:2]
 plot(first_two_components)
 ```
 
