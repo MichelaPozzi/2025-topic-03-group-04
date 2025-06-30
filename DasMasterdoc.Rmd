@@ -792,7 +792,7 @@ par(mfrow = c(1, 1))
 install.packages("pheatmap")
 library(pheatmap)
 
-# Auswahl einer Teilmenge der Proteine (z. B. Top 100 variabelsten)
+# Auswahl einer Teilmenge der Proteine (z.B. Top 100 variabelsten)
 select_top_var <- function(mat, top_n = 100) {
   vars <- apply(mat, 1, var)
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
@@ -1017,8 +1017,7 @@ rnase_expr_corrected_df <- data.frame(
 ```{r}
 head(rnase_expr_corrected_df)
 ```
-=======
-head(expr_corrected)
+
 
 ##SVA
 
@@ -1027,10 +1026,10 @@ if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
 
 BiocManager::install("sva")
-````##
+```
 
 
-##ctrl
+##control
 ```{r}
 install.packages("sva")
 
@@ -1607,8 +1606,8 @@ shift_result$Shift_Distance_scaled <- robust_scale(abs(shift_result$Shift_Distan
 ```
 
 ```{r}
-# scale to 20%
-shift_result$Shift_Distance_scaled_20 <- (shift_result$Shift_Distance_scaled/25)*20
+# scale to 100%
+shift_result$Shift_Distance_scaled_100 <- (shift_result$Shift_Distance_scaled/25)*100
 ```
 
 
@@ -1735,9 +1734,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #robust scaling
 amplitude_changes$changes_scaled <- robust_scale(amplitude_changes$changes)
 
-#scale to 20%
-amplitude_changes$changes_scaled_20<- (amplitude_changes$changes_scaled/100)*20
-head(amplitude_changes$changes_scaled_20)
+#scale to 100%
+amplitude_changes$changes_scaled_100<- (amplitude_changes$changes_scaled/100)*100
+head(amplitude_changes$changes_scaled_100)
 ```
 
 
@@ -1867,9 +1866,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #robust scaling
 normalized_ctrl_df$EMD_scaled <- robust_scale(normalized_ctrl_df$EMD)
 
-#scale to 20%
-normalized_ctrl_df$EMD_scaled_20 <- (normalized_ctrl_df$EMD_scaled/25)*20
-head(normalized_ctrl_df$EMD_scaled_20)
+#scale to 100%
+normalized_ctrl_df$EMD_scaled_100 <- (normalized_ctrl_df$EMD_scaled/25)*100
+head(normalized_ctrl_df$EMD_scaled_100)
 ```
 
 
@@ -1939,9 +1938,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #robust scaling
 center_of_mass_df$COM_scaled <- robust_scale(center_of_mass_df$Delta_COM)
 
-#scale to 20% (max_delta = 10.9376)
-center_of_mass_df$COM_scaled_20 <- (center_of_mass_df$COM_scaled/max_delta) * 20
-head(center_of_mass_df$COM_scaled_20)
+#scale to 100% (max_delta = 10.9376)
+center_of_mass_df$COM_scaled_100 <- (center_of_mass_df$COM_scaled/max_delta) * 100
+head(center_of_mass_df$COM_scaled_100)
 ```
 
 ```{r}
@@ -2091,9 +2090,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #robust scaling
 Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled<- robust_scale(Wilcoxon_Pos_Max$Wilcoxon_statistic)
 
-#scale to 20%
-Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/6)*20
-head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20)
+#scale to 100%
+Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/6)*100
+head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 ```
 
 
@@ -2156,10 +2155,10 @@ Wilcoxon_df$Wilcox_Statistic_scaled <- robust_scale(Wilcoxon_df$Wilcox_Statistic
 
 #calculate test statstic for testscore (max. 20%)
 #paired Wilcoxon test: W(min) = 0, W(max) = 325
-Wilcoxon_df$Wilcox_Statistic_scaled_20 <- (Wilcoxon_df$Wilcox_Statistic_scaled / 325) * 20
+Wilcoxon_df$Wilcox_Statistic_scaled_100 <- (Wilcoxon_df$Wilcox_Statistic_scaled / 325) * 100
 
 #depict results
-head(Wilcoxon_df$Wilcox_Statistic_scaled_20)
+head(Wilcoxon_df$Wilcox_Statistic_scaled_100)
 ```
 
 
@@ -2167,13 +2166,13 @@ head(Wilcoxon_df$Wilcox_Statistic_scaled_20)
 #define dataframe for all test scores of all proteines
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
-  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_20,
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_100,
   Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
-  amplitude_changes = amplitude_changes$changes_scaled_20,
-  EMD = normalized_ctrl_df$EMD_scaled_20,
-  Center_of_Mass = center_of_mass_df$COM_scaled_20,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_20,
-  Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_20
+  amplitude_changes = amplitude_changes$changes_scaled_100,
+  EMD = normalized_ctrl_df$EMD_scaled_100,
+  Center_of_Mass = center_of_mass_df$COM_scaled_100,
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100,
+  Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_100
 )
 #depict result
   head(test_scores_combined_df)
@@ -2368,46 +2367,6 @@ test_scores_combined_df$probability <- predict(logistic_model, newdata = test_sc
 head(test_scores_combined_df)
 ```
 
-```{r}
-#thresold is selected at FDR = 10%
-# 1. Mark reference proteins in the full dataset
-test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
-
-# 2. Make predictions using the logistic model
-predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
-
-# 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.619, ]
-selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
-
-
-# 4. Count how many of the selected proteins are reference proteins
-table(selected_proteins$is_reference)
-
-# Optional: Extract the non-reference hits
-predicted_non_reference <- selected_proteins[!selected_proteins$is_reference, ]
-
-
-#how many proteins of negative control are found at this threshold
-# 1. Mark negative control proteins in the full dataset
-test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
-
-# 2. Make predictions using the existing logistic model
-predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
-
-# 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
-selected_proteins <- test_scores_combined_df[predictions > 0.619, ]
-
-# 4. Count how many of the selected proteins are from the negative control
-table(selected_proteins$is_negative)
-
-# Extract those negative control proteins among predicted positives
-predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
-
-# Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
-predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
-
-```
 
 ```{r}
 #calculate threshold automatically
@@ -2445,6 +2404,46 @@ abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
 
+```{r}
+#thresold is selected at FDR = 10%
+# 1. Mark reference proteins in the full dataset
+test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
+
+# 2. Make predictions using the logistic model
+predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+
+# 3. Apply threshold (e.g., 0.95) to get predicted positives
+selected_proteins <- test_scores_combined_df[predictions > 0.49, ]
+selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
+
+
+# 4. Count how many of the selected proteins are reference proteins
+table(selected_proteins$is_reference)
+
+# Optional: Extract the non-reference hits
+predicted_non_reference <- selected_proteins[!selected_proteins$is_reference, ]
+
+
+#how many proteins of negative control are found at this threshold
+# 1. Mark negative control proteins in the full dataset
+test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
+
+# 2. Make predictions using the existing logistic model
+predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
+
+# 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
+selected_proteins <- test_scores_combined_df[predictions > 0.49, ]
+
+# 4. Count how many of the selected proteins are from the negative control
+table(selected_proteins$is_negative)
+
+# Extract those negative control proteins among predicted positives
+predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
+
+# Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
+predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
+
+```
 
 
 ```{r}
@@ -3425,41 +3424,70 @@ Mass_seq <- seq(min(df_complete$Mass_kDa), max(df_complete$Mass_kDa), length.out
 grid <- expand.grid(pI = pI_seq, Mass_kDa = Mass_seq)
 grid$predicted <- predict(model, newdata = grid)
 
-# 3D-Plot mit lila eingefärbten Datenpunkten nach RBP oder Non-RBP -> macht vielleicht nach einem anderen Parameter mehr Sinn
-#Einteilung der Proteine anhand von threshold in RBPs und Non-RBPs
-# Klassifikation basierend auf optimal_threshold
-# 1. Klassifikation hinzufügen, falls noch nicht passiert
-df_complete$predicted_RBP <- ifelse(df_complete$probability >= optimal_threshold,
-                                    "RBP", "Non-RBP")
+# Neue Klassifikation
+df_complete$RBP_shift_category <- ifelse(df_complete$probability >= optimal_threshold,
+                                         ifelse(df_complete$Shift_direction_ctrl_to_rnase == "left shift", "RBP_left",
+                                                ifelse(df_complete$Shift_direction_ctrl_to_rnase == "right shift", "RBP_right", "RBP")),
+                                         "Non-RBP")
 
-# 2. Plotly-Plot
-plot_ly() %>%
-  # Datenpunkte: Farbe nach RBP-Klassifikation (nicht Wert)
-  add_markers(data = df_complete,
-              x = ~pI,
-              y = ~Mass_kDa,
-              z = ~probability,
-              color = ~predicted_RBP,             # ← Klassifikation statt Wert
-              colors = c("RBP" = "purple", 
-                         "Non-RBP" = "lightgray"), # ← 2 Farben für Klassen
-              marker = list(size = 4),
-              name = "Klassifikation",
-              showlegend = TRUE) %>%
-  # Regressionsfläche (weiterhin violett)
+# Farbdefinition
+farben <- list("RBP_left" = "#c9a0dc",     # hell-lila
+               "RBP_right" = "#7a42a6",    # dunkel-lila
+               "RBP" = "purple",
+               "Non-RBP" = "lightgray")
+
+# Plotly Plot mit separaten Gruppen und eigener Legendenbeschriftung
+fig <- plot_ly()
+
+# RBP_left
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "RBP_left"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["RBP_left"]], size = 4),
+              name = "RBP (left shift)")
+
+# RBP_right
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "RBP_right"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["RBP_right"]], size = 4),
+              name = "RBP (right shift)")
+
+# RBP ohne Shift-Direction (optional)
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "RBP"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["RBP"]], size = 4),
+              name = "RBP (no shift info)")
+
+# Non-RBP
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "Non-RBP"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["Non-RBP"]], size = 4),
+              name = "Non-RBP")
+
+# Regressionsfläche
+fig <- fig %>%
   add_surface(x = ~pI_seq,
               y = ~Mass_seq,
               z = matrix(grid$predicted, nrow = 30),
               opacity = 0.5,
               colorscale = "Purples",
-              showscale = FALSE,  # Skala nur für Fläche
-              name = "Regressionsfläche") %>%
-  # Achsenbeschriftungen
+              showscale = FALSE,
+              name = "Regression Surface")
+
+# Layout
+fig <- fig %>%
   layout(scene = list(
     xaxis = list(title = "pI"),
-    yaxis = list(title = "Masse (kDa)"),
+    yaxis = list(title = "Mass (kDa)", tick0 = 0, dtick = 100, range = c(0, 1000)),
     zaxis = list(title = "Probability")
   ),
-  legend = list(title = list(text = "<b>RBP-Klassifikation</b>")))
+  legend = list(title = list(text = "<b>Protein Classification</b>")))
+
+fig
+
 
 ```
 
@@ -3494,5 +3522,26 @@ t_test_result <- t.test(
 )
 
 print(t_test_result)
+```
+
+```{r}
+# create boxplot
+boxplot(pI ~ RBP_group,
+        data = df_complete,
+        col = c("lightblue", "lavender"),
+        main = "compare pI\nbetween RBP and Non-RBP",
+        xlab = "group",
+        ylab = "isoelectric point (pI)")
+
+# calculate mean
+mean_rbp <- mean(df_complete$pI[df_complete$RBP_group == "RBP"])
+mean_nonrbp <- mean(df_complete$pI[df_complete$RBP_group == "Non-RBP"])
+
+# depict mean in plot
+points(c(1, 2), c(mean_rbp, mean_nonrbp), pch = 19, col = "coral")
+
+# Oadd legend
+legend("topright", legend = c("Mean"), col = "coral", pch = 19)
+
 ```
 
