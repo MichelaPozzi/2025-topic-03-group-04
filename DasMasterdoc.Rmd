@@ -1181,7 +1181,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 # 3) Top 100 variabelsten Proteine extrahieren
 heat_before <- select_top_var(ctrl_expression_matrix, 100)
-heat_after  <- select_top_var(corrected_exp_ctrl, 100)
+heat_after  <- select_top_var(corrected_expr_ctrl, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
@@ -1236,7 +1236,7 @@ rnase_replicate <- str_extract(rnase_samples, "Rep\\d+")
 
 # sampleInfo DataFrame erstellen
 sampleInfo_R <- data.frame(
-  rnase_fraction = factor(frnase_fraction),
+  rnase_fraction = factor(rnase_fraction),
   rnase_fraction = factor(rnase_fraction)
 )
 
@@ -1871,14 +1871,6 @@ normalized_ctrl_df$EMD_scaled_100 <- (normalized_ctrl_df$EMD_scaled/25)*100
 head(normalized_ctrl_df$EMD_scaled_100)
 ```
 
-
-```{r}
-# load dataframe for t-test
-percent_ctrl_df <- readRDS("data/percent_ctrl_df.rds")
-percent_rnase_df <- readRDS("data/percent_rnase_df.rds")
-```
-
-
 ```{r}
 # center of mass
 # function for calculating center of mass
@@ -2418,11 +2410,9 @@ selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_con
 
 
 # 4. Count how many of the selected proteins are reference proteins
-table(selected_proteins$is_reference)
-
-# Optional: Extract the non-reference hits
-predicted_non_reference <- selected_proteins[!selected_proteins$is_reference, ]
-
+ref_counts <- table(selected_proteins$is_reference)
+names(ref_counts) <- c("Not positive control protein (FALSE)", "Positive Control protein (TRUE)")
+print(ref_counts)
 
 #how many proteins of negative control are found at this threshold
 # 1. Mark negative control proteins in the full dataset
@@ -2435,7 +2425,9 @@ predictions <- predict(logistic_model, newdata = test_scores_combined_df, type =
 selected_proteins <- test_scores_combined_df[predictions > 0.49, ]
 
 # 4. Count how many of the selected proteins are from the negative control
-table(selected_proteins$is_negative)
+neg_counts <- table(selected_proteins$is_negative)
+names(neg_counts) <- c("Not negative control protein (FALSE)", "Negative control protein (TRUE)")
+print(neg_counts)
 
 # Extract those negative control proteins among predicted positives
 predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
@@ -3531,6 +3523,9 @@ boxplot(pI ~ RBP_group,
 # calculate mean
 mean_rbp <- mean(df_complete$pI[df_complete$RBP_group == "RBP"])
 mean_nonrbp <- mean(df_complete$pI[df_complete$RBP_group == "Non-RBP"])
+
+print(mean_rbp)
+print(mean_nonrbp)
 
 # depict mean in plot
 points(c(1, 2), c(mean_rbp, mean_nonrbp), pch = 19, col = "coral")
