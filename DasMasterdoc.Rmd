@@ -1209,7 +1209,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(ctrl_sva_df)
+head(corrected_exp_ctrl)
 ```
  
 ##RNASE
@@ -1395,7 +1395,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(rnase_sva_df)
+head(corrected_exp_rnase)
 ```
  
 
