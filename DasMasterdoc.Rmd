@@ -2429,7 +2429,7 @@ test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (e.g., 0.95) to get predicted positives
-selected_proteins <- test_scores_combined_df[predictions > 0.49, ]
+selected_proteins <- test_scores_combined_df[predictions > optimal_threshold, ]
 selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
 
 
@@ -2446,7 +2446,7 @@ test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_n
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
-selected_proteins <- test_scores_combined_df[predictions > 0.49, ]
+selected_proteins <- test_scores_combined_df[predictions > optimal_threshold, ]
 
 # 4. Count how many of the selected proteins are from the negative control
 neg_counts <- table(selected_proteins$is_negative)
@@ -3166,6 +3166,26 @@ plot(first_two_components)
 
 ###right shift
 ###pca selbst  
+```{r}
+#create dataframe with right shift proteins only
+# convert matrices to dataframes
+corrected_ctrl_df <- as.data.frame(corrected_expr_ctrl, stringsAsFactors = FALSE)
+corrected_rnase_df <- as.data.frame(corrected_expr_rnase, stringsAsFactors = FALSE)
+
+# add column with protein names to newly created dataframes
+corrected_ctrl_with_protein <- cbind(Protein = protein_names, corrected_ctrl_df)
+corrected_rnase_with_protein <- cbind(Protein = protein_names, corrected_rnase_df)
+
+# filter for matching columns between right_shift_proteins_df and the batch removed dataframes
+right_shift_ctrl <- corrected_ctrl_df[corrected_ctrl_with_protein$Protein %in% right_shift_proteins_df$Protein, ]
+right_shift_rnase <- corrected_rnase_df[corrected_rnase_with_protein$Protein %in% right_shift_proteins_df$Protein, ]
+
+#depict result
+head(right_shift_ctrl)
+head(right_shift_rnase)
+
+```
+
 ```{r}
 rsp_sva_df <- right_shift_proteins_df[,2:ncol(right_shift_proteins_df)]
 str(rsp_sva_df)
