@@ -1906,7 +1906,7 @@ com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
 max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
 
 
-# define dataframe with resulst and difference between both treatments
+# define dataframe with results and difference between both treatments
 center_of_mass_df <- data.frame(
   Protein     = normalized_ctrl_df[[1]],  # extract protein names from the first column
   COM_Control = com_control,
@@ -1958,7 +1958,7 @@ center_of_mass_df$COM_scaled <- robust_scale(center_of_mass_df$Relative_Delta_CO
 center_of_mass_df$COM_scaled_100 <- (center_of_mass_df$COM_scaled/max_delta) * 100
 head(center_of_mass_df$COM_scaled_100)
 ```
-### wilcoxon statistic (not used for testscore)
+### wilcoxon statistic: position of maxima between replicates of conditions are compared
 ```{r}
 # determine global maxima from dataframes with still all 3 replicates in them
 
