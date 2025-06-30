@@ -1403,8 +1403,7 @@ head(rnase_sva_df)
 ######PART 2
 ###Data analysis
 ```{r}
-#visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
-# Protein auswählen
+#visualize distribution for one protein 
 protein_id <- "SPB6_HUMAN"
 
 # extract amount of protein
@@ -1424,8 +1423,7 @@ plot(fraktionen, intensities, type = "n",
 ```
 
 ```{r}
-#visualize distribution for one protein -> hilft uns u.a. zu beurteilen ob Maxima-Funktion funktioniert
-# Protein auswählen
+#visualize distribution for one protein ##REDUNDANT??
 protein_id <- "SPB6_HUMAN"
 
 # extract amount of protein
@@ -1445,7 +1443,8 @@ plot(fraktionen, intensities, type = "n",
 ```
 
 ```{r}
-#find all maxima - brauchen wir diesen Chunk??????
+##Doch Unnötig !
+# IdentifY position of global maxima
 # recognize peaks with diff()
 find_peaks_diff <- function(x, threshold = 2) {
   n <- length(x)
@@ -1459,15 +1458,14 @@ find_peaks_diff <- function(x, threshold = 2) {
       peaks[i] <- TRUE
     }
   }
-  
-  # Ränder prüfen
+ 
   if (x[1] >= threshold && x[1] > x[2]) peaks[1] <- TRUE
   if (x[n] >= threshold && x[n] > x[n-1]) peaks[n] <- TRUE
   
   which(peaks)
 }
 
-# Beispielhafte Anwendung auf Dataframe mit Protein in Spalte 1 und 25 Messwerten in Spalten 2–26
+# experimental application with a protein
 process_df_peaks <- function(df, threshold = 2) {
   results <- lapply(1:nrow(df), function(i) {
     intensities <- as.numeric(df[i, 2:26])
@@ -1476,7 +1474,7 @@ process_df_peaks <- function(df, threshold = 2) {
     list(Protein = protein, Peaks = peaks)
   })
   
-  # Ergebnis in Dataframe umwandeln: Peaks als kommaseparierte Liste oder NA, falls keine Peaks
+  # save as dataframe
   df_peaks <- data.frame(
     Protein = sapply(results, `[[`, "Protein"),
     Maxima_Positions = sapply(results, function(x) {
@@ -1505,7 +1503,7 @@ head(df_peaks_RNAse)
 ```
 
 ```{r}
-# Funktion zum Finden des globalen Maximums (ggf. mittlerer Index bei mehreren)
+# Identify global maxima and their position, if present
 find_global_maxima <- function(x, threshold = 2) {
   max_val <- max(x)
   if (max_val >= threshold) {
@@ -1517,11 +1515,11 @@ find_global_maxima <- function(x, threshold = 2) {
       return(middle_index)
     }
   } else {
-    return(NA_real_)  # Kein gültiges Maximum
+    return(NA_real_)  
   }
 }
 
-# DataFrame-Verarbeitung
+# extract intensity of the protein concentration in each fraction
 process_df_global_maxima <- function(df, threshold = 2) {
   results <- lapply(1:nrow(df), function(i) {
     intensities <- as.numeric(df[i, 2:26])
@@ -1539,7 +1537,7 @@ process_df_global_maxima <- function(df, threshold = 2) {
   return(df_maxima)
 }
 
-# Anwenden auf deine DataFrames
+# Apply to our dataframe
 global_ctrl <- process_df_global_maxima(normalized_ctrl_df, threshold = 2)
 global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold = 2)
 
@@ -1548,17 +1546,18 @@ head(global_ctrl)
 ```
 
 ```{r}
+#Shift Distance and direction based on changes in global maximum
 global_ctrl$Global_Maximum <- as.numeric(as.character(global_ctrl$Global_Maximum))
 global_rnase$Global_Maximum <- as.numeric(as.character(global_rnase$Global_Maximum))
 
 shift_distance <- global_rnase$Global_Maximum - global_ctrl$Global_Maximum
 
-# Richtung bestimmen
+# determine direction of the shift
 shift_direction <- ifelse(shift_distance > 0, "right shift",
                     ifelse(shift_distance < 0, "left shift",
                            "No Shift"))
 
-# Ergebnis zusammenfassen
+# summarize results in a table
 shift_result <- data.frame(
   Protein = global_ctrl$Protein,
   Position_Control = global_ctrl$Global_Maximum,
@@ -1612,19 +1611,18 @@ shift_result$Shift_Distance_scaled_100 <- (shift_result$Shift_Distance_scaled/25
 
 
 ```{r}
+# calculate change in amplitude of global maximum for control measurments
 get_global_amplitudes <- function(expression_df, global_ctrl) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
-    # max_pos_str kann mehrere Maxima enthalten, z.B. "5,10"
     max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))
     
     if (length(max_positions) == 0 || all(is.na(max_positions))) {
       return(NA)
     }
     
-    # Intensitäten an den Maxima (Achtung: +1 wegen Proteinspalte in expression_df)
     intensities <- as.numeric(expression_df[row_idx, max_positions + 1])
     
-    # Falls mehrere Maxima, alle Werte als String mit Komma trennen
+    # if there are multiple maxima connect them as strings -> WIESO wenn globale maxima!????
     paste(intensities, collapse = ",")
   },
   row_idx = 1:nrow(expression_df),
@@ -1646,19 +1644,17 @@ head(global_amplitudes_ctrl)
 ```
 
 ```{r}
+#calculate change in amplitude of global maximum for rnase measurments
 get_global_amplitudes <- function(expression_df, global_rnase) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
-    # max_pos_str kann mehrere Maxima enthalten, z.B. "5,10"
     max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))
     
     if (length(max_positions) == 0 || all(is.na(max_positions))) {
       return(NA)
     }
     
-    # Intensitäten an den Maxima (Achtung: +1 wegen Proteinspalte in expression_df)
     intensities <- as.numeric(expression_df[row_idx, max_positions + 1])
     
-    # Falls mehrere Maxima, alle Werte als String mit Komma trennen
     paste(intensities, collapse = ",")
   },
   row_idx = 1:nrow(expression_df),
@@ -1683,14 +1679,14 @@ head(global_amplitudes_rnase)
 
 ```{r}
 ##Gain and loss of amplitude in peak 
-# Erst numerisch machen
+# amplitude as numerics
 global_amplitudes_ctrl$Amplitude <- as.numeric(as.character(global_amplitudes_ctrl$Amplitude))
 global_amplitudes_rnase$Amplitude <- as.numeric(as.character(global_amplitudes_rnase$Amplitude))
 
-# Verlust: Abnahme der Amplitude nach RNase-Behandlung 
+# loss: amplitude is smaller after rnase treatment
 amplitude_loss <- pmax(global_amplitudes_ctrl$Amplitude - global_amplitudes_rnase$Amplitude, 0)
 
-# Zuwachs: Zunahme der Amplitude nach RNase-Behandlung
+# gain: amplitude is greater bevor rnase treatment
 amplitude_gain <- pmax(global_amplitudes_rnase$Amplitude - global_amplitudes_ctrl$Amplitude, 0)
 
 amplitude_changes <- data.frame(
@@ -1741,25 +1737,22 @@ head(amplitude_changes$changes_scaled_100)
 
 
 ```{r}
-# Join beider Dataframes mit globalen Maxima
+# Join dataframes including global maxima and calculate their differences
 df_diff_peaks <- shift_result[, 1:3]
 
-
-# Differenz berechnen (neue Spalte 'diff')
 df_diff_peaks$diff <- df_diff_peaks$Position_RNase - df_diff_peaks$Position_Control
 
-# Achsenlimit berechnen
+# calculate limits for axes
 max_val <- max(
   df_diff_peaks$Position_RNase,
   df_diff_peaks$Position_Control,
   na.rm= TRUE
 )*1.1
 
-# Farben für Punkte definieren
 colors <- ifelse(df_diff_peaks$diff > 0, "pink",
                  ifelse(df_diff_peaks$diff < 0, "lavender", "cyan"))
 
-# Scatterplot erstellen
+# create scatterplot 
 plot(
   df_diff_peaks$Position_RNase,
   df_diff_peaks$Position_Control,
@@ -1772,7 +1765,7 @@ plot(
   col = colors
 )
 
-# Diagonale Referenzlinie y = x
+# Referenceline y = x
 abline(a = 0, b = 1, col = "grey",lty=2)
 
 ```
@@ -2362,13 +2355,13 @@ head(test_scores_combined_df)
 
 ```{r}
 #calculate threshold automatically
-# 1. Vorhersagen erzeugen
+# 1. predictions
 test_scores_combined_df$predicted_prob <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# 2. Referenzmarkierungen setzen
+# 2. Marks for reference
 test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
 
-# 3. Thresholds evaluieren
+# 3. Evaluate thresholds 
 thresholds <- seq(0, 1, by = 0.001)
 fdr_values <- sapply(thresholds, function(thresh) {
   selected <- test_scores_combined_df[test_scores_combined_df$predicted_prob > thresh, ]
@@ -2380,7 +2373,7 @@ fdr_values <- sapply(thresholds, function(thresh) {
   return(fdr)
 })
 
-# 4. Threshold bei FDR ≤ 10% finden
+# 4. Find threshold at FDR ≤ 10% 
 target_fdr <- 0.10
 valid_thresholds <- thresholds[which(fdr_values <= target_fdr)]
 optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) else NA
@@ -2397,7 +2390,7 @@ abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 ```
 
 ```{r}
-#thresold is selected at FDR = 10%
+#threshold is selected at FDR = 10%
 # 1. Mark reference proteins in the full dataset
 test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
 
@@ -2635,19 +2628,19 @@ writeLines(protein_names, "right_shift_proteins.txt")
 ###Continuation: Visialization
 
 ```{r}
-#Positiv Kontrolle visualisiert
-# 10 Proteine mit der höchsten Probability extrahieren
+#visualize positive control
+# for example: top 10 proteins with highest probability score
 top10_proteins_df <- test_scores_combined_df[order(-test_scores_combined_df$probability), ][1:10, ]
 print(top10_proteins_df)
 
-##Positiv control check
+#check if these are proteins used as positive control proteins
 common_proteins <- intersect(top10_proteins_df$Protein, df_positive_control[[1]])
 df_common <- data.frame(Protein = common_proteins)
 print(df_common)
 
 protein_of_interest <- "RLA1_HUMAN"
 
-# 2. Fraktionsdaten extrahieren
+# extract their information
 ctrl_profile <- normalized_ctrl_df[normalized_ctrl_df[[1]] == protein_of_interest, 2:26]
 rnase_profile <- normalized_rnase_df[normalized_rnase_df[[1]] == protein_of_interest, 2:26]
 
@@ -2656,14 +2649,13 @@ fractions <- 1:25
 ctrl_y <- as.numeric(ctrl_profile)
 rnase_y <- as.numeric(rnase_profile)
 
-# Glätten der Linien mit spline()
+# smooth over the lines with spline() and
 ctrl_spline <- spline(fractions, ctrl_y, n = 200)
 rnase_spline <- spline(fractions, rnase_y, n = 200)
 
-# Grafikfenster öffnen (optional, für sauberen Plot)
 dev.new(width = 7, height = 5)
 
-# Plot für Control (glatt)
+# Plot for Control 
 plot(ctrl_spline$x, ctrl_spline$y,
      type = "l",
      col = "lightblue",
@@ -2678,19 +2670,19 @@ plot(ctrl_spline$x, ctrl_spline$y,
      bty = "n"            # kein Rahmen um den Plot
 )
 
-# Glatte RNase-Linie hinzufügen
+# add lines
 lines(rnase_spline$x, rnase_spline$y,
       col = "pink",
       lwd = 2)
 
-# Originalpunkte als Marker
+# use original points as marks
 points(fractions, ctrl_y, col = "lightblue", pch = 16)
 points(fractions, rnase_y, col = "pink", pch = 17)
 
-# Gitternetz hinzufügen
+# add grid
 grid(col = "lightgray", lty = "dotted", lwd = 1)
 
-# Legende
+
 legend("topright",
        legend = c("Control", "RNase"),
        col = c("lightblue", "pink"),
@@ -2704,14 +2696,14 @@ legend("topright",
 
 
 ```{r}
-
-##Visualization negative control
+#visualize negative control
+# 10 proteins with lowest probability score
 bottom10_proteins_df <- test_scores_combined_df[order(test_scores_combined_df$probability), ][1:10, ]
 print(bottom10_proteins_df)
 
 protein_of_interest <- "APC16_HUMAN"
 
-# 2. Fraktionsdaten extrahieren
+# extract their information
 ctrl_profile <- normalized_ctrl_df[normalized_ctrl_df[[1]] == protein_of_interest, 2:26]
 rnase_profile <- normalized_rnase_df[normalized_rnase_df[[1]] == protein_of_interest, 2:26]
 
@@ -2720,14 +2712,13 @@ fractions <- 1:25
 ctrl_y <- as.numeric(ctrl_profile)
 rnase_y <- as.numeric(rnase_profile)
 
-# Glätten der Linien mit spline()
+# smooth over the lines with spline()
 ctrl_spline <- spline(fractions, ctrl_y, n = 200)
 rnase_spline <- spline(fractions, rnase_y, n = 200)
 
-# Grafikfenster öffnen (optional, für sauberen Plot)
 dev.new(width = 7, height = 5)
 
-# Plot für Control (glatt)
+# Plot for Control
 plot(ctrl_spline$x, ctrl_spline$y,
      type = "l",
      col = "lightblue",
@@ -2742,19 +2733,17 @@ plot(ctrl_spline$x, ctrl_spline$y,
      bty = "n"            # kein Rahmen um den Plot
 )
 
-# Glatte RNase-Linie hinzufügen
+# Add smooth RNase-line
 lines(rnase_spline$x, rnase_spline$y,
       col = "pink",
       lwd = 2)
 
-# Originalpunkte als Marker
 points(fractions, ctrl_y, col = "lightblue", pch = 16)
 points(fractions, rnase_y, col = "pink", pch = 17)
 
-# Gitternetz hinzufügen
+# Add grid
 grid(col = "lightgray", lty = "dotted", lwd = 1)
 
-# Legende
 legend("topright",
        legend = c("Control", "RNase"),
        col = c("lightblue", "pink"),
@@ -3349,8 +3338,8 @@ saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
 
 ```{r}
 # 1. Nur relevante Spalten aus RBP- und Non-RBP-Tabellen auswählen
-rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
-non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
+rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
+non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
 
 # 2. Zusammenführen beider Tabellen
 Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
@@ -3376,12 +3365,48 @@ summary(model)
 ```
 
 ```{r}
+#try smth
+# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
+df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa" , "Length_AA")]), ]
+
+# Regression: testscores ~ pI + Mass_kDa
+model <- lm(probability ~ pI + Mass_kDa + Length_AA, data = df_complete)
+
+summary(model)
+```
+
+
+
+```{r}
 # determine correlation between components for linear regression
 cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
 cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "spearman")
 cor(df_complete$Mass_kDa, df_complete$pI, method = "spearman")
 
 ```
+```{r}
+# Searman correlation with length
+cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
+cor(df_complete$predicted_prob, df_complete$Length_AA, method = "spearman")
+cor(df_complete$Length_AA, df_complete$pI, method = "spearman")
+
+```
+
+
+```{r}
+cor(df_complete$predicted_prob, df_complete$pI, method = "pearson")
+cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "pearson")
+cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
+```
+
+```{r}
+#pearson with length
+
+cor(df_complete$predicted_prob, df_complete$pI, method = "pearson")
+cor(df_complete$predicted_prob, df_complete$Length_AA, method = "pearson")
+cor(df_complete$Length_AA, df_complete$pI, method = "pearson")
+```
+
 
 ```{r}
 install.packages("scatterplot3d")  # falls noch nicht installiert
