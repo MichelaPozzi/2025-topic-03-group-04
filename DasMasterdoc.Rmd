@@ -3339,15 +3339,6 @@ all(is_in_rbp_or_nonrbp)#
 
 
 ```{r}
-#Dataframes speichern für lineare regression
-dir.create("data", showWarnings = FALSE)
-saveRDS(test_scores_combined_df, file = "data/test_scores_combined_df.rds")
-saveRDS(Table_HS_RBP, file =  "data/Table_HS_RBP.rds")
-saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
-```
-
-
-```{r}
 # 1. Nur relevante Spalten aus RBP- und Non-RBP-Tabellen auswählen
 rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
 non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa")]
@@ -3374,6 +3365,18 @@ model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
 summary(model)
 
 ```
+
+```{r}
+# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
+df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI")]), ]
+
+# Regression: testscores ~ pI + Mass_kDa
+model <- lm(probability ~ pI, data = df_complete)
+
+summary(model)
+
+```
+
 
 ```{r}
 # determine correlation between components for linear regression
