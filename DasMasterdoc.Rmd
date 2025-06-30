@@ -47,12 +47,12 @@ print(zip_contents)
 
 csv_file <- unzip(temp_file, files = zip_contents$Name[1], exdir = tempdir())
 A549_NS <- read.csv(csv_file, sep = ";")
-View(A549_NS)
+print(A549_NS)
 ```
 
 ```{r}
 #data exploration
-View(A549_NS)
+print(A549_NS)
 
 #number of rows and columns
 nrow(A549_NS)
@@ -113,7 +113,7 @@ for (i in 0:24) {
 }
 
 # show result
-View(ctrl_correlations)
+print(ctrl_correlations)
 plot(ctrl_correlations) 
 ```
 
@@ -143,7 +143,7 @@ for (i in 0:24) {
 }
 
 # show results
-View(rnase_correlations)
+print(rnase_correlations)
 plot(rnase_correlations)
 ```
 
@@ -1209,7 +1209,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(ctrl_sva_df)
+head(corrected_expr_ctrl)
 ```
  
 ##RNASE
@@ -1395,7 +1395,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(rnase_sva_df)
+head(corrected_expr_rnase)
 ```
  
 
@@ -2985,7 +2985,7 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
 ```
 
 ```{r}
-first_two_components <- Ctrl_data$x[,1:2]
+first_two_components <- Ctrl_data[,1:2]
 plot(first_two_components)
 ```
 
@@ -3125,7 +3125,7 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
 ```
 
 ```{r}
-first_two_components <- rnase_data$x[,1:2]
+first_two_components <- rnase_data[,1:2]
 plot(first_two_components)
 ```
 
@@ -3328,15 +3328,6 @@ all(is_in_rbp_or_nonrbp)#
 
 
 ```{r}
-#Dataframes speichern für lineare regression
-dir.create("data", showWarnings = FALSE)
-saveRDS(test_scores_combined_df, file = "data/test_scores_combined_df.rds")
-saveRDS(Table_HS_RBP, file =  "data/Table_HS_RBP.rds")
-saveRDS(Table_HS_Non_RBP, file =  "data/Table_HS_Non_RBP.rds")
-```
-
-
-```{r}
 # 1. Nur relevante Spalten aus RBP- und Non-RBP-Tabellen auswählen
 rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
 non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
@@ -3365,6 +3356,7 @@ summary(model)
 ```
 
 ```{r}
+# HEAD
 #try smth
 # Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
 df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa" , "Length_AA")]), ]
@@ -3384,8 +3376,9 @@ cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "spearman")
 cor(df_complete$Mass_kDa, df_complete$pI, method = "spearman")
 
 ```
+
 ```{r}
-# Searman correlation with length
+# Spearman correlation with length
 cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
 cor(df_complete$predicted_prob, df_complete$Length_AA, method = "spearman")
 cor(df_complete$Length_AA, df_complete$pI, method = "spearman")
