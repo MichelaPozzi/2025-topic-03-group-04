@@ -3149,8 +3149,14 @@ first_two_components <- rnase_data$x[,1:2]
 plot(first_two_components)
 ```
 
+
 ###right shift
 ###pca selbst  
+
+```{r}
+ head(right_shift_proteins_df)
+```
+
 ```{r}
 rsp_sva_df <- right_shift_proteins_df[,2:ncol(right_shift_proteins_df)]
 str(rsp_sva_df)
