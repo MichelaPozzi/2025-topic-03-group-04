@@ -3356,7 +3356,7 @@ summary(model)
 ```
 
 ```{r}
-# HEAD
+
 #try smth
 # Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
 df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa" , "Length_AA")]), ]
@@ -3387,6 +3387,7 @@ cor(df_complete$Length_AA, df_complete$pI, method = "spearman")
 
 
 ```{r}
+# pearson with mass
 cor(df_complete$predicted_prob, df_complete$pI, method = "pearson")
 cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "pearson")
 cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
@@ -3402,6 +3403,7 @@ cor(df_complete$Length_AA, df_complete$pI, method = "pearson")
 
 
 ```{r}
+
 install.packages("scatterplot3d")  # falls noch nicht installiert
 library(scatterplot3d)
 
@@ -3420,6 +3422,7 @@ s3d$plane3d(model)
 ```
 
 ```{r}
+
 install.packages("plotly")
 library(plotly)
 
@@ -3497,6 +3500,7 @@ fig
 ```
 
 ```{r}
+
 #hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
 
 # Group proteins based on optimal threshold:
@@ -3518,6 +3522,7 @@ print(t_test_result)
 ```
 
 ```{r}
+
 #check whether mass differs significantly between RBPs and Non-RBPs
 
 # Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
@@ -3530,6 +3535,7 @@ print(t_test_result)
 ```
 
 ```{r}
+
 # create boxplot
 boxplot(pI ~ RBP_group,
         data = df_complete,
