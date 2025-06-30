@@ -3148,14 +3148,8 @@ first_two_components <- rnase_data$x[,1:2]
 plot(first_two_components)
 ```
 
-
 ###right shift
 ###pca selbst  
-
-```{r}
- head(right_shift_proteins_df)
-```
-
 ```{r}
 rsp_sva_df <- right_shift_proteins_df[,2:ncol(right_shift_proteins_df)]
 str(rsp_sva_df)
@@ -3341,23 +3335,16 @@ head(Table_HS_Non_RBP)
 
 ```{r}
 # check if all our proteins are included in the tables 
-proteins_right_shift <- right_shift_proteins_df$Protein
+all_proteins <- test_scores_combined_df$Protein
 proteins_rbp <- Table_HS_RBP$Entry_Name
 proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
 
-is_in_rbp_or_nonrbp <- proteins_right_shift %in% proteins_rbp | proteins_right_shift %in% proteins_non_rbp
+is_in_rbp_or_nonrbp <- test_scores_combined_df %in% proteins_rbp | test_scores_combined_df %in% proteins_non_rbp
 
 all(is_in_rbp_or_nonrbp)#
 
 ```
 
-```{r}
-# determine correlation between components for linear regression
-cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
-cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "spearman")
-cor(df_complete$Mass_kDa, df_complete$pI, method = "spearman")
-
-```
 
 ```{r}
 #Dataframes speichern für lineare regression
@@ -3393,6 +3380,14 @@ df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass
 model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
 
 summary(model)
+
+```
+
+```{r}
+# determine correlation between components for linear regression
+cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
+cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "spearman")
+cor(df_complete$Mass_kDa, df_complete$pI, method = "spearman")
 
 ```
 
