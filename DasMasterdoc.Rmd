@@ -3186,37 +3186,38 @@ head(right_shift_rnase)
 
 ```
 
+##rnase 
 ```{r}
-rsp_sva_df <- right_shift_proteins_df[,2:ncol(right_shift_proteins_df)]
-str(rsp_sva_df)
+R_rsp_sva_df <- right_shift_rnase[,2:ncol(right_shift_rnase)]
+str(R_rsp_sva_df)
 
-apply(rsp_sva_df, 2, mean)
+apply(R_rsp_sva_df, 2, mean)
 
-rsp_pca <- prcomp(rsp_sva_df, center = TRUE, scale = TRUE)
+R_rsp_pca <- prcomp(R_rsp_sva_df, center = TRUE, scale = TRUE)
 
-names(rsp_pca)
+names(R_rsp_pca)
 
-rsp_pca$rotation
+R_rsp_pca$rotation
 
-rsp_pca$sdev
+R_rsp_pca$sdev
 
-rsp_pca_var <- rsp_pca$sdev^2 # eigenvalues 
-rsp_pca_var
+R_rsp_pca_var <- R_rsp_pca$sdev^2 # eigenvalues 
+R_rsp_pca_var
 
-rsp_pca_ve <- round(rsp_pca_var / sum(rsp_pca_var)*100,2) # wert in prozent auf zwei dezimal 
-rsp_pca_ve
+R_rsp_pca_ve <- round(R_rsp_pca_var / sum(R_rsp_pca_var)*100,2) # wert in prozent auf zwei dezimal 
+R_rsp_pca_ve
 
-sort(rsp_pca_ve,decreasing=TRUE)
+sort(R_rsp_pca_ve,decreasing=TRUE)
 ```
 
 ###prozentplot 
 ```{r}
-barplot(rsp_pca_ve)
+barplot(R_rsp_pca_ve)
 ```
 
 ###weirder plot 
 ```{r}
-biplot(rsp_pca, scale = 0, cex = 0.4)
+biplot(R_rsp_pca, scale = 0, cex = 0.4)
 ```
 
 ###cluster bestimmung 
@@ -3224,7 +3225,7 @@ biplot(rsp_pca, scale = 0, cex = 0.4)
 ```{r} 
 #elbow 
 wss <- sapply(1:25, function(k){
-  kmeans(rsp_pca$x, centers = k, nstart = 25)$tot.withinss
+  kmeans(R_rsp_pca$x, centers = k, nstart = 25)$tot.withinss
 })
 
 plot(1:25, wss, type = "b", pch = 19,
@@ -3240,7 +3241,7 @@ library(cluster)
 library(factoextra)
 
 # Deine PCA-Daten
-df <- rsp_pca$x
+df <- R_rsp_pca$x
 
 # Silhouettenmittelwerte für verschiedene k berechnen
 silhouette_score <- function(k){
@@ -3276,13 +3277,13 @@ fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
 library(cluster)
 
 # Nur die numerische Matrix aus dem PCA-Objekt extrahieren
-pca_data <- rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
+R_rsp_pca_data <- R_rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
 
 sil_width <- numeric(9)
 
 for(k in 2:10) {
-  km <- kmeans(pca_data, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(pca_data))  # dist() NUR auf pca_data
+  km <- kmeans(R_rsp_pca_data, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(R_rsp_pca_data))  # dist() NUR auf pca_data
   sil_width[k - 1] <- mean(ss[, 3])
 }
 
@@ -3294,7 +3295,7 @@ plot(2:10, sil_width, type = "b", pch = 19,
 
 ###kmeans 
 ```{r}
-kmeans_result <- kmeans(rsp_pca$x, centers = 2, nstart = 25)
+kmeans_result <- kmeans(R_rsp_pca$x, centers = 2, nstart = 25)
 ```
 
 ```{r}
@@ -3305,12 +3306,12 @@ kmeans_result$tot.withinss
 
 
 ```{r}
-rsp_data <- as.data.frame(rsp_pca$x)
-rsp_data$cluster <- as.factor(kmeans_result$cluster)
+R_rsp_pca_data <- as.data.frame(R_rsp_pca$x)
+R_rsp_pca_data$cluster <- as.factor(kmeans_result$cluster)
 
 library(ggplot2)
 
-ggplot(rsp_data, aes(x = PC1, y = PC2, color = cluster)) +
+ggplot(R_rsp_pca_data, aes(x = PC1, y = PC2, color = cluster)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "K-Means Cluster im PCA-Raum",
        x = "Hauptkomponente 1 (PC1)",
@@ -3320,9 +3321,204 @@ ggplot(rsp_data, aes(x = PC1, y = PC2, color = cluster)) +
 ```
 
 ```{r}
-first_two_components <- rsp_data$x[,1:2]
+first_two_components <- R_rsp_pca_data[,1:2]
 plot(first_two_components)
 ```
+
+
+
+## ctrl
+
+```{r}
+C_rsp_sva_df <- right_shift_ctrl[,2:ncol(right_shift_ctrl)]
+str(C_rsp_sva_df)
+
+apply(C_rsp_sva_df, 2, mean)
+
+C_rsp_pca <- prcomp(C_rsp_sva_df, center = TRUE, scale = TRUE)
+
+names(C_rsp_pca)
+
+C_rsp_pca$rotation
+
+C_rsp_pca$sdev
+
+C_rsp_pca_var <- C_rsp_pca$sdev^2 # eigenvalues 
+C_rsp_pca_var
+
+C_rsp_pca_ve <- round(C_rsp_pca_var / sum(C_rsp_pca_var)*100,2) # wert in prozent auf zwei dezimal 
+C_rsp_pca_ve
+
+sort(C_rsp_pca_ve,decreasing=TRUE)
+```
+
+###prozentplot 
+```{r}
+barplot(C_rsp_pca_ve)
+```
+
+###weirder plot 
+```{r}
+biplot(C_rsp_pca, scale = 0, cex = 0.4)
+```
+
+###cluster bestimmung 
+
+```{r} 
+#elbow 
+wss <- sapply(1:25, function(k){
+  kmeans(C_rsp_pca$x, centers = k, nstart = 25)$tot.withinss
+})
+
+plot(1:25, wss, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Totale Within-Cluster-Varianz",
+     main = "Elbow-Methode zur Bestimmung von k") 
+```
+
+```{r}
+#Silhouette 
+
+library(cluster)
+library(factoextra)
+
+# Deine PCA-Daten
+df <- C_rsp_pca$x
+
+# Silhouettenmittelwerte für verschiedene k berechnen
+silhouette_score <- function(k){
+  km <- kmeans(df, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(df))
+  mean(ss[, 3])
+}
+
+k_values <- 2:10
+avg_sil <- sapply(k_values, silhouette_score)
+
+# Plot zur Auswahl des besten k
+plot(k_values, avg_sil, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Durchschnittliche Silhouettenbreite",
+     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
+
+# Bestes k ermitteln
+best_k <- k_values[which.max(avg_sil)]
+
+# KMeans & Silhouette für bestes k
+km_best <- kmeans(df, centers = best_k, nstart = 25)
+sil <- silhouette(km_best$cluster, dist(df))
+
+# Silhouettenplot anzeigen wie im Beispielbild
+fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
+                main = paste("Silhouettenplot für k =", best_k))
+
+
+```
+
+```{r}
+library(cluster)
+
+# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
+C_rsp_pca_data <- C_rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
+
+sil_width <- numeric(9)
+
+for(k in 2:10) {
+  km <- kmeans(C_rsp_pca_data, centers = k, nstart = 25)
+  ss <- silhouette(km$cluster, dist(C_rsp_pca_data))  # dist() NUR auf pca_data
+  sil_width[k - 1] <- mean(ss[, 3])
+}
+
+plot(2:10, sil_width, type = "b", pch = 19,
+     xlab = "Anzahl der Cluster (k)",
+     ylab = "Durchschnittliche Silhouettenbreite",
+      main = "Silhouettenanalyse zur Bestimmung von k")
+```
+
+###kmeans 
+```{r}
+kmeans_result <- kmeans(C_rsp_pca$x, centers = 2, nstart = 25)
+```
+
+```{r}
+kmeans_result$cluster    
+kmeans_result$centers     
+kmeans_result$tot.withinss
+```
+
+
+```{r}
+C_rsp_pca_data <- as.data.frame(C_rsp_pca$x)
+C_rsp_pca_data$cluster <- as.factor(kmeans_result$cluster)
+
+library(ggplot2)
+
+ggplot(C_rsp_pca_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)") +
+  theme_minimal() +
+  scale_color_manual(values = rainbow(2))
+```
+
+```{r}
+first_two_components <- C_rsp_pca_data[,1:2]
+plot(first_two_components)
+```
+
+## Markierung von rsp in großer pca
+
+##rnase 
+
+```{r}
+# PCA
+R_rsp_pca <- prcomp(R_rsp_sva_df, center = TRUE, scale = TRUE)
+
+# Liste der zu markierenden Proteine aus DataFrame
+highlight_proteins <- right_shift_rnase$protein
+
+# Loadings (z. B. für Proteinlabels)
+loadings <- R_rsp_pca$rotation
+
+# Standard-biplot zeichnen
+biplot(R_rsp_pca, col = c("gray", "pink"))
+
+# Labels einfügen – markierte Proteine hervorheben
+text(loadings[,1]*150, loadings[,2]*150, labels = rownames(loadings),
+     col = ifelse(rownames(loadings) %in% highlight_proteins, "blue", "black"),
+     cex = ifelse(rownames(loadings) %in% highlight_proteins, 1.2, 0.6),
+     font = ifelse(rownames(loadings) %in% highlight_proteins, 2, 1))
+
+```
+
+```{r}
+library(ggplot2)
+
+# PCA aus deinen Daten
+R_rsp_pca <- prcomp(R_rsp_sva_df, center = TRUE, scale = TRUE)
+
+# Ladeproteine extrahieren
+loadings <- as.data.frame(R_rsp_pca$rotation[, 1:2])
+loadings$protein <- rownames(loadings)
+
+# Markierungen setzen
+loadings$highlight <- loadings$protein %in% right_shift_rnase$protein
+
+# Plot
+ggplot(loadings, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = 0.2, color = "black") +  # alle Punkte
+  geom_point(data = subset(loadings, highlight), color = "blue", size = 3) +  # markierte Punkte
+  geom_text(data = subset(loadings, highlight), aes(label = protein), 
+            color = "blue", size = 3, fontface = "bold", vjust = -1) +  # markierte Labels
+  theme_minimal() +
+  ggtitle("PCA: Nur markierte Proteine beschriftet") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+```
+
+
+
 
 
 
