@@ -46,6 +46,8 @@ interactions across the proteome.
 
 # **Group 4 Data Analysis Projekt**
 
+# ***Silent Signals: Using Protein Traits to Predict RNA Interactions/The Shape of Affinity: Exploring Protein Features Behind RNA Binding (Vorschläge von Jetty)***
+
 # **Projekt Überblick**
 
 ```mermaid
