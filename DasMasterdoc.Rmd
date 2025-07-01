@@ -3073,6 +3073,7 @@ plot(first_two_components)
 ###RNASE
 ###test  
 
+
 ```{r}
 rnase_sva_df <- as.data.frame(corrected_expr_rnase)
 rownames(rnase_sva_df) <- rnase_sva_df$X
@@ -3080,6 +3081,11 @@ R_TEST <- rnase_sva_df
 str(R_TEST)
 
 ```
+
+```{r}
+head(rnase_sva_df)
+```
+
 
 ```{r}
 apply(R_TEST, 2, mean) 
@@ -3142,7 +3148,7 @@ barplot(rnase_pca_ve)
 
 ###weirder plot 
 ```{r}
-biplot(rnase_pca, scale = 0, cex = 0.1)
+biplot(rnase_pca, scale = 0, cex = 0.6)
 ```
 
 ###cluster bestimmung 
@@ -3646,48 +3652,120 @@ plot(first_two_components)
 ##rnase 
 
 ```{r}
-# PCA
-T_rnase_pca <- prcomp(corrected_expr_rnase, center = TRUE, scale = TRUE)
-
-# Liste der zu markierenden Proteine aus DataFrame
-highlight_proteins <- right_shift_rnase$protein
-
-# Loadings (z. B. für Proteinlabels)
-loadings <- T_rnase_pca$rotation
-
-# Standard-biplot zeichnen
-biplot(T_rnase_pca, col = c("gray", "pink"))
-
-# Labels einfügen – markierte Proteine hervorheben
-text(loadings[,1]*150, loadings[,2]*150, labels = rownames(loadings),
-     col = ifelse(rownames(loadings) %in% highlight_proteins, "blue", "black"),
-     cex = ifelse(rownames(loadings) %in% highlight_proteins, 1.2, 0.6),
-     font = ifelse(rownames(loadings) %in% highlight_proteins, 2, 1))
+ rnase_sva_df <- as.data.frame(corrected_expr_rnase)
+Arnase_sva_df <- cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
 
 ```
 
 ```{r}
+T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
+```
+
+```{r}
+dim(T_rnase_df)
+```
+
+```{r}
+# 1. Sicherstellen, dass die Protein-Namen in den Zeilennamen stehen
+# (Falls sie in einer Spalte sind – z. B. "Protein" –, dann so:)
+# T_rnase_df <- column_to_rownames(T_rnase_df, var = "Protein")  # falls tidyverse
+# oder base R:
+# rownames(T_rnase_df) <- T_rnase_df$Protein
+# T_rnase_df$Protein <- NULL
+
+# 2. Nur numerische Werte an PCA übergeben
+pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+
+# 3. Ergebnis als DataFrame
+pca_df <- as.data.frame(pca$x)
+
+# 4. Jetzt Protein-Namen als neue Spalte hinzufügen (aus Zeilennamen!)
+pca_df$Protein <- rownames(T_rnase_df)
+
+
+# 5. Proteine, die hervorgehoben werden sollen
+highlight_proteins <- rownames(right_shift_rnase)
+
+# 6. Markierungsspalte
+pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
+
+# 7. Plot
 library(ggplot2)
 
-# PCA aus deinen Daten
-T_rnase_pca <- prcomp(corrected_expr_rnase, center = TRUE, scale = TRUE)
-
-# Ladeproteine extrahieren
-loadings <- as.data.frame(T_rnase_pca$rotation[, 1:2])
-loadings$protein <- rownames(loadings)
-
-# Markierungen setzen
-loadings$highlight <- loadings$protein %in% right_shift_rnase$protein
-
-# Plot
-ggplot(loadings, aes(x = PC1, y = PC2)) +
-  geom_point(alpha = 0.2, color = "black") +  # alle Punkte
-  geom_point(data = subset(loadings, highlight), color = "blue", size = 3) +  # markierte Punkte
-  geom_text(data = subset(loadings, highlight), aes(label = protein), 
-            color = "blue", size = 3, fontface = "bold", vjust = -1) +  # markierte Labels
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("Ja" = "red", "Nein" = "gray")) +
   theme_minimal() +
-  ggtitle("PCA: Nur markierte Proteine beschriftet") +
-  theme(plot.title = element_text(hjust = 0.5))
+  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
+
+```
+
+```{r}
+head(pca_df)
+```
+
+
+```{r}
+
+
+# 2. PCA auf dem großen Datensatz
+T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
+
+# 1. Sicherstellen, dass Zeilennamen gesetzt sind
+stopifnot(!is.null(rownames(T_rnase_df)))
+stopifnot(!is.null(rownames(right_shift_rnase)))
+
+# 3. PCA-Ergebnisse in DataFrame + Protein-Namen als Spalte
+pca_df <- as.data.frame(pca$x)
+pca_df$Protein <- rownames(T_rnase_df)
+
+# 4. Proteine, die hervorgehoben werden sollen
+highlight_proteins <- rownames(right_shift_rnase)
+
+# 5. Markierungsspalte hinzufügen
+pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
+
+# 6. Plot mit ggplot2
+library(ggplot2)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("Ja" = "red", "Nein" = "gray")) +
+  theme_minimal() +
+  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
+
+```
+
+
+```{r}
+# 1. Zeilennamen korrekt setzen – wichtig!
+if (is.null(rownames(rnase_sva_df))) {
+  rownames(rnase_sva_df) <- paste0("Protein_", 1:nrow(rnase_sva_df))
+}
+
+# 2. PCA
+T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+
+# 3. PCA-Ergebnisse + Protein-IDs
+pca_df <- as.data.frame(T_rnase_pca $x)
+pca_df$Protein <- rownames(rnase_sva_df)  # Jetzt korrekt
+
+# 4. Proteine, die hervorgehoben werden sollen
+highlight_proteins <- rownames(right_shift_rnase)
+
+# 5. Markierungsspalte
+pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
+
+# 6. Plot
+library(ggplot2)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("Ja" = "red", "Nein" = "grey")) +
+  theme_minimal() +
+  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
 
 ```
 
