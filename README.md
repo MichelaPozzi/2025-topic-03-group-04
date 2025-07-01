@@ -90,10 +90,10 @@ flowchart LR
 ```mermaid
 flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
-    B --> C[Normierung pro Protein]
+    B --> C[Normalisierung pro Protein]
     C --> D[Mittelwertberechung]
-    D --> E[Batchentfernung mit limma]
-    D --> F[Batchentfernung mit sva]
+    C --> E[Batchentfernung mit limma]
+    C --> F[Batchentfernung mit sva]
 ```
 
 1.  **3 Replikate pro Fraktion werden normalisiert**:\
