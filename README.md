@@ -101,5 +101,11 @@ interactions across the proteome.
 
 3.  
 
+```mermaid
+flowchart TD
+    A[Mass Spec Data] --> B[Normalize Data]
+    B --> C[Calculate RNA-dependency Probability]
+    C --> D[Linear Regression + t-Test]
+    D --> E[Interpret Results]
 
 
