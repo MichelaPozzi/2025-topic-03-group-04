@@ -2251,7 +2251,6 @@ head(RNA_independent)
 
 ```{r}
 # check which of the potential proteins for negative control are actually contained in our dataset
-
 row_subset <- RNA_independent[,1]
 ref_row <- normalized_ctrl_df[,1]
 
@@ -2261,12 +2260,34 @@ common_proteins_negative <- intersect(row_subset, ref_row)
 # depict vector with common proteins
 length(common_proteins_negative)
 
-# Randomly sample 550 elements from 'common_proteins_positive' 
-# (together with 550 positive control proteins, 1100 total — approx. 30% of all proteins,
-#  allowing a 30/70 model split)
-negative_control <- sample(common_proteins_negative, 550, replace = FALSE) #replace = FALSE -> no protein can be chosen twice
+# select 550 proteins for negative control
+# (to be combined later with 550 positive controls for a balanced dataset of 1100 proteins,
+#  which is about 30% of all proteins, suitable for a 30/70 training-test split)
 
+# Filter proteins with '0' in column 4 that are present in the dataset 
+zero_proteins <- intersect(RNA_independent[RNA_independent[,4] == 0, 1], normalized_ctrl_df[,1])
+
+# Filter proteins with '1' in column 4 that are present in the dataset 
+one_proteins <- intersect(RNA_independent[RNA_independent[,4] == 1, 1], normalized_ctrl_df[,1])
+
+# Count how many definite negatives we have
+n_zero <- length(zero_proteins)
+
+# Calculate how many proteins with '1' we need to sample to reach 550 total
+n_fill <- 550 - n_zero
+
+# Set random seed for reproducibility
+set.seed(42)
+
+# Randomly sample the required number of '1' proteins to fill the negative control set
+sampled_one_proteins <- sample(one_proteins, n_fill)
+
+# Combine the definite negatives and sampled proteins to form the final negative control set
+negative_control <- c(zero_proteins, sampled_one_proteins)
+
+# Confirm the length of the final negative control vector (should be 550)
 length(negative_control)
+
 
 ```
 
@@ -2299,13 +2320,8 @@ common_proteins_positive <- intersect(row_subset, ref_row)
 
 # Output the number of common proteins
 length(common_proteins_positive)
-
-# Randomly sample 550 elements from 'common_proteins_positive' 
-# (together with 550 negative control proteins, 1100 total — approx. 30% of all proteins,
-#  allowing a 30/70 model split)
-positive_control <- sample(common_proteins_positive, 550, replace = FALSE)
-
-length(positive_control)
+ 
+positive_control <- common_proteins_positive
 ```
 
 ```{r}
@@ -2314,6 +2330,7 @@ length(positive_control)
 df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
 # depict result
 print(df_positive_control)
+dim(df_positive_control)
 
 max_positive <- max(df_positive_control$testscores)
 print(max_positive)
@@ -3260,7 +3277,6 @@ plot(first_two_components)
 
 
 ###right shift
-###pca selbst  
 ```{r}
 #create dataframe with right shift proteins only
 # convert matrices to dataframes
@@ -3363,7 +3379,7 @@ biplot(rnase_rsp_pca, scale = 0, cex = 0.4)
 ```{r} 
 #elbow 
 wss <- sapply(1:25, function(k){
-  kmeans(R_rsp_pca$x, centers = k, nstart = 25)$tot.withinss
+  kmeans(rnase_rsp_pca$x, centers = k, nstart = 25)$tot.withinss
 })
 
 plot(1:25, wss, type = "b", pch = 19,
@@ -3415,7 +3431,7 @@ fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
 library(cluster)
 
 # Nur die numerische Matrix aus dem PCA-Objekt extrahieren
-rnase_rsp_pca_data <- rnase_rsp_pca_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
+rnase_rsp_pca_data <- rnase_rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
 
 sil_width <- numeric(9)
 
@@ -3488,7 +3504,6 @@ apply(ctrl_rsp_T, 2, sd)
 
 ```{r}
 ctrl_rsp_pca <- prcomp(ctrl_rsp_df, center = TRUE, scale = TRUE)
-
 names(ctrl_rsp_pca)
 ```
 
@@ -3778,6 +3793,17 @@ dim(merged_df)
 ```
 
 ```{r}
+# which parameters can be used in multiple regression: correlation between independent variables should be as low as possible
+cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
+cor(df_complete$Mass_kDa, df_complete$Length_AA, method = "pearson")
+cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
+
+# pI can be used as independent variable with either mass or length
+# mass and length should not both be used due to high correlation -> we chose mass as it is experimentally more accessable than length
+```
+
+
+```{r}
 # Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
 df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
 
@@ -3786,52 +3812,6 @@ model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
 
 summary(model)
 
-```
-
-```{r}
-
-#try smth
-# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
-df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa" , "Length_AA")]), ]
-
-# Regression: testscores ~ pI + Mass_kDa
-model <- lm(probability ~ pI + Mass_kDa + Length_AA, data = df_complete)
-
-summary(model)
-```
-
-
-
-```{r}
-# determine correlation between components for linear regression
-cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
-cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "spearman")
-cor(df_complete$Mass_kDa, df_complete$pI, method = "spearman")
-
-```
-
-```{r}
-# Spearman correlation with length
-cor(df_complete$predicted_prob, df_complete$pI, method = "spearman")
-cor(df_complete$predicted_prob, df_complete$Length_AA, method = "spearman")
-cor(df_complete$Length_AA, df_complete$pI, method = "spearman")
-
-```
-
-
-```{r}
-# pearson with mass
-cor(df_complete$predicted_prob, df_complete$pI, method = "pearson")
-cor(df_complete$predicted_prob, df_complete$Mass_kDa, method = "pearson")
-cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
-```
-
-```{r}
-#pearson with length
-
-cor(df_complete$predicted_prob, df_complete$pI, method = "pearson")
-cor(df_complete$predicted_prob, df_complete$Length_AA, method = "pearson")
-cor(df_complete$Length_AA, df_complete$pI, method = "pearson")
 ```
 
 
@@ -3944,6 +3924,7 @@ df_complete$RBP_group <- ifelse(df_complete$probability > optimal_threshold,
 aggregate(pI ~ RBP_group, data = df_complete, mean)
 
 # Perform one-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
+# as big sample sizes are used, it was assumed that the central limit theorem applies (meaning the data follows a normal distribution)
 t_test_result <- t.test(
   df_complete$pI[df_complete$RBP_group == "RBP"],
   df_complete$pI[df_complete$RBP_group == "Non-RBP"],
