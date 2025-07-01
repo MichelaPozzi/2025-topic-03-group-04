@@ -48,8 +48,7 @@ interactions across the proteome.
 
 # **Projekt Überblick**
 
-```mermaid
-flowchart LR
+flowchart TD
     A[Mass Spec Data] --> B[Data Exploration]
     B --> C[Reproducibility]
     C --> D[Normalization]
@@ -57,7 +56,7 @@ flowchart LR
     E --> F[Calculation Probability Of RNA-dependence]
     F --> G[Dimension Reduction]
     G --> H[Linear Regression]
-    H --> I[Influence Of pI and Mass on RNA-dependenc]
+    H --> I[Influence Of pI and Mass on RNA-dependence]
 
 ## **Ziel:**
 
@@ -111,6 +110,5 @@ flowchart LR
     mit den geglätteten Werten
 
 3.  
-
 
 
