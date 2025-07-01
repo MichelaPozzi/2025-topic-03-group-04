@@ -92,8 +92,7 @@ flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
     B --> C[Normalisierung pro Protein]
     C --> D[Mittelwertberechung]
-    C --> E[Batchentfernung mit limma]
-    C --> F[Batchentfernung mit sva]
+    C --> E[Batchentfernung]
 ```
 
 1.  **3 Replikate pro Fraktion werden normalisiert**:\
