@@ -147,8 +147,8 @@ flowchart LR
    Da die Masse leichter experimentell zugänglich ist als die Länge, wurde sie gemeinsam mit dem pI als Prädiktor in der multiplen Regression eingesetzt.
     
 3. **Multiple Regression**
-    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001).\> 
-    Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38).\ 
+    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001).\ 
+    Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38).
     ![Beschreibung des Bildes](image/3d_scatterplot.jpeg)\
     Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple Regression bestimmte Regressionsfläche.\
     Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten an.\
