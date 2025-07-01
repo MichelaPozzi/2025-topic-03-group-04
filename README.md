@@ -101,4 +101,20 @@ interactions across the proteome.
 
 3.  
 
-4.  
+
+---
+## 🧪 Analyse-Workflow
+```mermaid
+graph TD
+  A[Rohdaten: Mass Spec] --> B[Normalisierung]
+  B --> C[RNA-binding Probability Estimation]
+  C --> D[Struktureigenschaften extrahieren (pI, Masse)]
+  D --> E[Lineare Regression]
+  E --> F[t-Test auf Signifikanz]
+  F --> G[Ergebnisse + Visualisierung]
+
+  click A "#datenquelle" "Zur Datenquelle"
+  click C "#probability" "Wahrscheinlichkeitsmodell"
+  click E "#regression" "Details zur Regression"
+  click G "#plots" "Zu den Ergebnissen"
+
