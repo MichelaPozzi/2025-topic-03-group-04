@@ -129,7 +129,7 @@ flowchart LR
 - Einfluss ausgewählter Prädiktoren (Masse und pI) auf die Wahrscheinlichkeit für RNA-Dependenz untersuchen und auf Signifikanz prüfen
 - für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand von experimentell zugänglichen Größen vorhersagen
 
-## ** Ablauf:**
+## **Ablauf:**
 
 ```mermaid
 flowchart LR
@@ -149,7 +149,7 @@ flowchart LR
 3. **Multiple Regression**
     Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001). 
     Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38). 
-    ![Beschreibung des Bildes](images/Bild 01.07.25 um 20.00.jpeg)
+    ![Beschreibung des Bildes](images/Bild%2001.07.25%20um%2020.00.jpeg)
     Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple Regression bestimmte Regressionsfläche.
     Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten an.
     Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil der Varianz erklären kann.
