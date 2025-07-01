@@ -122,7 +122,7 @@ flowchart LR
 
 3.  
 
-# **Linear Regression**
+# **Lineare Regression**
 
 ## **Ziel:**
 
