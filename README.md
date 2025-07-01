@@ -54,8 +54,8 @@ flowchart LR
     B --> C[Daten Aufreinigen]
     C --> D[Daten Beschreibung]
     D --> E[Daten Normalisierung]
-    D --> E[Dimensionsreduktion]
-    E --> F[Lineare Regression]
+    E --> F[Dimensionsreduktion]
+    F --> G[Lineare Regression]
 ```
 
 
