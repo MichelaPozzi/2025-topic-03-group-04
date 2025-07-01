@@ -1905,15 +1905,18 @@ com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
 # calculate maximal possible shift for every protein
 max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
 
+# Delta and relative shift
+delta_com <- com_rnase - com_control
+relative_delta_com <- abs(delta_com) / max_delta_com
 
 # define dataframe with results and difference between both treatments
 center_of_mass_df <- data.frame(
   Protein     = normalized_ctrl_df[[1]],  # extract protein names from the first column
   COM_Control = com_control,
   COM_RNase   = com_rnase,
-  Delta_COM   = com_rnase - com_control, # calculate delta
+  Delta_COM   = delta_com,
   Max_Delta_COM      = max_delta_com,
-  Relative_Delta_COM = abs(com_rnase - com_control) / max_delta_com
+  Relative_Delta_COM = relative_delta_com
 )
 
 # View first few results
@@ -1952,11 +1955,16 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #### scaling
 ```{r}
 #robust scaling
-center_of_mass_df$COM_scaled <- robust_scale(center_of_mass_df$Relative_Delta_COM)
+center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Relative_Delta_COM)
 
-#scale to 100% (max_delta = 10.9376)
-center_of_mass_df$COM_scaled_100 <- (center_of_mass_df$COM_scaled/max_delta) * 100
-head(center_of_mass_df$COM_scaled_100)
+# devide by maximal fraction delta (24)
+center_of_mass_df$COM_scaled_norm <- center_of_mass_df$COM_scaled / 24
+
+# scale to 100 (24 fractions as max Delta)
+center_of_mass_df$COM_scaled_100 <- center_of_mass_df$COM_scaled_norm * 100
+
+# depict results
+head(center_of_mass_df[, c("Protein", "Delta_COM", "Relative_Delta_COM", "COM_scaled", "COM_scaled_100")])
 ```
 ### wilcoxon statistic: position of maxima between replicates of conditions are compared
 ```{r}
