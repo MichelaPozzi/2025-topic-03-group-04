@@ -149,7 +149,7 @@ flowchart LR
 3. **Multiple Regression**
     Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001). 
     Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38). 
-    ![Beschreibung des Bildes](images/Bild%2001.07.25%20um%2020.00.jpeg)
+    ![Beschreibung des Bildes](images/3d_scatterplot.jpeg)
     Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple Regression bestimmte Regressionsfläche.
     Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten an.
     Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil der Varianz erklären kann.
@@ -157,7 +157,7 @@ flowchart LR
     
 4. **Einfluss der Prädiktoren auf Signifikanz testen**
     Mit t-Tests wurde geprüft, ob sich RBPs und Non-RBPs signifikant in pI und Masse unterscheiden.
-    ![Beschreibung des Bildes](images/Bild 01.07.25 um 20.51.jpeg)
+    ![Beschreibung des Bildes](images/comparison_pI.jpeg)
     Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter RNA-Dependence-Wahrscheinlichkeit festgestellt.
 
 
