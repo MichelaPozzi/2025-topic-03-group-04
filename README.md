@@ -83,7 +83,12 @@ interactions across the proteome.
 
     **Output**:\
     Zwei Dataframes (für Control und RNase) mit 75 Spalten (3×25)\
-    mit den skalierten Intensitäten der Proteine
+    mit den skalierten Intensitäten der Proteine\
+    **Normed Control Dataframe (first 6 rows)**\
+    ![Mein Screenshot](image/screenshot_normed_control.png)
+
+    **Normed RNase Dataframe (first 6 rows)**\
+    ![Mein Screenshot](image/screenshot_normed_rnase.png)
 
 2.  **Glättung der Werte durch einen gleitenden Mittelwert** der gleitende Mittelwert resultiert in
     einer Glättung der mittleren\
