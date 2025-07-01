@@ -51,13 +51,20 @@ interactions across the proteome.
 ```mermaid
 flowchart LR
     A[Mass Spec Data] --> B[Data Exploration]
-    B --> C[Reproducibility]
-    C --> D[Normalization]
-    D --> E[Removal Of Batch Effect]
-    E --> F[Calculation Probability Of RNA-dependence]
-    F --> G[Dimension Reduction]
-    G --> H[Linear Regression]
-    H --> I[Influence Of pI and Mass on RNA-dependence]
+    B --> C[Data Clean Up]
+    C --> D[Descriptive Statistics]
+    
+    subgraph Descriptive_Stats ["Descriptive Statistics Details"]
+        D1[Reproducibility]
+        D2[Normalization]
+        D3[Removal of Batch Effect]
+    end
+    
+    D --> D1
+    D1 --> D2
+    D2 --> D3
+    D3 --> E[Dimension]
+    E --> F[Linear Regression]
 ```
 
 
