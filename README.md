@@ -50,21 +50,12 @@ interactions across the proteome.
 
 ```mermaid
 flowchart LR
-    A[Mass Spec Data] --> B[Data Exploration]
-    B --> C[Data Clean Up]
-    C --> D[Descriptive Statistics]
-    
-    subgraph Descriptive_Stats ["Descriptive Statistics Details"]
-        D1[Reproducibility]
-        D2[Normalization]
-        D3[Removal of Batch Effect]
-    end
-    
-    D --> D1
-    D1 --> D2
-    D2 --> D3
-    D3 --> E[Dimension]
-    E --> F[Linear Regression]
+    A[Mass Spec Daten] --> B[Data Exploration]
+    B --> C[Daten Aufreinigen]
+    C --> D[Daten Beschreibung]
+    D --> E[Daten Normalisierung]
+    D --> E[Dimensionsreduktion]
+    E --> F[Lineare Regression]
 ```
 
 
