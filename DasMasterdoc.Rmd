@@ -798,6 +798,21 @@ select_top_var <- function(mat, top_n = 100) {
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
 }
 
+heat_before <- select_top_var(expr_matrix, 100)
+heat_after  <- select_top_var(ctrl_expr_corrected, 100)
+
+pheatmap(heat_before,
+         main = "Vor Korrektur",
+         cluster_cols = TRUE,
+         cluster_rows = TRUE,
+         annotation_col = annotation_col)
+
+pheatmap(heat_after,
+         main = "Nach Korrektur",
+         cluster_cols = TRUE,
+         cluster_rows = TRUE,
+         annotation_col = annotation_col)
+
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
 heat_before <- select_top_var(expr_matrix, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
@@ -824,6 +839,13 @@ pheatmap(heat_after,
 # Reset Layout
 par(mfrow = c(1, 1))
 ```
+
+
+```{r}
+pheatmap(expr_matrix[1:100, ], main = "Test Heatmap Original")
+pheatmap(ctrl_expr_corrected[1:100, ], main = "Test Heatmap Korrigiert")
+```
+
 
 
 ```{r}
