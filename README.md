@@ -48,6 +48,17 @@ interactions across the proteome.
 
 # **Projekt Überblick**
 
+```mermaid
+flowchart LR
+    A[Mass Spec Data] --> B[Data Exploration]
+    B --> C[Reproducibility]
+    C --> D[Normalization]
+    D --> E[Removal Of Batch Effect]
+    E --> F[Calculation Probability Of RNA-dependence]
+    F --> G[Dimension Reduction]
+    G --> H[Linear Regression]
+    H --> I[Influence Of pI and Mass on RNA-dependenc]
+
 ## **Ziel:**
 
 ## **Libraries:**
@@ -101,11 +112,5 @@ interactions across the proteome.
 
 3.  
 
-```mermaid
-flowchart TD
-    A[Mass Spec Data] --> B[Normalize Data]
-    B --> C[Calculate RNA-dependency Probability]
-    C --> D[Linear Regression + t-Test]
-    D --> E[Interpret Results]
 
 
