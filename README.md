@@ -102,12 +102,4 @@ interactions across the proteome.
 3.  
 
 
-graph TD
-  A[Rohdaten: Massenspektrometrie] --> B[Normalisierung der Daten]
-  B --> C[Bestimmung der RNA-Bindungswahrscheinlichkeit]
-  C --> D[Extraktion von Protein-Eigenschaften (pI, Masse)]
-  D --> E[Lineare Regression: Einfluss von pI und Masse]
-  E --> F[t-Test auf Signifikanz]
-  F --> G[Interpretation und Visualisierung der Ergebnisse]
-
 
