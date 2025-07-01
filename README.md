@@ -138,26 +138,26 @@ flowchart LR
     C --> D[Einfluss der Prädiktoren auf Siginifkanz testen]
 ```
 1. **Biochemische Eigenschaften der Proteine laden**
-    Für alle betrachteten Proteine wurden aus der Datenbank RBP2GO Informationen zu Länge in AA, Masse in kDa und dem pI geladen. 
+    Für alle betrachteten Proteine wurden aus der Datenbank RBP2GO Informationen zu Länge in AA, Masse in kDa und dem pI geladen.\ 
     
 2. **Auswahl der unabhängigen Variablen für die multiple Regression**
-   Unabhängige Variablen sollten möglichst wenig miteinander korrelieren, um Mehrfachkollinearität zu vermeiden.
-   Daher wurde die Korrelation zwischen Masse, Länge und pI untersucht.
-   Es zeigte sich eine starke Korrelation zwischen Masse und Länge.
-   Da die Masse leichter experimentell zugänglich ist als die Länge, wurde sie gemeinsam mit dem pI als Prädiktor in der multiplen Regression eingesetzt
+   Unabhängige Variablen sollten möglichst wenig miteinander korrelieren, um Mehrfachkollinearität zu vermeiden.\
+   Daher wurde die Korrelation zwischen Masse, Länge und pI untersucht.\
+   Es zeigte sich eine starke Korrelation zwischen Masse und Länge.\
+   Da die Masse leichter experimentell zugänglich ist als die Länge, wurde sie gemeinsam mit dem pI als Prädiktor in der multiplen Regression eingesetzt.\
     
 3. **Multiple Regression**
-    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001). 
-    Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38). 
-    ![Beschreibung des Bildes](images/3d_scatterplot.jpeg)
-    Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple Regression bestimmte Regressionsfläche.
-    Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten an.
-    Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil der Varianz erklären kann.
-    Konkret erklärt das Modell etwa 10,8 % der Varianz (adjusted R² = 0,108).
+    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001).\ 
+    Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38).\ 
+    ![Beschreibung des Bildes](image/3d_scatterplot.jpeg)\
+    Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple Regression bestimmte Regressionsfläche.\
+    Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten an.\
+    Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil der Varianz erklären kann.\
+    Konkret erklärt das Modell etwa 10,8 % der Varianz (adjusted R² = 0,108).\
     
 4. **Einfluss der Prädiktoren auf Signifikanz testen**
-    Mit t-Tests wurde geprüft, ob sich RBPs und Non-RBPs signifikant in pI und Masse unterscheiden.
-    ![Beschreibung des Bildes](images/comparison_pI.jpeg)
-    Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter RNA-Dependence-Wahrscheinlichkeit festgestellt.
+    Mit t-Tests wurde geprüft, ob sich RBPs und Non-RBPs signifikant in pI und Masse unterscheiden.\
+    ![Beschreibung des Bildes](image/comparison_pI.jpeg)\
+    Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter RNA-Dependence-Wahrscheinlichkeit festgestellt.\
 
 
