@@ -127,7 +127,7 @@ flowchart LR
 ## **Ziel:**
 
 - Einfluss ausgewählter Prädiktoren (Masse und pI) auf die Wahrscheinlichkeit für RNA-Dependenz untersuchen und auf Signifikanz prüfen
-- für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand von experimentell zugänglichen Größen vorhersagen
+- für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand experimentell zugänglicher Größen vorhersagen
 
 ## **Ablauf:**
 
