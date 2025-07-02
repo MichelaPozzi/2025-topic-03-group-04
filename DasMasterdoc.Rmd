@@ -2364,7 +2364,6 @@ print(max_positive)
 ```
 
 ```{r}
-
 #check whether positive and negative control are reliable and whether they differ significantly 
 # Vector of column indices to test
 cols_to_test <- c(2,4,5,6,7,8)
@@ -2397,7 +2396,6 @@ print(test_results_df)
 
 
 ```{r}
-
 # 1. Add labels to the datasets
 df_positive_control$label <- 1  # Positive control group labeled as 1
 df_negative_control$label <- 0  # Negative control group labeled as 0
@@ -2487,16 +2485,23 @@ results_df_FDR <- do.call(rbind, lapply(results_list, as.data.frame))
 
 print(results_df_FDR)
 
-# plot FDR-graph and mark different FDRs and thresholds
-plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
+# Plot FDR vs Prediction Threshold with grape purple line
+plot(thresholds, fdr_values, type = "l", col = "#6F2DA8", lwd = 2,
      xlab = "Prediction Threshold", ylab = "FDR",
      main = "FDR vs Threshold")
-abline(h = target_fdrs, col = c("coral", "orange", "violet", "cyan"), lty = 2)
+
+# Add horizontal lines for target FDRs with light purple to beige colors
+abline(h = target_fdrs, 
+       col = c("#D8BFD8", "#8E4585", "#C2B280", "#A39070"), lty = 2)
+
+# Add vertical lines and labels for optimal thresholds in warm wine red
 for (res in results_list) {
-  abline(v = res$Optimal_threshold, col = "darkgreen", lty = 3)
-  text(res$Optimal_threshold, 0.02, labels = round(res$Optimal_threshold, 3), col = "darkgreen", srt = 90, pos = 3)
+  abline(v = res$Optimal_threshold, col = "#722F37", lty = 3)
+  text(res$Optimal_threshold, 0.02, labels = round(res$Optimal_threshold, 3), 
+       col = "#722F37", srt = 90, pos = 3)
 }
 ```
+
 ```{r}
 # define values and x-positions
 fdr_labels <- paste0(results_df_FDR$FDR_target * 100, "%")
@@ -2517,16 +2522,16 @@ axis(1, at = x_pos, labels = fdr_labels)
 # bar for true Positives
 rect(xleft = x_pos - bar_width, ybottom = 0, 
      xright = x_pos - bar_width/2, ytop = results_df_FDR$True_positives, 
-     col = "steelblue", border = NA)
+     col = "#e6ccff", border = NA)
 
 # bar for false Positives
 rect(xleft = x_pos + bar_width/2, ybottom = 0, 
      xright = x_pos + bar_width, ytop = results_df_FDR$False_positives, 
-     col = "tomato", border = NA)
+     col = "steelblue", border = NA)
 
 # legend
 legend("topright", legend = c("True Positives", "False Positives"), 
-       fill = c("steelblue", "tomato"), bty = "n")
+       fill = c("#e6ccff", "steelblue"), bty = "n")
 
 ```
 
@@ -2560,14 +2565,14 @@ optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) els
 cat("Threshold bei FDR ≤ 10%:", optimal_threshold, "\n")
 
 #visualize FDR
-plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
+plot(thresholds, fdr_values, type = "l", col = "#800080", lwd = 2,
      xlab = "Prediction Threshold", ylab = "FDR",
      main = "FDR vs Threshold")
-abline(h = 0.1, col = "violet", lty = 2)
-abline(v = optimal_threshold, col = "lightgreen", lty = 2)
+abline(h = 0.1, col = "#a6ccff", lty = 2)
+abline(v = optimal_threshold, col = "#b366ff", lty = 2)
 
 ```
-
+###### apply threshold on data
 ```{r}
 #threshold is selected at FDR = 10%
 # Mark reference proteins in the full dataset
@@ -2627,96 +2632,71 @@ print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
 ```
 
-### visualize test-modell results ### will ich so nicht haben
+### visualize test-model results
+#### Distribution of all Proteins
 ```{r}
-# Calculate total number of proteins in the dataset
-total_proteins <- nrow(test_scores_combined_df)
+# Create a matrix for a single stacked bar (3 segments)
+counts_matrix_stacked <- matrix(c(
+  non_rbp_count,
+  right_shift_count,
+  left_shift_count
+), nrow = 3)
 
-# Define the threshold to classify proteins as predicted shifted
-threshold <- optimal_threshold
+# Set row and column names
+rownames(counts_matrix_stacked) <- c("Non-RBPs", "RBPs (Right Shift)", "RBPs (Left Shift)")
+colnames(counts_matrix_stacked) <- c("Proteins")
 
-# Subset proteins predicted as shifted (probability above threshold)
-predicted_proteins <- test_scores_combined_df[test_scores_combined_df$probability > threshold, ]
+# Define pastel color scheme for segments
+colors1 <- c("#f2e6d9", "#b366ff", "#e6ccff")
 
-# Number of predicted shifted proteins (RBP)
-num_rbp <- nrow(predicted_proteins)
-
-# Number of right-shifted proteins (given)
-num_right_shift <- right_shift_count
-
-# Number of left-shifted proteins calculated as remainder of total shifts
-num_left_shift <- total_proteins - right_shift_count
-
-# Number of false positives among predicted proteins (given)
-num_false_positives <- neg_counts
-
-# Calculate true positives by subtracting false positives from predicted RBPs
-num_true_positives <- num_rbp - num_false_positives
-
-# Calculate number of proteins not predicted as RBPs
-num_non_rbp <- total_proteins - num_rbp
-
-# Extract numeric values from false_positives and true_positives if they are tables
-if (is.table(num_false_positives)) {
-  false_positives_num <- as.numeric(num_false_positives["TRUE"])
-} else {
-  false_positives_num <- num_false_positives
-}
-
-if (is.table(num_true_positives)) {
-  true_positives_num <- as.numeric(num_true_positives["TRUE"])
-} else {
-  true_positives_num <- num_true_positives
-}
-
-# Prepare counts for plotting (ensure numeric scalars)
-total_proteins_count <- as.numeric(total_proteins)
-significant_shifted <- as.numeric(num_rbp)
-false_positives_num <- as.numeric(false_positives_num)
-true_positives_num <- as.numeric(true_positives_num)
-
-# Create matrix for stacked barplot: 2 rows (segments) x 3 columns (bars)
-counts_matrix <- matrix(c(
-  # Bottom segments of bars
-  total_proteins_count - significant_shifted,  # Bar 1: Non-shifted
-  num_right_shift,                             # Bar 2: Right Shift
-  false_positives_num,                         # Bar 3: False Positives
-
-  # Top segments of bars
-  significant_shifted,                         # Bar 1: Shifted
-  num_left_shift,                             # Bar 2: Left Shift
-  true_positives_num                           # Bar 3: True Positives
-), nrow = 2, byrow = TRUE)
-
-# Assign column and row names
-colnames(counts_matrix) <- c("All Proteins", "Shifted Proteins", "Prediction Quality")
-rownames(counts_matrix) <- c("Bottom Segment", "Top Segment")
-
-# Print matrix and dimensions for debug
-print(counts_matrix)
-print(dim(counts_matrix))
-
-# Define colors for segments
-colors <- c("grey80", "darkblue")
-
-# Define legend labels (corresponding to segments)
-legend_labels <- c(
-  "Non-shifted / Right Shift / False Positives",
-  "Shifted / Left Shift / True Positives"
-)
-
-# Create stacked barplot (beside = FALSE stacks segments vertically)
-barplot(counts_matrix,
-        beside = FALSE,
-        col = colors,
+# Plot a stacked bar; use xlim to visually narrow the bar
+barplot(counts_matrix_stacked,
+        col = colors1,
         border = "white",
-        main = "Protein Shift Classification",
+        main = "Distribution of All Proteins",
         ylab = "Number of Proteins",
         las = 1,
-        names.arg = colnames(counts_matrix))
+        xlim = c(0, 5))  # Expands x-axis range to make the bar appear narrower
 
-# Add legend
-legend("topright", legend = legend_labels, fill = colors, bty = "n")
+# Add legend at bottom right
+legend("bottomright",
+       legend = rownames(counts_matrix_stacked),
+       fill = colors1,
+       bty = "n")
+```
+#### Prediction Performance
+```{r}
+# Get numeric counts of false positives and true positives
+false_positives_num <- nrow(predicted_negatives)
+true_positives_num  <- nrow(predicted_non_negative)
+
+# Create matrix for stacked bar (2 segments: false + true positives)
+counts_matrix_predictions <- matrix(c(
+  false_positives_num,
+  true_positives_num
+), nrow = 2)
+
+# Set row and column names
+rownames(counts_matrix_predictions) <- c("False Positives", "True Positives")
+colnames(counts_matrix_predictions) <- c("Predicted RBPs")
+
+# Define pastel color scheme for prediction performance
+colors2 <- c("#f2e6d9", "#b366ff")
+
+# Plot stacked bar (1 bar), use xlim to make bar appear narrower
+barplot(counts_matrix_predictions,
+        col = colors2,
+        border = "white",
+        main = "Prediction Performance",
+        ylab = "Number of Proteins",
+        las = 1,
+        xlim = c(0, 5))  # Visually narrows the bar
+
+# Add legend at bottom right
+legend("bottomright",
+       legend = rownames(counts_matrix_predictions),
+       fill = colors2,
+       bty = "n")
 
 ```
 
