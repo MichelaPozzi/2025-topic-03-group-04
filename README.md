@@ -83,8 +83,6 @@ messbarer Parameter.
 - [Dimensionsreduktion](#dimensionsreduktion)
 - [Lineare Regression](#lineare-regression)
 
-## **Ziel:**
-
 ## **Libraries:**
 
 # **Daten Aufreinigung**
