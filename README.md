@@ -83,17 +83,6 @@ messbarer Parameter.
 - [Dimensionsreduktion](#dimensionsreduktion)
 - [Lineare Regression](#lineare-regression)
 
-
-```mermaid
-flowchart LR
-    A[Mass Spec Daten] --> B[Data Exploration]
-    B --> C[Daten Aufreinigen]
-    C --> D[Daten Beschreibung]
-    D --> E[Daten Normalisierung]
-    E --> F[Dimensionsreduktion]
-    F --> G[Lineare Regression]
-```
-
 ## **Ziel:**
 
 ## **Libraries:**
