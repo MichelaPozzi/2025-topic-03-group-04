@@ -71,6 +71,8 @@ RNA-Abhängigkeit. Das entwickelte Programm ermöglicht erstmals eine automatisi
 solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
 messbarer Parameter.
 
+![](images/clipboard-3286070548.png)
+
 # **Projekt Überblick**
 
 ``` mermaid

@@ -577,7 +577,7 @@ any(zeilen_mit_nullsumme_rnase)
 
 ```{r}
 # Protein auswählen
-protein_id <- "SPB6_HUMAN"
+protein_id <- "KIF2A_HUMAN"
 
 # Zeile finden, die dem Protein entspricht
 protein_row <- which(normalized_ctrl_df[, 1] == protein_id)
@@ -610,8 +610,8 @@ polygon(c(fraktionen, rev(fraktionen)),
 lines(fraktionen, intensities_ctrl, col = ctrl_line_color, lwd = 2)
 
 # RNase: Blau-Ton
-rnase_fill_color <- rgb(0, 0.4, 1, 0.3)
-rnase_line_color <- rgb(0, 0.4, 1)
+rnase_fill_color <- rgb(0, 1, 1, 0.3)
+rnase_line_color <- rgb(0, 1, 1)
 
 polygon(c(fraktionen, rev(fraktionen)),
         c(rep(0, length(fraktionen)), rev(intensities_rnase)),
