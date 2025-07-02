@@ -1934,35 +1934,13 @@ center_of_mass_df <- data.frame(
 head(center_of_mass_df)
 ```
 
-```{r}# OBSOLET ????
-# create two extreme distributions
-  only_first <- numeric(length(values))
-  only_last  <- numeric(length(values))
-  only_first[1] <- 1
-  only_last[length(values)] <- 1
-
-  # COM for extreme distributions
-  com_min <- center_of_mass(only_first)
-  com_max <- center_of_mass(only_last)
-
-# theoretical max delta
-  abs(com_max - com_min)
-  
-# calculate maximal possible shift for every protein
-max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
-
-relative_delta_com <- abs(delta_com) / max_delta_com
-  
-```
-
-
 ```{r}
 # show results
 head(center_of_mass_df)
 ```
 #### skewness of center of mass
 Goal: determine whether the delta center of mass values are skewed or not
-If skewed: scaling is needed
+If skewed: robust scaling is possible
 ```{r}
 #skewness of center of mass
 # extract values
@@ -1985,7 +1963,7 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 
 ```
 Output: delta COM is left-skewed
--> scaling is needed
+-> scaling is possible
 #### scaling
 Goal: transform testscore by centering at median and scaling based on the interquartile range
 ```{r}
@@ -2220,7 +2198,7 @@ Wilcoxon_df$Wilcox_Statistic_scaled_100 <- (Wilcoxon_df$Wilcox_Statistic_scaled 
 head(Wilcoxon_df$Wilcox_Statistic_scaled_100)
 ```
 
-### test score
+### test score dataframe
 ```{r}
 #define dataframe for all test scores of all proteines
 test_scores_combined_df <- data.frame(
@@ -2238,14 +2216,6 @@ test_scores_combined_df <- data.frame(
   
 #check that no NAs were created
 sum(is.na(test_scores_combined_df))
-```
-
-```{r}
-#calculate final testscores
-test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6,7,8)])
-
-#depict result
-head(test_scores_combined_df)
 ```
 
 ####create dataframes with reference proteins
