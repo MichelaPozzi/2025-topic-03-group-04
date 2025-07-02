@@ -84,6 +84,19 @@ messbarer Parameter.
 -   [Dimensionsreduktion](#dimensionsreduktion)
 -   [Lineare Regression](#lineare-regression)
 
+- [Daten Aufreinigung](#daten-aufreinigung)
+- [Daten Beschreibung](#daten-beschreibung)
+- [Daten Normalisierung](#daten-normalisierung)
+  - [Normalisierung](#normalisierung)
+  - [Batchentfernung](#batchentfernung)
+- [Shift Analyse](#shift-analyse)
+  - [Tests](#tests)
+  - [Logistisches Modell](#logistisches-modell)
+- [Dimensionsreduktion](#dimensionsreduktion)
+  - [PCA](#pca)
+  - [k-means](#k--means)
+- [Lineare Regression](#lineare-regression)
+
 ## **Libraries:**
 
 # **Daten Aufreinigung** {#daten-aufreinigung}
@@ -109,6 +122,10 @@ messbarer Parameter.
 ## **Ablauf:**
 
 ``` mermaid
+
+### **Normalisierung**
+
+```mermaid
 flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
     B --> C[Normalisierung pro Protein]
@@ -125,10 +142,10 @@ flowchart LR
     Zwei Dataframes (für Control und RNase) mit 75 Spalten (3×25)\
     mit den skalierten Intensitäten der Proteine\
     **Normed Control Dataframe (first 6 rows)**\
-    ![Mein Screenshot](image/screenshot_normed_control.png)
+    ![Mein Screenshot](images/screenshot_normed_control.png)
 
     **Normed RNase Dataframe (first 6 rows)**\
-    ![Mein Screenshot](image/screenshot_normed_rnase.png)
+    ![Mein Screenshot](images/screenshot_normed_rnase.png)
 
 2.  **Glättung der Werte durch einen gleitenden Mittelwert** der gleitende Mittelwert resultiert in
     einer Glättung der mittleren\
@@ -141,7 +158,37 @@ flowchart LR
 
 3.  
 
+
 # **Lineare Regression** {#lineare-regression}
+
+### **Batchentfernung**
+
+# **Shift Analyse**
+
+## **Ziel**
+
+## **Ablauf**
+
+```mermaid
+flowchart LR
+    A[normalisierte Daten] --> B[Shift Distanz]
+    A --> C[Amplitudenveränderung]
+    A --> D[Earth Mover Test]
+    A --> E[Center Of Mass Test]
+    A --> F[Wilcoxon Test pro Protein]
+    A --> G[Wilcoxon Test für Globale Maxima]
+    B --> H[Logistisches Modell]
+    C --> H
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+```
+## **Tests**
+
+## **Logistisches Modell**
+
+# **Lineare Regression**
 
 ## **Ziel:**
 
@@ -175,7 +222,7 @@ flowchart LR
     Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse
     (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p \< 0.001). Der pI hat den
     stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38). ![Beschreibung des
-    Bildes](image/3d_scatterplot.jpeg)\
+    Bildes](images/3d_scatterplot.jpeg)\
     Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple
     Regression bestimmte Regressionsfläche.\
     Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten
@@ -186,6 +233,6 @@ flowchart LR
 
 4.  **Einfluss der Prädiktoren auf Signifikanz testen**:\
     Mit t-Tests wurde geprüft, ob sich RBPs und Non-RBPs signifikant in pI und Masse unterscheiden.\
-    ![Beschreibung des Bildes](image/comparison_pI.jpeg)\
+    ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
     Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter
     RNA-Dependence-Wahrscheinlichkeit festgestellt.

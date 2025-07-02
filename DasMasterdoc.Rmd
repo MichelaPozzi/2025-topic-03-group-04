@@ -740,7 +740,7 @@ boxplot(ctrl_expr_matrix_log,
         cex.axis = 0.6)              # kleinere Achsenbeschriftung
 
 # Boxplot nach Korrektur 
-boxplot(ctrl_expr_corrected,
+boxplot(L_ctrl_expr_corrected,
         main = "Expression nach Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -763,7 +763,7 @@ legend("topright",
 ```{r}
 # PCA-Analyse vorbereiten
 pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
-pca_after  <- prcomp(t(ctrl_expr_corrected), scale. = TRUE)
+pca_after  <- prcomp(t(L_ctrl_expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
@@ -807,7 +807,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 
 heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
-heat_after  <- select_top_var(ctrl_expr_corrected, 100)
+heat_after  <- select_top_var(L_ctrl_expr_corrected, 100)
 
 pheatmap(heat_before,
          main = "Vor Korrektur",
@@ -1570,7 +1570,10 @@ global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold = 2)
 head(global_ctrl)
 
 ```
-## Tests for test-model
+# Classification of RBP and Non-RBP according to test-model
+Goal: Apply statistical testscores to our test-modell and thus determine the probability of the proteins being RBPs or Non-RBPS
+## Statisitcal Tests
+Goal: determine testscores by testing different selection criteria
 ### shift distance and direction test
 ```{r}
 #Shift Distance and direction based on changes in global maximum
@@ -1891,6 +1894,7 @@ normalized_ctrl_df$EMD_scaled_100 <- (normalized_ctrl_df$EMD_scaled/25)*100
 head(normalized_ctrl_df$EMD_scaled_100)
 ```
 ### center of mass test
+Goal: deterimine the center of mass of each protein for each treatment
 ```{r}
 # center of mass
 # function for calculating center of mass
@@ -1903,19 +1907,6 @@ center_of_mass <- function(values) {
 max_possible_com_shift <- function(values) {
   fracs <- seq_along(values)
   if (sum(values, na.rm = TRUE) == 0) return(NA)
-
-  # create two extreme distributions
-  only_first <- numeric(length(values))
-  only_last  <- numeric(length(values))
-  only_first[1] <- 1
-  only_last[length(values)] <- 1
-
-  # COM for extreme distributions
-  com_min <- center_of_mass(only_first)
-  com_max <- center_of_mass(only_last)
-
-  # theoretical max delta
-  abs(com_max - com_min)
 }
 
 
@@ -1927,39 +1918,53 @@ fractions_rnase   <- normalized_rnase_df[, 2:26]
 com_control <- apply(fractions_control, 1, center_of_mass)
 com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
 
-# calculate maximal possible shift for every protein
-max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
-
-# Delta and relative shift
+# Delta COM
 delta_com <- com_rnase - com_control
-relative_delta_com <- abs(delta_com) / max_delta_com
+
 
 # define dataframe with results and difference between both treatments
 center_of_mass_df <- data.frame(
   Protein     = normalized_ctrl_df[[1]],  # extract protein names from the first column
   COM_Control = com_control,
   COM_RNase   = com_rnase,
-  Delta_COM   = delta_com,
-  Max_Delta_COM      = max_delta_com,
-  Relative_Delta_COM = relative_delta_com
+  Delta_COM   = delta_com
 )
 
 # View first few results
 head(center_of_mass_df)
 ```
 
+```{r}# OBSOLET ????
+# create two extreme distributions
+  only_first <- numeric(length(values))
+  only_last  <- numeric(length(values))
+  only_first[1] <- 1
+  only_last[length(values)] <- 1
+
+  # COM for extreme distributions
+  com_min <- center_of_mass(only_first)
+  com_max <- center_of_mass(only_last)
+
+# theoretical max delta
+  abs(com_max - com_min)
+  
+# calculate maximal possible shift for every protein
+max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
+
+relative_delta_com <- abs(delta_com) / max_delta_com
+  
+```
+
+
 ```{r}
 # show results
 head(center_of_mass_df)
-
-# biggest relative shift
-max(center_of_mass_df$Relative_Delta_COM, na.rm = TRUE)
 ```
 #### skewness of center of mass
 ```{r}
 #skewness of center of mass
 # extract values
-x <- center_of_mass_df$Relative_Delta_COM
+x <- center_of_mass_df$Delta_COM
 
 # calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
@@ -1980,7 +1985,7 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #### scaling
 ```{r}
 #robust scaling
-center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Relative_Delta_COM)
+center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Delta_COM)
 
 # devide by maximal fraction delta (24)
 center_of_mass_df$COM_scaled_norm <- center_of_mass_df$COM_scaled / 24
@@ -1989,7 +1994,7 @@ center_of_mass_df$COM_scaled_norm <- center_of_mass_df$COM_scaled / 24
 center_of_mass_df$COM_scaled_100 <- center_of_mass_df$COM_scaled_norm * 100
 
 # depict results
-head(center_of_mass_df[, c("Protein", "Delta_COM", "Relative_Delta_COM", "COM_scaled", "COM_scaled_100")])
+head(center_of_mass_df[, c("Protein", "Delta_COM", "COM_scaled", "COM_scaled_100")])
 ```
 ### wilcoxon statistic: position of maxima between replicates of conditions are compared
 ```{r}
@@ -3090,19 +3095,20 @@ plot(2:10, sil_width, type = "b", pch = 19,
 
 ###kmeans 
 ```{r}
-kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
+C_kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
 ```
 
+
 ```{r}
-kmeans_result$cluster    
-kmeans_result$centers     
-kmeans_result$tot.withinss
+C_kmeans_result$cluster    
+C_kmeans_result$centers     
+C_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
 Ctrl_data <- as.data.frame(Ctrl_pca$x)
-Ctrl_data$cluster <- as.factor(kmeans_result$cluster)
+Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
 library(ggplot2)
 
@@ -3276,19 +3282,19 @@ plot(2:10, sil_width, type = "b", pch = 19,
 
 ###kmeans 
 ```{r}
-kmeans_result <- kmeans(rnase_pca$x, centers = 2, nstart = 25)
+R_kmeans_result <- kmeans(rnase_pca$x, centers = 2, nstart = 25)
 ```
 
 ```{r}
-kmeans_result$cluster    
-kmeans_result$centers     
-kmeans_result$tot.withinss
+R_kmeans_result$cluster    
+R_kmeans_result$centers     
+R_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
 rnase_data <- as.data.frame(rnase_pca$x)
-rnase_data$cluster <- as.factor(kmeans_result$cluster)
+rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
 library(ggplot2)
 
@@ -4108,3 +4114,108 @@ legend("topright", legend = c("Mean"), col = "coral", pch = 19)
 ```
 
 
+
+
+##isolieren rbp
+
+```{r}
+rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
+
+rbp_proteins <- rbp_only$Protein
+head(rbp_proteins)
+
+Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+```
+
+
+```{r}
+C_kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
+```
+
+
+```{r}
+C_kmeans_result$cluster    
+C_kmeans_result$centers     
+C_kmeans_result$tot.withinss
+```
+
+
+
+```{r}
+Ctrl_data <- as.data.frame(Ctrl_pca$x)
+Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
+
+#protein namen isolieren 
+Ctrl_data$protein_name <- rownames(Ctrl_data)
+#check if rbp present 
+Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+
+#farbe 
+Ctrl_data$color_group <- ifelse(Ctrl_data$is_rbp, "RBP", as.character(Ctrl_data$cluster))
+
+library(ggplot2)
+
+ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Gruppe",
+       shape = "Protein-Typ") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
+  scale_color_manual(values = c("1" = "blue", "2" = "light grey", "RBP" = "purple"))
+
+
+ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "Protein-Typ")
+```
+
+```{r}
+Ctrl_data$protein_name <- rownames(Ctrl_data)
+```
+
+
+```{r}
+head(Ctrl_data)
+colnames(Ctrl_data)
+```
+
+
+##rnase
+```{r}
+rnase_data <- as.data.frame(rnase_pca$x)
+rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
+
+#protein namen isolieren 
+rnase_data$protein_name <- rownames(rnase_data)
+#check if rbp present 
+rnase_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+
+#farbe 
+rnase_data$color_group <- ifelse(rnase_data$is_rbp, "RBP", as.character(rnase_data$cluster))
+
+#label
+Ctrl_data$rbp_label <- ifelse(Ctrl_data$is_rbp, "RBP", "non-RBP")
+
+library(ggplot2)
+
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Gruppe",
+       shape = "rbp") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
+  scale_color_manual(values = c("1" = "light blue", "2" = "light grey", "RBP" = "purple"))
+
+
+ggplot(rnase_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "rbp_label")
+```
