@@ -87,19 +87,34 @@ messbarer Parameter.
   - [k-means](#k--means)
 - [Lineare Regression](#lineare-regression)
 
-## **Libraries:**
+## **📚Libraries:**
 
-# **Daten Aufreinigung**
+- limma
+- pheatmap
+- sva
+- stringr
+- emdist
+- DT
+- tidyr
+- ggplot2
+- dplyr
+- shiny
+- cluster
+- factoextra
+- scatterplot3d
+- plotly
 
-## **Ziel:**
+# **🧼Daten Aufreinigung**
+
+## **🎯Ziel:**
 
 # **Daten Beschreibung**
 
-## **Ziel:**
+## **🎯Ziel:**
 
 # **Daten Normalisierung**
 
-## **Ziel:**
+## **🎯Ziel:**
 
 -   Vergleichbarkeit herstellen:
     -   Methoden???
@@ -148,13 +163,11 @@ flowchart LR
 3.  
 
 
-# **Lineare Regression** {#lineare-regression}
-
 ### **Batchentfernung**
 
-# **Shift Analyse**
+# **✅Shift Analyse**
 
-## **Ziel**
+## **🎯Ziel**
 
 ## **Ablauf**
 
@@ -177,9 +190,9 @@ flowchart LR
 
 ## **Logistisches Modell**
 
-# **Lineare Regression**
+# **📈Lineare Regression**
 
-## **Ziel:**
+## **🎯Ziel:**
 
 -   Einfluss ausgewählter Prädiktoren (Masse und pI) auf die Wahrscheinlichkeit für RNA-Dependenz
     untersuchen und auf Signifikanz prüfen
