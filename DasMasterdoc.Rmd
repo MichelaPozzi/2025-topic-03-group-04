@@ -1542,7 +1542,10 @@ global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold = 2)
 head(global_ctrl)
 
 ```
-## Tests for test-model
+# Classification of RBP and Non-RBP according to test-model
+Goal: Apply statistical testscores to our test-modell and thus determine the probability of the proteins being RBPs or Non-RBPS
+## Statisitcal Tests
+Goal: determine testscores by testing different selection criteria
 ### shift distance and direction test
 ```{r}
 #Shift Distance and direction based on changes in global maximum
@@ -1863,6 +1866,7 @@ normalized_ctrl_df$EMD_scaled_100 <- (normalized_ctrl_df$EMD_scaled/25)*100
 head(normalized_ctrl_df$EMD_scaled_100)
 ```
 ### center of mass test
+Goal: deterimine the center of mass of each protein for each treatment
 ```{r}
 # center of mass
 # function for calculating center of mass
@@ -1875,19 +1879,6 @@ center_of_mass <- function(values) {
 max_possible_com_shift <- function(values) {
   fracs <- seq_along(values)
   if (sum(values, na.rm = TRUE) == 0) return(NA)
-
-  # create two extreme distributions
-  only_first <- numeric(length(values))
-  only_last  <- numeric(length(values))
-  only_first[1] <- 1
-  only_last[length(values)] <- 1
-
-  # COM for extreme distributions
-  com_min <- center_of_mass(only_first)
-  com_max <- center_of_mass(only_last)
-
-  # theoretical max delta
-  abs(com_max - com_min)
 }
 
 
@@ -1899,39 +1890,53 @@ fractions_rnase   <- normalized_rnase_df[, 2:26]
 com_control <- apply(fractions_control, 1, center_of_mass)
 com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
 
-# calculate maximal possible shift for every protein
-max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
-
-# Delta and relative shift
+# Delta COM
 delta_com <- com_rnase - com_control
-relative_delta_com <- abs(delta_com) / max_delta_com
+
 
 # define dataframe with results and difference between both treatments
 center_of_mass_df <- data.frame(
   Protein     = normalized_ctrl_df[[1]],  # extract protein names from the first column
   COM_Control = com_control,
   COM_RNase   = com_rnase,
-  Delta_COM   = delta_com,
-  Max_Delta_COM      = max_delta_com,
-  Relative_Delta_COM = relative_delta_com
+  Delta_COM   = delta_com
 )
 
 # View first few results
 head(center_of_mass_df)
 ```
 
+```{r}# OBSOLET ????
+# create two extreme distributions
+  only_first <- numeric(length(values))
+  only_last  <- numeric(length(values))
+  only_first[1] <- 1
+  only_last[length(values)] <- 1
+
+  # COM for extreme distributions
+  com_min <- center_of_mass(only_first)
+  com_max <- center_of_mass(only_last)
+
+# theoretical max delta
+  abs(com_max - com_min)
+  
+# calculate maximal possible shift for every protein
+max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
+
+relative_delta_com <- abs(delta_com) / max_delta_com
+  
+```
+
+
 ```{r}
 # show results
 head(center_of_mass_df)
-
-# biggest relative shift
-max(center_of_mass_df$Relative_Delta_COM, na.rm = TRUE)
 ```
 #### skewness of center of mass
 ```{r}
 #skewness of center of mass
 # extract values
-x <- center_of_mass_df$Relative_Delta_COM
+x <- center_of_mass_df$Delta_COM
 
 # calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
@@ -1952,7 +1957,7 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 #### scaling
 ```{r}
 #robust scaling
-center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Relative_Delta_COM)
+center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Delta_COM)
 
 # devide by maximal fraction delta (24)
 center_of_mass_df$COM_scaled_norm <- center_of_mass_df$COM_scaled / 24
@@ -1961,7 +1966,7 @@ center_of_mass_df$COM_scaled_norm <- center_of_mass_df$COM_scaled / 24
 center_of_mass_df$COM_scaled_100 <- center_of_mass_df$COM_scaled_norm * 100
 
 # depict results
-head(center_of_mass_df[, c("Protein", "Delta_COM", "Relative_Delta_COM", "COM_scaled", "COM_scaled_100")])
+head(center_of_mass_df[, c("Protein", "Delta_COM", "COM_scaled", "COM_scaled_100")])
 ```
 ### wilcoxon statistic: position of maxima between replicates of conditions are compared
 ```{r}
