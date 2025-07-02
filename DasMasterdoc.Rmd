@@ -23,11 +23,11 @@ The aim of this project is the automated identification of RNA-dependent protein
 To achieve this, we investigate the influence of RNA on protein complexes by comparing protein distribution profiles between untreated cell lysates (control samples) and RNase-treated lysates (RNase samples
 
 ## Steps
-- data exploration
-- data normalisation
-- shift analysis
-- dimension reduction
-- identification of predictors for RNA-dependence 
+- 1. data exploration
+- 2. data normalisation
+- 3. shift analysis
+- 4. dimension reduction
+- 5. detection of features predictive of RNA-binding
 
 ## libraries
 - limma
@@ -62,7 +62,7 @@ A549_NS <- read.csv(csv_file, sep = ";")
 print(A549_NS)
 ```
 
-# data exploration
+# 1. data exploration
 ```{r}
 #number of rows and columns
 nrow(A549_NS)
@@ -157,7 +157,7 @@ print(rnase_correlations)
 plot(rnase_correlations)
 ```
 
-# data normalisation
+# 2. data normalisation
 ## normalisation
 ### determine columnwise mean
 ```{r}
@@ -1438,7 +1438,7 @@ head(corrected_expr_rnase)
  
 
  
-# shift analysis
+# 3. shift analysis
 Goal: Classify proteins as RNA-dependent (RDP) or non-RNA-dependent (non-RDP) based on differences between control and RNase condition
 ## Tests
 Goal: characterize the differences between Ctrl and RNase for each protein
@@ -2592,7 +2592,10 @@ abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 ```
 
 ### overview of RBPs
-- 
+- Evaluate the composition of proteins classified as RNA-binding by the logistic model:
+-> How many belong to the positive control set?
+-> many are false positives (i.e., negative control proteins)?
+-> How many are novel predictions outside of the control sets?
 ```{r}
 #threshold is selected at FDR = 10%
 # Mark reference proteins in the full dataset
@@ -2652,7 +2655,9 @@ print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
 ```
 
-### visualize test-modell results ### will ich so nicht haben
+# visualisation of test-model results 
+## composition of found RBPS
+### will ich so nicht haben
 ```{r}
 # Calculate total number of proteins in the dataset
 total_proteins <- nrow(test_scores_combined_df)
@@ -2744,9 +2749,10 @@ barplot(counts_matrix,
 legend("topright", legend = legend_labels, fill = colors, bty = "n")
 
 ```
-
+## show result for any desired protein
+Enter a protein name to visualize its distribution across conditions (Control and RNase).
+The code will also return the predicted probability of RNA-binding and the corresponding classification as either RBP or Non-RBP
 ```{r}
-
 # Define protein name
 protein_name <- "1433B_HUMAN"
 
@@ -2818,14 +2824,16 @@ ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condi
 install.packages("shiny")
 ```
 # 'app' panel: Protein Profile Viewer
+more userfriendly way to depict results: distributions, probability and classification
+be mindful: this chunk has to be closed or newly opened window has to be closed for following chunks to run
 ```{r}
-
-#macht quasi dasselbe wie der chunk obendrüber aber hat anschaulichere Eingabemöglichkeit für Protein of interest
+# Load required packages
 library(shiny)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 
+# Define User Interface
 ui <- fluidPage(
   titlePanel("Protein Profile Viewer"),
   sidebarLayout(
@@ -2839,23 +2847,28 @@ ui <- fluidPage(
   )
 )
 
+# Define Server logic
 server <- function(input, output, session) {
   
   observeEvent(input$plot_button, {
     protein_name <- input$protein_name
     
-    if (!exists("normalized_ctrl_df") || !exists("normalized_rnase_df") || 
-    !exists("test_scores_combined_df") || !exists("optimal_threshold")) {
-  output$proteinPlot <- renderPlot(NULL)
-  showNotification("One or more required data objects are missing.", type = "error")
-  return()
-}
+    # Check if required data objects are available
+    if (!exists("normalized_ctrl_df") || 
+        !exists("normalized_rnase_df") || 
+        !exists("test_scores_combined_df") || 
+        !exists("optimal_threshold")) {
+      
+      output$proteinPlot <- renderPlot(NULL)
+      showNotification("One or more required data objects are missing.", type = "error")
+      return()
+    }
     
-    # Select columns 1 (name) and 2:26 (Fraction1 to Fraction25)
+    # Subset to protein abundance across fractions (columns 2–26)
     ctrl <- normalized_ctrl_df[, c(1, 2:26)]
     rnase <- normalized_rnase_df[, c(1, 2:26)]
     
-    # Filter for selected protein
+    # Filter for the selected protein
     ctrl_data <- ctrl %>% filter(Protein == protein_name)
     rnase_data <- rnase %>% filter(Protein == protein_name)
     
@@ -2865,22 +2878,23 @@ server <- function(input, output, session) {
       return()
     }
     
-    # Label condition
+    # Add condition labels
     ctrl_data$Condition <- "Control"
     rnase_data$Condition <- "RNase"
     
-    # Combine and reshape
+    # Combine both datasets and convert to long format
     combined <- bind_rows(ctrl_data, rnase_data)
     long_df <- combined %>%
       pivot_longer(cols = starts_with("Fraction"),
                    names_to = "Fraction", values_to = "Intensity") %>%
       mutate(Fraction = as.numeric(gsub("Fraction", "", Fraction)))
     
-    # Get model probability and RBP classification
+    # Retrieve predicted probability and RBP classification
     prob <- test_scores_combined_df$probability[test_scores_combined_df$Protein == protein_name]
     if (length(prob) == 0) prob <- NA
     classification <- ifelse(!is.na(prob) & prob > optimal_threshold, "RBP", "Non-RBP")
     
+    # Plot profile
     output$proteinPlot <- renderPlot({
       ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condition)) +
         geom_area(alpha = 0.3, position = "identity", show.legend = FALSE) +
@@ -2903,11 +2917,8 @@ server <- function(input, output, session) {
   })
 }
 
+# Launch the Shiny app
 shinyApp(ui, server)
-
-
-
-
 
 ```
 
@@ -3149,8 +3160,8 @@ legend("topright",
 
 ```
 
-######PART 3
-###Data reduction PCA
+# 4. dimension reduction
+## PCA
 
 ###Control
 
@@ -4045,10 +4056,13 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
 
 
 
+# 5. Detection of features predictive of RNA-binding
+# linear regression
+Goal: Identify experimentally accessible predictors of RNA-binding
+-> establish relation between predictors and RNA-binding behavior
 
-
-
-#####PART 4: Linear regression
+### load data with protein features 
+-> dataframe from RBP2GO is loaded that contains information on pI, Mass in kDa and length in AA as possible predictors for RNA-binding
 ```{r}
 ### read Table_RBPs
 
@@ -4068,7 +4082,6 @@ Table_HS_RBP = read.delim("cleaned_table.txt",
 head(Table_HS_RBP)
 
 ```
-
 
 ```{r}
 # read Table_Non_RBP
@@ -4091,7 +4104,7 @@ head(Table_HS_Non_RBP)
 
 ```
 
-
+### connect information on protein features to proteins from dataset
 ```{r}
 # check if all our proteins are included in the tables 
 all_proteins <- test_scores_combined_df$Protein
@@ -4104,26 +4117,30 @@ all(is_in_rbp_or_nonrbp)#
 
 ```
 
-
 ```{r}
-# 1. Nur relevante Spalten aus RBP- und Non-RBP-Tabellen auswählen
+# Select only relevant columns from the RBP and Non-RBP tables
 rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
 non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
 
-# 2. Zusammenführen beider Tabellen
+# Combine both subsets into a single table
 Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
 
-# 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
+# Merge with test score dataframe 
+# column names differ ("Protein" vs. "Entry_Name") → use by.x / by.y to align
 merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
                    by.x = "Protein", by.y = "Entry_Name",
-                   all.x = TRUE)  # alle aus test_scores_combined_df behalten
+                   all.x = TRUE)  # keep all entries from test_scores_combined_df
 
+# depict result
 head(merged_df)
 dim(merged_df)
 ```
 
+## determinantion of suitable predictors for multiple regression
+- Independent variables should exhibit minimal correlation to avoid multicollinearity
+-> correlation between molecular weight, sequence length, and isoelectric point was examined
 ```{r}
-# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
+# select relevant columns
 df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
 # which parameters can be used in multiple regression: correlation between independent variables should be as low as possible
 
@@ -4131,20 +4148,30 @@ cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
 cor(df_complete$Mass_kDa, df_complete$Length_AA, method = "pearson")
 cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
 
-# pI can be used as independent variable with either mass or length
-# mass and length should not both be used due to high correlation -> we chose mass as it is experimentally more accessable than length
 ```
+output:
+- there is no strong correlation between pI and mass nor between pI and length
+- a strong correlation was observed between molecular weight and sequence length
+-> since molecular weight is more readily accessible experimentally than sequence length, it was used as a predictor in the multiple regression model along with the isoelectric point (pI)
 
-
+## multiple regression
+goal: assess whether isoelectric point (pI) and molecular mass are reliable predictors of RNA-binding probability
 ```{r}
-# Regression: testscores ~ pI + Mass_kDa
+# multiple regression: probability ~ pI + Mass_kDa
 model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
 
 summary(model)
 
 ```
+output:
+- both the isoelectric point (pI) and molecular weight (Mass_kDa) are significantly associated with the target variable (p < 0.001)
+- pI has the stronger effect (t = 20.70), followed by molecular weight (t = 3.38) 
+- After accounting for mass, proteins with higher pI tend to have a higher probability of RNA-binding, and similarly, after accounting for pI, higher mass is associated with higher probability
+- the model explains approximately 10.8% of the variance (adjusted R² = 0.108)
+- model with two predictors is significantly better than null model
 
-
+### visualization of multiple regression
+- hyperplane depicts relation between probability and predictors according to the multiple regression model
 ```{r}
 # visualization of linear regression using hyperplanes
 
@@ -4178,7 +4205,13 @@ plane <- predict(model,
 # Fläche einzeichnen
 s3d$plane3d(model)
 ```
+output:
+- The closer the points lie to the plane, the better the model fits the observed data
+- Large distances between the points and the plane indicate that the model explains only a small portion of the variance
+-> depicts that only approximately 11% of variance is explained by the model
 
+### visualization of multiple regression
+interactive hyperplane displays the same relatins as the chunk above but offers a better spacial unterstanding
 ```{r}
 # create interactive hyperplane 
 
@@ -4259,8 +4292,10 @@ fig
 
 ```
 
+## check individual relation between predictors and probability
+### determine whether thre is a signifcant relation between a higher pI and an increased probability for RNA-binding
+- using a t-test the pIs od RBPs and Non-RBPs are compared
 ```{r}
-
 #hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
 
 # Group proteins based on optimal threshold:
@@ -4281,9 +4316,11 @@ t_test_result <- t.test(
 print(t_test_result)
 
 ```
+output:
+- there is a signifcant difference between the pIs of RBPs and Non-RBPs
+-> RBPs tend to have a higher pI
 
 ```{r}
-
 #check whether mass differs significantly between RBPs and Non-RBPs
 
 # Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
