@@ -69,12 +69,18 @@ RNA-Abhängigkeit. Das entwickelte Programm ermöglicht eine automatisierte Ausw
 solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
 messbarer Parameter.
 
-![](images/clipboard-3286070548.png)
+![](images/clipboard-1052987459.png)
 
 # **Projekt Überblick**
 
-
 ## Inhaltsverzeichnis
+
+-   [Daten Aufreinigung](#daten-aufreinigung)
+-   [Daten Beschreibung](#daten-beschreibung)
+-   [Daten Normalisierung](#daten-normalisierung)
+-   [Shift Analyse](#shift-analyse)
+-   [Dimensionsreduktion](#dimensionsreduktion)
+-   [Lineare Regression](#lineare-regression)
 
 - [Daten Aufreinigung](#daten-aufreinigung)
 - [Daten Beschreibung](#daten-beschreibung)
@@ -91,7 +97,7 @@ messbarer Parameter.
 
 ## **Libraries:**
 
-# **Daten Aufreinigung**
+# **Daten Aufreinigung** {#daten-aufreinigung}
 
 ## **Ziel:**
 
@@ -99,7 +105,7 @@ messbarer Parameter.
 
 ## **Ziel:**
 
-# **Daten Normalisierung**
+# **Daten Normalisierung** {#daten-normalisierung}
 
 ## **Ziel:**
 
@@ -112,6 +118,8 @@ messbarer Parameter.
     -   Transformation
 
 ## **Ablauf:**
+
+``` mermaid
 
 ### **Normalisierung**
 
@@ -147,6 +155,9 @@ flowchart LR
     mit den geglätteten Werten
 
 3.  
+
+
+# **Lineare Regression** {#lineare-regression}
 
 ### **Batchentfernung**
 
@@ -186,7 +197,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-```mermaid
+``` mermaid
 flowchart LR
     A[biochemische Eigenschafte der Proteine laden] --> B[Auswahl der unabhängigen Variablen für die multiple Regression]
     B --> C[multiple Regression]
