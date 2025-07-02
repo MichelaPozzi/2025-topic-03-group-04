@@ -75,14 +75,6 @@ messbarer Parameter.
 
 ## Inhaltsverzeichnis
 
--   [Daten Aufreinigung](#daten-aufreinigung)
--   [Daten Beschreibung](#daten-beschreibung)
--   [Daten Normalisierung](#daten-normalisierung)
--   [Shift Analyse](#shift-analyse)
--   [Dimensionsreduktion](#dimensionsreduktion)
--   [Lineare Regression](#lineare-regression)
-
-- [Daten Aufreinigung](#daten-aufreinigung)
 - [Daten Beschreibung](#daten-beschreibung)
 - [Daten Normalisierung](#daten-normalisierung)
   - [Normalisierung](#normalisierung)
@@ -119,7 +111,6 @@ messbarer Parameter.
 
 ## **Ablauf:**
 
-``` mermaid
 
 ### **Normalisierung**
 
