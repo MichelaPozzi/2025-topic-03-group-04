@@ -2433,7 +2433,8 @@ boxplot(weighted_score ~ label, data = df_all,
         main = "Distribution of Weighted Scores by Class")
 
 ```
-
+### test-model applied to testscores
+Goal: ???
 ```{r}
 #apply model to our data
 # 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
@@ -2442,8 +2443,8 @@ test_scores_combined_df$probability <- predict(logistic_model, newdata = test_sc
 # 2. View the first few rows of the result
 head(test_scores_combined_df)
 ```
-
-
+#### threshold
+Goal: define threshold with a 10% FDR
 ```{r}
 #calculate threshold automatically
 # 1. predictions
@@ -2479,7 +2480,7 @@ abline(h = 0.1, col = "violet", lty = 2)
 abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
-
+##### why 10% FDR
 ```{r}
 #threshold is selected at FDR = 10%
 # 1. Mark reference proteins in the full dataset
@@ -2520,8 +2521,8 @@ predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 
 ```
-
-
+### right shift proteins
+Goal: define right shift proteins according to their delta COM
 ```{r}
 # filter proteins for significant right shift with defined threshold
 filtered_df <- test_scores_combined_df[
