@@ -48,18 +48,16 @@ interactions across the proteome.
 
 # Stille Signale: Proteinmerkmale als Prädiktoren für RNA-Interaktionen (Vorschlag von Jetty)
 
-RNA-Protein-Komplexe sind zentrale Regulatoren zahlreicher zellulären Prozesse. Seit einiger Zeit
+RNA-Protein-Komplexe sind zentrale Regulatoren zahlreicher zellulärer Prozesse. Seit einiger Zeit
 gewinnen proteomweite experimentelle und computergestützte Methoden zur Untersuchung von
 RNA-Bindenden Proteinen an wissenschaftlicher Relevanz und Aufmerksamkeit. Neuere
 Forschungsergebnisse knüpfen einen Zusammenhang zwischen dysfunktionalen RBPs und der Entstehung
-neurodegenerativer Erkrankungen sowie verschiedener Krebsformen. Diese Erkenntnisse bieten nun
+verschiedener Krebsformen. Diese Erkenntnisse bieten nun
 Zugang zu einem bislang weniger erforschten Gebiet: RNA-abhängige Proteine, eine Klasse an
-Proteinen, deren Funktion direkt oder indirekt von der Anwesenheit von RNA beeinflusst wird.
-Charakteristisch für diese Proteine ist eine RNA-vermittelte Modulation ihres
-Protein-Protein-Interaktoms.
+Proteinen, deren Protein-Protein-Interaktom RNA-moduliert ist.
 
 **Ziel unseres Projekts** ist die automatisierte Identifizierung RNA-abhängiger Proteine aus einer
-nicht-synchronisierten A549-Zelllinie, die einem Adenokarzinom des Lungengewebes entspringen Hierfür
+nicht-synchronisierten A549-Zelllinie, die einem Adenokarzinom des Lungengewebes entspringen. Hierfür
 wird der Einfluss von RNA auf die Proteinkomplexe durch einen Vergleich der Proteinverteilungen in
 unbehandelten Zelllysaten (Kontrollproben) und RNase-behandelten Lysaten (RNase-Proben) untersucht.
 Die Lysate werden mittels Ultrazentrifugation in einem Sucrose-Dichtegradienten fraktioniert und in
@@ -67,7 +65,7 @@ Die Lysate werden mittels Ultrazentrifugation in einem Sucrose-Dichtegradienten 
 Massenspektrometrie über drei Replikate je Treatment. Insgesamt ergibt sich daraus ein Datensatz mit
 3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten Verteilungsänderungen (shift) in
 den Dichteprofilen dienen als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer
-RNA-Abhängigkeit. Das entwickelte Programm ermöglicht erstmals eine automatisierte Auswertung
+RNA-Abhängigkeit. Das entwickelte Programm ermöglicht eine automatisierte Auswertung
 solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
 messbarer Parameter.
 
