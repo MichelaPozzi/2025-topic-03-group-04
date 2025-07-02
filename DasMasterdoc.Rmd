@@ -1936,43 +1936,9 @@ center_of_mass_df <- data.frame(
 head(center_of_mass_df)
 ```
 
-<<<<<<< HEAD
-```{r}# OBSOLET ????
-# create two extreme distributions
-  only_first <- numeric(length(values))
-  only_last  <- numeric(length(values))
-  only_first[1] <- 1
-  only_last[length(values)] <- 1
-
-  # COM for extreme distributions
-  com_min <- center_of_mass(only_first)
-  com_max <- center_of_mass(only_last)
-
-# theoretical max delta
-  abs(com_max - com_min)
-  
-# calculate maximal possible shift for every protein
-max_delta_com <- apply(fractions_control, 1, max_possible_com_shift)
-
-relative_delta_com <- abs(delta_com) / max_delta_com
-  
-
-
-=======
->>>>>>> 07ebdc11c37714982e1c38a3d79bf5f46d52c3f1
-```{r}
-# show results
-
-head(center_of_mass_df)
-```
 #### skewness of center of mass
 Goal: determine whether the delta center of mass values are skewed or not
-<<<<<<< HEAD
-If skewed: scaling is needed
-
-=======
 If skewed: robust scaling is possible
->>>>>>> 07ebdc11c37714982e1c38a3d79bf5f46d52c3f1
 ```{r}
 #skewness of center of mass
 # extract values
