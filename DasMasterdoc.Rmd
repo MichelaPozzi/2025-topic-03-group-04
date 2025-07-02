@@ -147,8 +147,8 @@ print(rnase_correlations)
 plot(rnase_correlations)
 ```
 
-####Normalization###
-
+#Normalization
+## Normalization per fraction
 ```{r}
 # function to compute mean columnwise (except Protein_Name)
 compute_column_means <- function(df) {
@@ -177,9 +177,8 @@ head(rnase_means_df)
 #check whether there are means == 0 (to calculate normalization factor: mean are denominator -> would create NAs if mean were 0)
 sum(ctrl_means_df[, 2] == 0)
 sum(rnase_means_df[, 2]==0)
-
 ```
-
+## normalization factor
 ```{r}
 # create function to calculate the mean of the two most similar replicates (out of three replicates)
 mean_of_closest_pair <- function(x) {
@@ -223,21 +222,20 @@ closest_means_rnase <- data.frame(
 # depict result
 print(closest_means_ctrl)
 print(closest_means_rnase)
-
 ```
-
+### create normalization matirx
 ```{r}
 n_fractions <- 25
 n_replicates <- 3
 
-# ctrl_means_df und rnase_means_df enthalten alle Replikat-Mittelwerte in einer Spalte, z.B. 'Means'
-# ctrl_final_means_df und rnase_final_means_df enthalten je einen Mittelwert pro Fraktion in 'FinalMean'
+# ctrl_means_df and rnase_means_df contain all replicate means in one column, e.g. 'Mean'
+# ctrl_final_means_df and rnase_final_means_df each contain one mean per fraction in 'FinalMean'
 
 # create matrix for replicates of each fraction (25x3)
 ctrl_mat <- matrix(ctrl_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
 rnase_mat <- matrix(rnase_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
 
-# initialize normalization matrixes
+# initialize normalization matrices
 norm_ctrl_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 norm_rnase_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 
@@ -246,13 +244,13 @@ for (r in 1:n_fractions) {
   control_values <- ctrl_mat[r, ]  # 3 replicates Control
   rnase_values <- rnase_mat[r, ]   # 3 replicates RNase
   
-  # FinalMean from Ctrl and RNAse dataframe
+  # FinalMean from Control and RNase dataframes
   mean_control <- closest_means_ctrl[r, 2]
   mean_rnase <- closest_means_rnase[r, 2]
   
   # check if only one value per fraction
   if(length(mean_control) != 1 | length(mean_rnase) != 1) {
-    stop(paste("Mehr oder weniger als ein FinalMean für Fraktion", r))
+    stop(paste("More or less than one FinalMean for fraction", r))
   }
   
   # calculate normalization factors
@@ -260,26 +258,26 @@ for (r in 1:n_fractions) {
   norm_rnase_mat[r, ] <- mean_rnase / rnase_values
 }
 
-#depict results
+# display results
 head(norm_ctrl_mat)
 head(norm_rnase_mat)
 
-#check if any NAs were created
+# check if any NAs were created
 sum(is.na(norm_ctrl_mat))
 sum(is.na(norm_rnase_mat))
 ```
-
+### apply normalization matrix (with normalization factors) to data
 ```{r}
-
 normalize_df <- function(df, norm_mat) {
-  # extract numeric data (not "Protein_Name")
+  # extract numeric data (excluding "Protein_Name" column)
   data_mat <- as.matrix(df[, -1])
   
-  # check dimensions
+  # get dimensions of normalization matrix
   n_blocks <- nrow(norm_mat)
   cols_per_block <- ncol(norm_mat)
   
-  # blockwise normalization: Normierungsmatrix wird spaltenweise durchlaufen und in dieser Reihenfolge auf die Spalten der Originaldaten angewendet
+  # blockwise normalization:
+  # iterate through normalization matrix columns and apply them in order to original data columns
   for (i in 1:n_blocks) {
     for (j in 1:cols_per_block) {
       col_index <- (i - 1) * cols_per_block + j
@@ -287,23 +285,23 @@ normalize_df <- function(df, norm_mat) {
     }
   }
   
-  # create dataframe as result
+  # create a dataframe with normalized data and original protein names
   result_df <- cbind(Protein_Name = df$Protein_Name, as.data.frame(data_mat))
   return(result_df)
 }
 
-# apply to our data
+# apply normalization to our data
 normed_ctrl_df  <- normalize_df(df_ctrl, norm_ctrl_mat)
 normed_rnase_df <- normalize_df(df_rnase, norm_rnase_mat)
 
-# depict results
+# display results
 head(normed_ctrl_df)
 head(normed_rnase_df)
-
-
 ```
-
-
+## moving average filter &
+## sorting data
+Goal: smooth values per proteins and replicates
+      & arrange data more clearly
 ```{r}
 # Mean filter function for a row (preserving first and last value)
 smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
@@ -348,9 +346,8 @@ head(final_smoothed_rnase)
 #check if any NAs were created
 sum(is.na(final_smoothed_ctrl))
 sum(is.na(final_smoothed_rnase))
-
 ```
-
+### apply moving average filter to data
 ```{r}
 # check for any rows with rowSum == 0 (per replicate)
 check_zero_replicates_detailed <- function(df) {
@@ -407,11 +404,9 @@ rnase_zero_summary <- check_zero_replicates_detailed(final_smoothed_rnase)
 # View examples
 head(ctrl_zero_summary)
 head(rnase_zero_summary)
-
-
 ```
-
-
+## normalize total amount per replicate to 100%
+Goal: normalized values (vertical normalization)
 ```{r}
 #normalize total amount per replicate to 100%
 calc_fraction_percentages <- function(df, zero_info, n_fractions = 25, n_replicates = 3) {
@@ -478,7 +473,9 @@ head(percent_rnase_df)
 sum(is.na(percent_ctrl_df))
 sum(is.na(percent_rnase_df))
 ```
-
+## calculate mean over the three replicates per fraction
+Goal: normalized values which are averaged across all replicates
+      -> obtain an average distribution per fraction.
 ```{r}
 calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
   proteins <- df[, 1]  # Protein-Names
@@ -512,10 +509,10 @@ head(mean_rnase_df)
 sum(is.na(mean_ctrl_df))
 sum(is.na(mean_rnase_df))
 ```
-
+## normalization of amount of protein to equal 100%
+Goal:get comparable values of relative distributions of protein amounts across the fractions
 ```{r}
 # normalization of amount of protein to equal 100%
-
 calculate_fraction_percentages <- function(mean_df) {
   proteins <- mean_df[, 1]
   data_only <- mean_df[, -1]
@@ -533,7 +530,6 @@ calculate_fraction_percentages <- function(mean_df) {
   return(percent_df)
 }
 
-
 # apply to our data
 normalized_ctrl_df  <- calculate_fraction_percentages(mean_ctrl_df)
 normalized_rnase_df <- calculate_fraction_percentages(mean_rnase_df)
@@ -545,35 +541,29 @@ head(normalized_rnase_df)
 #check if any NAs were created
 sum(is.na(normalized_ctrl_df))
 sum(is.na(normalized_rnase_df))
-
-
 ```
-
+# Check for empty protein distributions after normalization
 ```{r}
-#for Ctrl
-# are there rows with sum == 0 (starting with second column) for Ctrl
-zeilensummen <- rowSums(normalized_ctrl_df[, -1])
+# For Control
+# Check if there are rows with sum == 0 (excluding the first column)
+row_sums_ctrl <- rowSums(normalized_ctrl_df[, -1])
 
-# boolean vector: TRUE for rows with sum == 0
-zeilen_mit_nullsumme <- zeilensummen == 0
+# Boolean vector: TRUE for rows where the sum is 0
+rows_with_zero_sum_ctrl <- row_sums_ctrl == 0
 
-# are there any such rows?
-any(zeilen_mit_nullsumme)
+# Are there any such rows?
+any(rows_with_zero_sum_ctrl)
 
-#für RNase
-#are there rows with sum == (starting with second column) for Ctrl
-zeilensummen_rnase <- rowSums(normalized_rnase_df[, -1])
+# For RNase
+# Check if there are rows with sum == 0 (excluding the first column)
+row_sums_rnase <- rowSums(normalized_rnase_df[, -1])
 
-# boolean vector: TRUE for rows with sum == 0
-zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
+# Boolean vector: TRUE for rows where the sum is 0
+rows_with_zero_sum_rnase <- row_sums_rnase == 0
 
-# are there any such rows?
-any(zeilen_mit_nullsumme_rnase)
-
- 
+# Are there any such rows?
+any(rows_with_zero_sum_rnase)
 ```
-
-
 #Visualisierung Deluxe
 ```{r}
 # Protein auswählen
@@ -654,7 +644,6 @@ text(x = mean(c(fraktionen[max_ctrl_idx], fraktionen[max_rnase_idx])),
      labels = "Shift Distance", col = "black", cex = 0.8)
 
 ```
-
 
 ###Batch Effect###
 
@@ -2221,7 +2210,6 @@ test_scores_combined_df <- data.frame(
 sum(is.na(test_scores_combined_df))
 ```
 
-<<<<<<< HEAD
 ```{r}
 #calculate final testscores
 
@@ -2232,7 +2220,7 @@ head(test_scores_combined_df)
 ```
 
 =======
->>>>>>> 07ebdc11c37714982e1c38a3d79bf5f46d52c3f1
+
 ####create dataframes with reference proteins
 
 ```{r}
