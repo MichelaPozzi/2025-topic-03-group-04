@@ -1567,7 +1567,9 @@ head(global_ctrl)
 
 ```
 # Classification of RBP and Non-RBP according to logistic model
-Goal: Apply statistical testscores to our test-modell and thus determine the probability of the proteins being RBPs or Non-RBPS
+Goal: Apply statistical testscores to our test-model and thus determine the probability of the proteins being RBPs or Non-RBPS
+-> logistic model is established using 30 % of the dataset to train the model
+-> when applying the remaining data to the model, it returns the proteins' probability for RNA-binding
 ## Statisitcal Tests
 Goal: determine testscores by testing different selection criteria
 ### shift distance and direction test
@@ -1618,7 +1620,12 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
      col = "violet", pos = 4)
 ```
+output: 
+- skewness < -1 -> robust scaling can be applied
+
 #### scaling
+scaling is needed as different tests are used for the logistic model
+-> tests need to be made comparable by scaling them to a common range
 ```{r}
 # Robust scaling function: (x - median) / IQR
 robust_scale <- function(x) {
@@ -1756,6 +1763,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
      col = "violet", pos = 4)
 ```
+output: 
+- skewness > 1 -> robust scaling can be applied
+
 #### scaling
 ```{r}
 #robust scaling
@@ -1808,11 +1818,16 @@ write.table(right_shift_df, file = "Right_Shift_Proteins.txt", sep = "\t", row.n
 
 ```
 
-```{r}
+### earth mover test
+
+```{r}#
 install.packages("emdist")  
 
 ```
-### earth mover test
+
+principle of earth mover test: 
+- test calculates the work that needs to be done in order to transform one distribution into the other
+-> determines masss (amount of protein) that needs to be moved a certain distance in order to compute said transformation
 ```{r}
 library(emdist)
 
@@ -1885,6 +1900,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
      col = "violet", pos = 4)
 ```
+output:
+- skewness > 1 -> robust scaling can be applied
+
 #### scaling 
 ```{r}
 #robust scaling
@@ -1977,6 +1995,7 @@ center_of_mass_df$COM_scaled_100 <- center_of_mass_df$COM_scaled_norm * 100
 head(center_of_mass_df[, c("Protein", "Delta_COM", "COM_scaled", "COM_scaled_100")])
 ```
 ### wilcoxon statistic: position of maxima between replicates of conditions are compared
+determine position of global maximum for each replicate of both conditions
 ```{r}
 # determine global maxima from dataframes with still all 3 replicates in them
 
@@ -2060,7 +2079,7 @@ print(global_max_rnase_df)
 print(fraktion_pos_rnase_df)
 
 ```
-
+compare whether there is a signficant difference in the position of global maxima between Ctrl and RNase
 ```{r}
 #paired Wilxocon test to compare the global maxima positions between control und rnase
 # Prepare vectors to store results
@@ -2120,6 +2139,9 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
      col = "violet", pos = 4)
 ```
+output:
+- skewness > 1 -> robust scaling can be applied
+
 #### scaling
 ```{r}
 #robust scaling
@@ -2130,7 +2152,8 @@ Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_sta
 head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 ```
 
-### wilcoxon test proteinwise (test used for testscore)
+### wilcoxon test proteinwise
+for each protein the amount protein per fraction are compared between Ctrl and RNase
 ```{r}
 #Wilcoxon test proteinwise -> test statistic is used for testscore
 
@@ -2184,6 +2207,8 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
      col = "violet", pos = 4)
 ```
+output:
+- skewness > 1 -> robust scaling can be conducted
 
 #### scaling
 ```{r}
@@ -2200,6 +2225,7 @@ head(Wilcoxon_df$Wilcox_Statistic_scaled_100)
 ```
 
 ### test score dataframe
+contains the results of all tests
 ```{r}
 #define dataframe for all test scores of all proteines
 
