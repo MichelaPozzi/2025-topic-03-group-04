@@ -2430,7 +2430,6 @@ boxplot(weighted_score ~ label, data = df_all,
 ### test-model applied to testscores
 Goal: predict probability of RNA binding proteins
 ```{r}
-
 #apply model to our data
 # 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
 test_scores_combined_df$probability <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
@@ -2438,11 +2437,103 @@ test_scores_combined_df$probability <- predict(logistic_model, newdata = test_sc
 # 2. View the first few rows of the result
 head(test_scores_combined_df)
 ```
+
+##### define FDR
+Goal: look at different possible FDRs and define a FDR according to the best FDR and threshold ratio (looking at True and False Positives)
+```{r}
+# FDR-Levels which could be possibly used
+target_fdrs <- c(0.05, 0.07, 0.10, 0.12)
+
+# compute reference columns
+test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
+test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
+
+# compute FDR for multiple thresholds (0 to 1)
+thresholds <- seq(0, 1, by = 0.001)
+fdr_values <- sapply(thresholds, function(thresh) {
+  selected <- test_scores_combined_df[test_scores_combined_df$probability > thresh, ]
+  if (nrow(selected) == 0) return(NA)
+  sum(selected$is_negative, na.rm = TRUE) / nrow(selected)
+})
+
+# determine for every target FDR the optimal threshold & save results
+results_list_FDR <- lapply(target_fdrs, function(target_fdr) {
+  valid_thresholds <- thresholds[which(fdr_values <= target_fdr)]
+  optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) else NA
+  
+  # proteins with significant shift selected according to optimal threshold
+  selected_proteins <- test_scores_combined_df[test_scores_combined_df$probability > optimal_threshold, ]
+  
+  # how many positive control proteins (True Positives) are in optimal threshold
+  true_positives <- sum(selected_proteins$is_reference, na.rm = TRUE)
+  
+  # how many negative control proteins (False Positives) are in optimal threshold
+  false_positives <- sum(selected_proteins$is_negative, na.rm = TRUE)
+  
+  # total of selected proteins
+  total_selected <- nrow(selected_proteins)
+  
+  list(
+    FDR_target = target_fdr,
+    Optimal_threshold = optimal_threshold,
+    True_positives = true_positives,
+    False_positives = false_positives,
+    Total_selected = total_selected
+  )
+})
+
+# create dataframe
+results_df_FDR <- do.call(rbind, lapply(results_list, as.data.frame))
+
+print(results_df_FDR)
+
+# plot FDR-graph and mark different FDRs and thresholds
+plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
+     xlab = "Prediction Threshold", ylab = "FDR",
+     main = "FDR vs Threshold")
+abline(h = target_fdrs, col = c("coral", "orange", "violet", "cyan"), lty = 2)
+for (res in results_list) {
+  abline(v = res$Optimal_threshold, col = "darkgreen", lty = 3)
+  text(res$Optimal_threshold, 0.02, labels = round(res$Optimal_threshold, 3), col = "darkgreen", srt = 90, pos = 3)
+}
+```
+```{r}
+# define values and x-positions
+fdr_labels <- paste0(results_df_FDR$FDR_target * 100, "%")
+bar_width <- 0.35
+x_pos <- 1:length(fdr_labels)
+
+# define Y-achsis max 
+y_max <- max(c(results_df_FDR$True_positives, results_df$False_positives)) * 1.2
+
+# empty plot
+plot(NA, xlim = c(0.5, length(fdr_labels) + 0.5), ylim = c(0, y_max), 
+     xaxt = "n", xlab = "FDR-Goal", ylab = "Number of Proteins", 
+     main = "True Positives and False Positives at different FDR-Levels")
+
+# x-axis description
+axis(1, at = x_pos, labels = fdr_labels)
+
+# bar for true Positives
+rect(xleft = x_pos - bar_width, ybottom = 0, 
+     xright = x_pos - bar_width/2, ytop = results_df_FDR$True_positives, 
+     col = "steelblue", border = NA)
+
+# bar for false Positives
+rect(xleft = x_pos + bar_width/2, ybottom = 0, 
+     xright = x_pos + bar_width, ytop = results_df_FDR$False_positives, 
+     col = "tomato", border = NA)
+
+# legend
+legend("topright", legend = c("True Positives", "False Positives"), 
+       fill = c("steelblue", "tomato"), bty = "n")
+
+```
+
 #### threshold
 Goal: define threshold with a 10% FDR
 ```{r}
-
-#calculate threshold automatically
+#calculate threshold
 # 1. predictions
 test_scores_combined_df$predicted_prob <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
@@ -2476,37 +2567,36 @@ abline(h = 0.1, col = "violet", lty = 2)
 abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
-##### why 10% FDR
-```{r}
 
+```{r}
 #threshold is selected at FDR = 10%
-# 1. Mark reference proteins in the full dataset
+# Mark reference proteins in the full dataset
 test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
 
-# 2. Make predictions using the logistic model
+# Make predictions using the logistic model
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# 3. Apply threshold (e.g., 0.95) to get predicted positives
+# Apply threshold (e.g., 0.95) to get predicted positives
 selected_proteins <- test_scores_combined_df[predictions > optimal_threshold, ]
 selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
 
 
-# 4. Count how many of the selected proteins are reference proteins
+# Count how many of the selected proteins are reference proteins
 ref_counts <- table(selected_proteins$is_reference)
 names(ref_counts) <- c("Not positive control protein (FALSE)", "Positive Control protein (TRUE)")
 print(ref_counts)
 
 #how many proteins of negative control are found at this threshold
-# 1. Mark negative control proteins in the full dataset
+# Mark negative control proteins in the full dataset
 test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
 
-# 2. Make predictions using the existing logistic model
+# Make predictions using the existing logistic model
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
+# Apply threshold
 selected_proteins <- test_scores_combined_df[predictions > optimal_threshold, ]
 
-# 4. Count how many of the selected proteins are from the negative control
+# Count how many of the selected proteins are from the negative control
 neg_counts <- table(selected_proteins$is_negative)
 names(neg_counts) <- c("Not negative control protein (FALSE)", "Negative control protein (TRUE)")
 print(neg_counts)
@@ -2516,7 +2606,6 @@ predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 
 # Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
-
 ```
 ### right shift proteins
 Goal: define right shift proteins according to their delta COM
@@ -2537,6 +2626,100 @@ right_shift_count <- nrow(filtered_df)
 print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
 ```
+
+### visualize test-modell results ### will ich so nicht haben
+```{r}
+# Calculate total number of proteins in the dataset
+total_proteins <- nrow(test_scores_combined_df)
+
+# Define the threshold to classify proteins as predicted shifted
+threshold <- optimal_threshold
+
+# Subset proteins predicted as shifted (probability above threshold)
+predicted_proteins <- test_scores_combined_df[test_scores_combined_df$probability > threshold, ]
+
+# Number of predicted shifted proteins (RBP)
+num_rbp <- nrow(predicted_proteins)
+
+# Number of right-shifted proteins (given)
+num_right_shift <- right_shift_count
+
+# Number of left-shifted proteins calculated as remainder of total shifts
+num_left_shift <- total_proteins - right_shift_count
+
+# Number of false positives among predicted proteins (given)
+num_false_positives <- neg_counts
+
+# Calculate true positives by subtracting false positives from predicted RBPs
+num_true_positives <- num_rbp - num_false_positives
+
+# Calculate number of proteins not predicted as RBPs
+num_non_rbp <- total_proteins - num_rbp
+
+# Extract numeric values from false_positives and true_positives if they are tables
+if (is.table(num_false_positives)) {
+  false_positives_num <- as.numeric(num_false_positives["TRUE"])
+} else {
+  false_positives_num <- num_false_positives
+}
+
+if (is.table(num_true_positives)) {
+  true_positives_num <- as.numeric(num_true_positives["TRUE"])
+} else {
+  true_positives_num <- num_true_positives
+}
+
+# Prepare counts for plotting (ensure numeric scalars)
+total_proteins_count <- as.numeric(total_proteins)
+significant_shifted <- as.numeric(num_rbp)
+false_positives_num <- as.numeric(false_positives_num)
+true_positives_num <- as.numeric(true_positives_num)
+
+# Create matrix for stacked barplot: 2 rows (segments) x 3 columns (bars)
+counts_matrix <- matrix(c(
+  # Bottom segments of bars
+  total_proteins_count - significant_shifted,  # Bar 1: Non-shifted
+  num_right_shift,                             # Bar 2: Right Shift
+  false_positives_num,                         # Bar 3: False Positives
+
+  # Top segments of bars
+  significant_shifted,                         # Bar 1: Shifted
+  num_left_shift,                             # Bar 2: Left Shift
+  true_positives_num                           # Bar 3: True Positives
+), nrow = 2, byrow = TRUE)
+
+# Assign column and row names
+colnames(counts_matrix) <- c("All Proteins", "Shifted Proteins", "Prediction Quality")
+rownames(counts_matrix) <- c("Bottom Segment", "Top Segment")
+
+# Print matrix and dimensions for debug
+print(counts_matrix)
+print(dim(counts_matrix))
+
+# Define colors for segments
+colors <- c("grey80", "darkblue")
+
+# Define legend labels (corresponding to segments)
+legend_labels <- c(
+  "Non-shifted / Right Shift / False Positives",
+  "Shifted / Left Shift / True Positives"
+)
+
+# Create stacked barplot (beside = FALSE stacks segments vertically)
+barplot(counts_matrix,
+        beside = FALSE,
+        col = colors,
+        border = "white",
+        main = "Protein Shift Classification",
+        ylab = "Number of Proteins",
+        las = 1,
+        names.arg = colnames(counts_matrix))
+
+# Add legend
+legend("topright", legend = legend_labels, fill = colors, bty = "n")
+
+```
+
 ```{r}
 
 # Define protein name
