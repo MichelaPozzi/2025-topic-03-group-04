@@ -65,10 +65,11 @@ unbehandelten Zelllysaten (Kontrollproben) und RNase-behandelten Lysaten (RNase-
 Die Lysate werden mittels Ultrazentrifugation in einem Sucrose-Dichtegradienten fraktioniert und in
 25 Fraktionen aufgeteilt. Anschließend erfolgt eine proteomweite Quantifizierung mittels
 Massenspektrometrie über drei Replikate je Treatment. Insgesamt ergibt sich daraus ein Datensatz mit
-3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten shift in den Dichteprofilen dienen
-als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer RNA-Abhängigkeit. Das entwickelte
-Programm ermöglicht erstmals eine automatisierte Auswertung solcher großskaligen Datensätze zur
-Identifikation RNA-abhängiger Proteine auf Basis experimentell messbarer Parameter.
+3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten Verteilungsänderungen (shift) in
+den Dichteprofilen dienen als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer
+RNA-Abhängigkeit. Das entwickelte Programm ermöglicht erstmals eine automatisierte Auswertung
+solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
+messbarer Parameter.
 
 # **Projekt Überblick**
 
