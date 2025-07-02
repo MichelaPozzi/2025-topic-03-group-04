@@ -158,6 +158,22 @@ flowchart LR
 
 ## **Tests**
 
+```mermaid
+flowchart LR
+    A[normalisierte Daten] --> B[Shift Distanz]
+    A --> C[Amplitudenveränderung]
+    A --> D[Earth Mover Test]
+    A --> E[Center Of Mass Test]
+    A --> F[Wilcoxon Test pro Protein]
+    A --> G[Wilcoxon Test für Globale Maxima]
+    B --> H[Logistisches Modell]
+    C --> H
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+```
+
 ## **Logistisches Modell**
 
 # **Lineare Regression**
