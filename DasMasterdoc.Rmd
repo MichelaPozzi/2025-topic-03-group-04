@@ -573,46 +573,38 @@ any(zeilen_mit_nullsumme_rnase)
  
 ```
 
-##Visualization
 
+#Visualisierung Deluxe
 ```{r}
 # Protein auswählen
 protein_id <- "KIF2A_HUMAN"
-
-# Zeile finden, die dem Protein entspricht
 protein_row <- which(normalized_ctrl_df[, 1] == protein_id)
-
-# Normierte Intensitäten extrahieren
 intensities_ctrl <- as.numeric(normalized_ctrl_df[protein_row, 2:26])
 intensities_rnase <- as.numeric(normalized_rnase_df[protein_row, 2:26])
 fraktionen <- 1:25
 
-# Plot vorbereiten (ohne automatische x-Achse)
+# Plot vorbereiten
 plot(fraktionen, intensities_ctrl, type = "n",
      xlab = "Fraktion (1–25)", ylab = "Proteinmenge",
      main = paste("Vergleich: Kontrolle vs. RNase für", protein_id),
      ylim = c(0, max(c(intensities_ctrl, intensities_rnase)) * 1.1),
-     xaxt = "n")  # <- x-Achse deaktivieren
-
-# Eigene x-Achse: Alle Fraktionen anzeigen
+     xaxt = "n")
 axis(1, at = 1:25)
-
-# Gitterlinien
 grid(col = "lightgray", lty = "dotted")
 
-# Kontrolle: Lavendel-Ton
+# Farben definieren
 ctrl_fill_color <- rgb(0.7, 0.6, 1, 0.3)
 ctrl_line_color <- rgb(0.7, 0.6, 1)
+rnase_fill_color <- rgb(0.2745, 0.5098, 0.7059, 0.3)
+rnase_line_color <- rgb(0.2745, 0.5098, 0.7059)
 
+# Kontrolle zeichnen
 polygon(c(fraktionen, rev(fraktionen)),
         c(rep(0, length(fraktionen)), rev(intensities_ctrl)),
         col = ctrl_fill_color, border = NA)
 lines(fraktionen, intensities_ctrl, col = ctrl_line_color, lwd = 2)
 
-# RNase: Blau-Ton
-rnase_fill_color <- rgb(0, 1, 1, 0.3)
-rnase_line_color <- rgb(0, 1, 1)
-
+# RNase zeichnen
 polygon(c(fraktionen, rev(fraktionen)),
         c(rep(0, length(fraktionen)), rev(intensities_rnase)),
         col = rnase_fill_color, border = NA)
@@ -626,7 +618,43 @@ legend("topright",
        bg = "white")
 
 
+# 1. Maxima bestimmen
+max_ctrl_idx <- which.max(intensities_ctrl)
+max_ctrl_val <- intensities_ctrl[max_ctrl_idx]
+max_rnase_idx <- which.max(intensities_rnase)
+max_rnase_val <- intensities_rnase[max_rnase_idx]
+
+# 2. Amplitudenpfeile zeichnen
+arrows(x0 = fraktionen[max_ctrl_idx], y0 = 0,
+       x1 = fraktionen[max_ctrl_idx], y1 = max_ctrl_val,
+       col = ctrl_line_color, lwd = 1.5, length = 0.1)
+
+arrows(x0 = fraktionen[max_rnase_idx], y0 = 0,
+       x1 = fraktionen[max_rnase_idx], y1 = max_rnase_val,
+       col = rnase_line_color, lwd = 1.5, length = 0.1)
+
+# 3. Amplitude-Beschriftungen
+text(fraktionen[max_ctrl_idx], max_ctrl_val + 0.08 * max_ctrl_val,
+     labels = "Amplitude", col = ctrl_line_color, cex = 0.8)
+
+text(fraktionen[max_rnase_idx], max_rnase_val + 0.08 * max_rnase_val,
+     labels = "Amplitude", col = rnase_line_color, cex = 0.8)
+
+# Pfeilhöhe auf dem niedrigeren der beiden Maxima
+arrow_y <- min(max_ctrl_val, max_rnase_val)
+
+# Horizontaler Pfeil (ebenfalls dünner)
+arrows(x0 = fraktionen[max_ctrl_idx], y0 = arrow_y,
+       x1 = fraktionen[max_rnase_idx], y1 = arrow_y,
+       col = "black", lwd = 1.6, angle = 15, length = 0.1, code = 2)
+
+# Beschriftung über dem horizontalen Pfeil (einzige "Shift"-Beschriftung)
+text(x = mean(c(fraktionen[max_ctrl_idx], fraktionen[max_rnase_idx])),
+     y = arrow_y + 0.08 * arrow_y,
+     labels = "Shift Distance", col = "black", cex = 0.8)
+
 ```
+
 
 ###Batch Effect###
 
