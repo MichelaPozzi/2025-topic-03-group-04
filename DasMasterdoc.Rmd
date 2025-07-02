@@ -721,10 +721,12 @@ batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 ctrl_expr_matrix_log <- log2(ctrl_expr_matrix + 1)
 
 # 5. Batch-Korrektur mit limma
-ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
+L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
+
+
 
 # 5. Boxplot zeichnen vor korrektur 
-boxplot(ctrl_expr_matrix,
+boxplot(ctrl_expr_matrix_log,
         main = "Expression vor Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -745,8 +747,9 @@ boxplot(ctrl_expr_corrected,
 
 
 # 6. Legende hinzufügen
+legend_labels <- c("Batch A", "Batch B", "Batch C")
 legend("topright",
-       legend = names(batch_colors),
+       legend = legend_labels,
        fill = batch_colors,
        title = "Batch")
 ```
@@ -755,12 +758,12 @@ legend("topright",
 ## PCA
 ```{r}
 # PCA-Analyse vorbereiten
-pca_before <- prcomp(t(ctrl_expr_matrix), scale. = TRUE)
+pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(ctrl_expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
-sample_names <- colnames(ctrl_expr_matrix)
+sample_names <- colnames(ctrl_expr_matrix_log)
 
 # 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
@@ -798,7 +801,7 @@ select_top_var <- function(mat, top_n = 100) {
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
 }
 
-heat_before <- select_top_var(expr_matrix, 100)
+heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
 
 pheatmap(heat_before,
@@ -814,7 +817,7 @@ pheatmap(heat_after,
          annotation_col = annotation_col)
 
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
-heat_before <- select_top_var(expr_matrix, 100)
+heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
 
 # Spaltenannotation nach Batch
@@ -921,10 +924,10 @@ batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 rnase_expr_matrix_log <- log2(rnase_expr_matrix + 1)
 
 # 5. Batch-Korrektur mit limma
-rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, batch = batch)
+L_rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, batch = batch)
 
 # 5. Boxplot zeichnen vor korrektur 
-boxplot(rnase_expr_matrix,
+boxplot(rnase_expr_matrix_log,
         main = "Expression vor Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -934,7 +937,7 @@ boxplot(rnase_expr_matrix,
         cex.axis = 0.6)              # kleinere Achsenbeschriftung
 
 # Boxplot nach Korrektur 
-boxplot(rnase_expr_corrected,
+boxplot(L_rnase_expr_corrected,
         main = "Expression nach Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -945,8 +948,9 @@ boxplot(rnase_expr_corrected,
 
 
 # 6. Legende hinzufügen
+llegend_labels <- c("Batch A", "Batch B", "Batch C")
 legend("topright",
-       legend = names(batch_colors),
+       legend = legend_labels,
        fill = batch_colors,
        title = "Batch")
 ```
@@ -955,12 +959,12 @@ legend("topright",
 ## PCA
 ```{r}
 # PCA-Analyse vorbereiten
-pca_before <- prcomp(t(rnase_expr_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(rnase_expr_corrected), scale. = TRUE)
+pca_before <- prcomp(t(rnase_expr_matrix_log), scale. = TRUE)
+pca_after  <- prcomp(t(L_rnase_expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
-sample_names <- colnames(rnase_expr_matrix)
+sample_names <- colnames(rnase_expr_matrix_log)
 
 # 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
@@ -999,8 +1003,8 @@ select_top_var <- function(mat, top_n = 100) {
 }
 
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
-heat_before <- select_top_var(rnase_expr_matrix, 100)
-heat_after  <- select_top_var(rnase_expr_corrected, 100)
+heat_before <- select_top_var(rnase_expr_matrix_log, 100)
+heat_after  <- select_top_var(L_rnase_expr_corrected, 100)
 
 # Spaltenannotation nach Batch
 annotation_col <- data.frame(Batch = batch)
@@ -1098,7 +1102,7 @@ fit <- lmFit(ctrl_expression_matrix, mod_sv)
 fit <- eBayes(fit)
 
 # Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
-corrected_expr_ctrl <- residuals(fit, ctrl_expression_matrix)
+S_corrected_expr_ctrl <- residuals(fit, ctrl_expression_matrix)
 
 # 'corrected_expr' enthält die bereinigten Expressionswerte
 
@@ -1133,7 +1137,7 @@ boxplot(ctrl_expression_matrix,
         cex.axis = 0.6)
 
 # 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
-boxplot(corrected_expr_ctrl,
+boxplot(S_corrected_expr_ctrl,
         main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -1155,7 +1159,7 @@ legend("topright",
 
 # 1) PCA vorbereiten
 pca_before <- prcomp(t(ctrl_expression_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(corrected_expr_ctrl), scale. = TRUE)
+pca_after  <- prcomp(t(S_corrected_expr_ctrl), scale. = TRUE)
 
 # 2) Batch-Zuordnung erneut für Farben
 sample_names <- colnames(ctrl_expression_matrix)
@@ -1203,7 +1207,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 # 3) Top 100 variabelsten Proteine extrahieren
 heat_before <- select_top_var(ctrl_expression_matrix, 100)
-heat_after  <- select_top_var(corrected_expr_ctrl, 100)
+heat_after  <- select_top_var(S_corrected_expr_ctrl, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
@@ -1231,7 +1235,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(corrected_expr_ctrl)
+head(S_corrected_expr_ctrl)
 ```
  
 ##RNASE
@@ -1283,7 +1287,7 @@ fit <- lmFit(rnase_expression_matrix, mod_sv)
 fit <- eBayes(fit)
 
 # Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
-corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
+S_corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
 
 # 'corrected_expr' enthält die bereinigten Expressionswerte
 
@@ -1318,7 +1322,7 @@ boxplot(rnase_expression_matrix,
         cex.axis = 0.6)
 
 # 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
-boxplot(corrected_expr_rnase,
+boxplot(S_corrected_expr_rnase,
         main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -1341,7 +1345,7 @@ legend("topright",
 
 # 1) PCA vorbereiten
 pca_before <- prcomp(t(rnase_expression_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(corrected_expr_rnase), scale. = TRUE)
+pca_after  <- prcomp(t(S_corrected_expr_rnase), scale. = TRUE)
 
 # 2) Batch-Zuordnung erneut für Farben
 sample_names <- colnames(rnase_expression_matrix)
@@ -1389,7 +1393,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 # 3) Top 100 variabelsten Proteine extrahieren
 heat_before <- select_top_var(rnase_expression_matrix, 100)
-heat_after  <- select_top_var(corrected_expr_rnase, 100)
+heat_after  <- select_top_var(S_corrected_expr_rnase, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
@@ -2935,7 +2939,7 @@ legend("topright",
 
 
 ```{r}
-ctrl_sva_df <- as.data.frame(corrected_expr_ctrl)
+ctrl_sva_df <- as.data.frame(S_corrected_expr_ctrl)
 rownames(ctrl_sva_df) <- ctrl_sva_df$X
 C_test <- ctrl_sva_df
 str(C_test)
@@ -3122,7 +3126,7 @@ plot(first_two_components)
 
 
 ```{r}
-rnase_sva_df <- as.data.frame(corrected_expr_rnase)
+rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
 rownames(rnase_sva_df) <- rnase_sva_df$X
 R_TEST <- rnase_sva_df
 str(R_TEST)
@@ -3697,7 +3701,7 @@ plot(first_two_components)
 ##rnase 
 
 ```{r}
- rnase_sva_df <- as.data.frame(corrected_expr_rnase)
+ rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
 Arnase_sva_df <- cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
 
 ```
@@ -3753,7 +3757,7 @@ str(pca_df)
 ```
 
 
-##ctr
+##ctrl
 
 
 ```{r}
