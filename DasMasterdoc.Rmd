@@ -777,7 +777,7 @@ select_top_var <- function(mat, top_n = 100) {
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
 }
 
-<<<<<<< HEAD
+
 heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
 
@@ -793,8 +793,7 @@ pheatmap(heat_after,
          cluster_rows = TRUE,
          annotation_col = annotation_col)
 
-=======
->>>>>>> 3de0ff0de2e4be85805188b368dc5873f23ab43a
+
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
 heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
