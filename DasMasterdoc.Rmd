@@ -2521,12 +2521,7 @@ predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 ### right shift proteins
 Goal: define right shift proteins according to their delta COM
 ```{r}
-<<<<<<< HEAD
-
-# filter proteins for significant right shift with defined threshold
-=======
 # Filter proteins for significant right shift based on Delta_COM > 0 and a minimum probability threshold
->>>>>>> 67d00e9d8788cad44269b35af803df9bf415e1d0
 filtered_df <- test_scores_combined_df[
   center_of_mass_df$Delta_COM > 0 &
   test_scores_combined_df$probability >= optimal_threshold, 
