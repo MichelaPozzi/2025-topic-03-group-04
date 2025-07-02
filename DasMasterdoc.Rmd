@@ -712,7 +712,7 @@ boxplot(ctrl_expr_matrix_log,
         cex.axis = 0.6)              # kleinere Achsenbeschriftung
 
 # Boxplot nach Korrektur 
-boxplot(ctrl_expr_corrected,
+boxplot(L_ctrl_expr_corrected,
         main = "Expression nach Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -735,7 +735,7 @@ legend("topright",
 ```{r}
 # PCA-Analyse vorbereiten
 pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
-pca_after  <- prcomp(t(ctrl_expr_corrected), scale. = TRUE)
+pca_after  <- prcomp(t(L_ctrl_expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
@@ -779,7 +779,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 
 heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
-heat_after  <- select_top_var(ctrl_expr_corrected, 100)
+heat_after  <- select_top_var(L_ctrl_expr_corrected, 100)
 
 pheatmap(heat_before,
          main = "Vor Korrektur",
