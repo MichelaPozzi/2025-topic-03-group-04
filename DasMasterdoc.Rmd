@@ -1569,7 +1569,7 @@ head(global_ctrl)
 # Classification of RBP and Non-RBP according to logistic model
 Goal: Apply statistical testscores to our test-model and thus determine the probability of the proteins being RBPs or Non-RBPS
 -> logistic model is established using 30 % of the dataset to train the model
--> when applying the remaining data to the model, it returns the proteins' probability for RNA-binding
+-> applying the model to the remaining data yields the predicted probability of RNA-binding for each protein
 ## Statisitcal Tests
 Goal: determine testscores by testing different selection criteria
 ### shift distance and direction test
