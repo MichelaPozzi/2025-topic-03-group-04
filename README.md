@@ -93,24 +93,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     -   [k-means](#k--means)
 -   [Linear Regression](#linear-regression)
 
-## **📚Libraries:**
-
--   limma
--   pheatmap
--   sva
--   stringr
--   emdist
--   DT
--   tidyr
--   ggplot2
--   dplyr
--   shiny
--   cluster
--   factoextra
--   scatterplot3d
--   plotly
-
-# **🧼Data Normalisation** {#data-normalisation}
+# **🧼Data Normalisation** 
 
 ## **🎯Objective:**
 
@@ -124,7 +107,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 
 ## **📃Steps:**
 
-### **📊Normalisation** {#normalisation}
+### **📊Normalisation** 
 
 ``` mermaid
 flowchart LR
@@ -173,9 +156,9 @@ flowchart LR
     **Normalized RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
-### **💥Batch Removal** {#batch-removal}
+### **💥Batch Removal** 
 
-# **✅Shift Analysis** {#shift-analysis}
+# **✅Shift Analysis** 
 
 ## **🎯Objective**
 
@@ -201,7 +184,7 @@ flowchart LR
 
 ### **🤖Logistic Model**
 
-# **📈Linear Regression** {#linear-regression}
+# **📈Linear Regression** 
 
 ## **🎯Objective:**
 
