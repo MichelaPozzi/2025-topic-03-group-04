@@ -3693,8 +3693,8 @@ pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
 library(ggplot2)
 
 ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
-  geom_point(size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("Ja" = "red", "Nein" = "gray")) +
+
+  scale_color_manual(values = c("Ja" = "magenta", "Nein" = "light grey")) +
   theme_minimal() +
   labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
 
