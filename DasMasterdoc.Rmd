@@ -4190,9 +4190,11 @@ colnames(Ctrl_data)
 ```
 
 
-##rnase
+
 ```{r}
+
 rnase_data <- as.data.frame(rnase_pca$x)
+
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
 #protein namen isolieren 
