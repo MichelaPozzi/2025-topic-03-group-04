@@ -2404,7 +2404,7 @@ boxplot(weighted_score ~ label, data = df_all,
 
 ```
 ### test-model applied to testscores
-Goal: ???
+Goal: predict probability of RNA binding proteins
 ```{r}
 #apply model to our data
 # 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
@@ -2494,25 +2494,22 @@ predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
 ### right shift proteins
 Goal: define right shift proteins according to their delta COM
 ```{r}
-# filter proteins for significant right shift with defined threshold
+# Filter proteins for significant right shift based on Delta_COM > 0 and a minimum probability threshold
 filtered_df <- test_scores_combined_df[
-  test_scores_combined_df$Shift_direction_ctrl_to_rnase == "right shift" &
+  center_of_mass_df$Delta_COM > 0 &
   test_scores_combined_df$probability >= optimal_threshold, 
 ]
 
-# Extract protein names from first column, save as dataframe
+# Extract protein names from the first column, save as a new dataframe
 right_shift_proteins_df <- data.frame(Protein = filtered_df[[1]])
 
-# Number of filtered proteins
+# Count number of right-shifted proteins
 right_shift_count <- nrow(filtered_df)
 
-# Depict results
+# Display results
 print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
-
-
 ```
-
 ```{r}
 # Define protein name
 protein_name <- "1433B_HUMAN"
