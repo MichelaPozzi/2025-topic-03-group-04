@@ -71,7 +71,7 @@ messbarer Parameter.
 
 ![](images/clipboard-1052987459.png)
 
-# **Projekt Überblick**
+# **🔮Projekt Überblick**
 
 ## Inhaltsverzeichnis
 
@@ -104,15 +104,7 @@ messbarer Parameter.
 - scatterplot3d
 - plotly
 
-# **🧼Daten Aufreinigung**
-
-## **🎯Ziel:**
-
-# **Daten Beschreibung**
-
-## **🎯Ziel:**
-
-# **Daten Normalisierung**
+# **🧼Daten Normalisierung**
 
 ## **🎯Ziel:**
 
@@ -124,10 +116,10 @@ messbarer Parameter.
     -   Skalierung und Normierung
     -   Transformation
 
-## **Ablauf:**
+## **📃Ablauf:**
 
 
-### **Normalisierung**
+### **📊Normalisierung**
 
 ```mermaid
 flowchart LR
@@ -163,13 +155,13 @@ flowchart LR
 3.  
 
 
-### **Batchentfernung**
+### **💥Batchentfernung**
 
 # **✅Shift Analyse**
 
 ## **🎯Ziel**
 
-## **Ablauf**
+## ️**📃Ablauf**
 
 ```mermaid
 flowchart LR
@@ -186,9 +178,9 @@ flowchart LR
     F --> H
     G --> H
 ```
-## **Tests**
+## **📝Tests**
 
-## **Logistisches Modell**
+## **🤖Logistisches Modell**
 
 # **📈Lineare Regression**
 
@@ -199,7 +191,7 @@ flowchart LR
 -   für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand experimentell zugänglicher Größen
     vorhersagen
 
-## **Ablauf:**
+## **📃Ablauf**
 
 ``` mermaid
 flowchart LR
