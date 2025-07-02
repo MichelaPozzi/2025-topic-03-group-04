@@ -351,15 +351,6 @@ sum(is.na(final_smoothed_rnase))
 
 ```
 
-
-
-```{r}
-#save dataframes for batch effect
-dir.create("data", showWarnings = FALSE)
-saveRDS(final_smoothed_ctrl, file = "data/final_smoothed_ctrl.rds")
-saveRDS(final_smoothed_rnase, file =  "data/final_smoothed_rnase.rds")
-```
-
 ```{r}
 # check for any rows with rowSum == 0 (per replicate)
 check_zero_replicates_detailed <- function(df) {
@@ -489,13 +480,6 @@ sum(is.na(percent_rnase_df))
 ```
 
 ```{r}
-# save dataframe for t-test
-saveRDS(percent_ctrl_df, file = "data/percent_ctrl_df.rds")
-saveRDS(percent_rnase_df, file =  "data/percent_rnase_df.rds")
-```
-
-
-```{r}
 calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
   proteins <- df[, 1]  # Protein-Names
   data_only <- df[, -1]  # only numeric values
@@ -587,14 +571,6 @@ zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
 any(zeilen_mit_nullsumme_rnase)
 
  
-```
-
-
-```{r}
-#Dataframes speichern
-dir.create("data", showWarnings = FALSE)
-saveRDS(normalized_ctrl_df, file = "data/normalized_ctrl_df.rds")
-saveRDS(normalized_rnase_df, file =  "data/normalized_rnase_df.rds")
 ```
 
 ##Visualization
@@ -721,10 +697,12 @@ batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 ctrl_expr_matrix_log <- log2(ctrl_expr_matrix + 1)
 
 # 5. Batch-Korrektur mit limma
-ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
+L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
+
+
 
 # 5. Boxplot zeichnen vor korrektur 
-boxplot(ctrl_expr_matrix,
+boxplot(ctrl_expr_matrix_log,
         main = "Expression vor Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -745,8 +723,9 @@ boxplot(ctrl_expr_corrected,
 
 
 # 6. Legende hinzufügen
+legend_labels <- c("Batch A", "Batch B", "Batch C")
 legend("topright",
-       legend = names(batch_colors),
+       legend = legend_labels,
        fill = batch_colors,
        title = "Batch")
 ```
@@ -755,12 +734,12 @@ legend("topright",
 ## PCA
 ```{r}
 # PCA-Analyse vorbereiten
-pca_before <- prcomp(t(ctrl_expr_matrix), scale. = TRUE)
+pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(ctrl_expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
-sample_names <- colnames(ctrl_expr_matrix)
+sample_names <- colnames(ctrl_expr_matrix_log)
 
 # 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
@@ -798,7 +777,8 @@ select_top_var <- function(mat, top_n = 100) {
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
 }
 
-heat_before <- select_top_var(expr_matrix, 100)
+
+heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
 
 pheatmap(heat_before,
@@ -813,8 +793,9 @@ pheatmap(heat_after,
          cluster_rows = TRUE,
          annotation_col = annotation_col)
 
+
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
-heat_before <- select_top_var(expr_matrix, 100)
+heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(ctrl_expr_corrected, 100)
 
 # Spaltenannotation nach Batch
@@ -839,13 +820,6 @@ pheatmap(heat_after,
 # Reset Layout
 par(mfrow = c(1, 1))
 ```
-
-
-```{r}
-pheatmap(expr_matrix[1:100, ], main = "Test Heatmap Original")
-pheatmap(ctrl_expr_corrected[1:100, ], main = "Test Heatmap Korrigiert")
-```
-
 
 
 ```{r}
@@ -921,10 +895,10 @@ batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 rnase_expr_matrix_log <- log2(rnase_expr_matrix + 1)
 
 # 5. Batch-Korrektur mit limma
-rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, batch = batch)
+L_rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, batch = batch)
 
 # 5. Boxplot zeichnen vor korrektur 
-boxplot(rnase_expr_matrix,
+boxplot(rnase_expr_matrix_log,
         main = "Expression vor Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -934,7 +908,7 @@ boxplot(rnase_expr_matrix,
         cex.axis = 0.6)              # kleinere Achsenbeschriftung
 
 # Boxplot nach Korrektur 
-boxplot(rnase_expr_corrected,
+boxplot(L_rnase_expr_corrected,
         main = "Expression nach Korrektur (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -945,8 +919,9 @@ boxplot(rnase_expr_corrected,
 
 
 # 6. Legende hinzufügen
+llegend_labels <- c("Batch A", "Batch B", "Batch C")
 legend("topright",
-       legend = names(batch_colors),
+       legend = legend_labels,
        fill = batch_colors,
        title = "Batch")
 ```
@@ -955,12 +930,12 @@ legend("topright",
 ## PCA
 ```{r}
 # PCA-Analyse vorbereiten
-pca_before <- prcomp(t(rnase_expr_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(rnase_expr_corrected), scale. = TRUE)
+pca_before <- prcomp(t(rnase_expr_matrix_log), scale. = TRUE)
+pca_after  <- prcomp(t(L_rnase_expr_corrected), scale. = TRUE)
 
 # Batch-Zuordnung erneut für Farben
 # 2. Sample-Namen extrahieren
-sample_names <- colnames(rnase_expr_matrix)
+sample_names <- colnames(rnase_expr_matrix_log)
 
 # 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
@@ -999,8 +974,8 @@ select_top_var <- function(mat, top_n = 100) {
 }
 
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
-heat_before <- select_top_var(rnase_expr_matrix, 100)
-heat_after  <- select_top_var(rnase_expr_corrected, 100)
+heat_before <- select_top_var(rnase_expr_matrix_log, 100)
+heat_after  <- select_top_var(L_rnase_expr_corrected, 100)
 
 # Spaltenannotation nach Batch
 annotation_col <- data.frame(Batch = batch)
@@ -1098,7 +1073,7 @@ fit <- lmFit(ctrl_expression_matrix, mod_sv)
 fit <- eBayes(fit)
 
 # Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
-corrected_expr_ctrl <- residuals(fit, ctrl_expression_matrix)
+S_corrected_expr_ctrl <- residuals(fit, ctrl_expression_matrix)
 
 # 'corrected_expr' enthält die bereinigten Expressionswerte
 
@@ -1133,7 +1108,7 @@ boxplot(ctrl_expression_matrix,
         cex.axis = 0.6)
 
 # 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
-boxplot(corrected_expr_ctrl,
+boxplot(S_corrected_expr_ctrl,
         main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -1155,7 +1130,7 @@ legend("topright",
 
 # 1) PCA vorbereiten
 pca_before <- prcomp(t(ctrl_expression_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(corrected_expr_ctrl), scale. = TRUE)
+pca_after  <- prcomp(t(S_corrected_expr_ctrl), scale. = TRUE)
 
 # 2) Batch-Zuordnung erneut für Farben
 sample_names <- colnames(ctrl_expression_matrix)
@@ -1203,7 +1178,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 # 3) Top 100 variabelsten Proteine extrahieren
 heat_before <- select_top_var(ctrl_expression_matrix, 100)
-heat_after  <- select_top_var(corrected_expr_ctrl, 100)
+heat_after  <- select_top_var(S_corrected_expr_ctrl, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
@@ -1231,7 +1206,7 @@ pheatmap(heat_after,
 ```
  
 ```{r}
-head(corrected_expr_ctrl)
+head(S_corrected_expr_ctrl)
 ```
  
 ##RNASE
@@ -1283,7 +1258,7 @@ fit <- lmFit(rnase_expression_matrix, mod_sv)
 fit <- eBayes(fit)
 
 # Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
-corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
+S_corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
 
 # 'corrected_expr' enthält die bereinigten Expressionswerte
 
@@ -1318,7 +1293,7 @@ boxplot(rnase_expression_matrix,
         cex.axis = 0.6)
 
 # 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
-boxplot(corrected_expr_rnase,
+boxplot(S_corrected_expr_rnase,
         main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
@@ -1341,7 +1316,7 @@ legend("topright",
 
 # 1) PCA vorbereiten
 pca_before <- prcomp(t(rnase_expression_matrix), scale. = TRUE)
-pca_after  <- prcomp(t(corrected_expr_rnase), scale. = TRUE)
+pca_after  <- prcomp(t(S_corrected_expr_rnase), scale. = TRUE)
 
 # 2) Batch-Zuordnung erneut für Farben
 sample_names <- colnames(rnase_expression_matrix)
@@ -1389,7 +1364,7 @@ select_top_var <- function(mat, top_n = 100) {
 
 # 3) Top 100 variabelsten Proteine extrahieren
 heat_before <- select_top_var(rnase_expression_matrix, 100)
-heat_after  <- select_top_var(corrected_expr_rnase, 100)
+heat_after  <- select_top_var(S_corrected_expr_rnase, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
@@ -2935,7 +2910,7 @@ legend("topright",
 
 
 ```{r}
-ctrl_sva_df <- as.data.frame(corrected_expr_ctrl)
+ctrl_sva_df <- as.data.frame(S_corrected_expr_ctrl)
 rownames(ctrl_sva_df) <- ctrl_sva_df$X
 C_test <- ctrl_sva_df
 str(C_test)
@@ -3000,7 +2975,7 @@ head(ctrl_pca$x, 10)
 ###prozentplot 
 
 ```{r}
-barplot(Pct_Ctrl_pca_ve)
+barplot(Pct_ctrl_pca_ve)
 ```
 
 ```{r}
@@ -3122,7 +3097,7 @@ plot(first_two_components)
 
 
 ```{r}
-rnase_sva_df <- as.data.frame(corrected_expr_rnase)
+rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
 rownames(rnase_sva_df) <- rnase_sva_df$X
 R_TEST <- rnase_sva_df
 str(R_TEST)
@@ -3697,7 +3672,7 @@ plot(first_two_components)
 ##rnase 
 
 ```{r}
- rnase_sva_df <- as.data.frame(corrected_expr_rnase)
+ rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
 Arnase_sva_df <- cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
 
 ```
@@ -3711,10 +3686,9 @@ T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
 dim(T_rnase_df)
 ```
 
-##funktioniert 
 ```{r}
 # 1. Sicherstellen, dass die Protein-Namen in den Zeilennamen stehen
-# (Falls sie in einer Spalte sind – z.B. "Protein" –, dann so:)
+# (Falls sie in einer Spalte sind – z. B. "Protein" –, dann so:)
 # T_rnase_df <- column_to_rownames(T_rnase_df, var = "Protein")  # falls tidyverse
 # oder base R:
 # rownames(T_rnase_df) <- T_rnase_df$Protein
@@ -3724,11 +3698,10 @@ dim(T_rnase_df)
 pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
 
 # 3. Ergebnis als DataFrame
-
 pca_df <- as.data.frame(pca$x)
-pca_df$Protein <- rownames(pca_df)  # Zeilennamen explizit in Spalte
-rownames(pca_df) <- NULL            # Zeilennamen löschen, damit keine Verwirrung
 
+# 4. Jetzt Protein-Namen als neue Spalte hinzufügen (aus Zeilennamen!)
+pca_df$Protein <- rownames(T_rnase_df)
 
 
 # 5. Proteine, die hervorgehoben werden sollen
@@ -3741,76 +3714,89 @@ pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
 library(ggplot2)
 
 ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
-  geom_point(size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("Ja" = "hot pink", "Nein" = "light grey")) +
+
+  scale_color_manual(values = c("Ja" = "magenta", "Nein" = "light grey")) +
   theme_minimal() +
   labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
 
 ```
 
 ```{r}
-str(pca_df)
+head(pca_df)
 ```
 
 
-##ctr
+<<<<<<< HEAD
+##ctrl
 
 
+=======
+>>>>>>> 3de0ff0de2e4be85805188b368dc5873f23ab43a
 ```{r}
- ctrl_sva_df <- as.data.frame(corrected_expr_ctrl)
-Bctrl_sva_df <- cbind(gene=rownames(ctrl_sva_df),ctrl_sva_df)
-
-```
-
-```{r}
-T_ctrl_pca <- prcomp(ctrl_sva_df, center = TRUE, scale = TRUE)
-T_ctrl_df<-cbind(gene=rownames(ctrl_sva_df),ctrl_sva_df)
-```
-
-```{r}
-dim(T_ctrl_df)
-```
-
-##funktioniert 
-```{r}
-# 1. Sicherstellen, dass die Protein-Namen in den Zeilennamen stehen
-# (Falls sie in einer Spalte sind – z.B. "Protein" –, dann so:)
-# T_rnase_df <- column_to_rownames(T_rnase_df, var = "Protein")  # falls tidyverse
-# oder base R:
-# rownames(T_rnase_df) <- T_rnase_df$Protein
-# T_rnase_df$Protein <- NULL
-
-# 2. Nur numerische Werte an PCA übergeben
-C_pca <- prcomp(ctrl_sva_df, center = TRUE, scale = TRUE)
-
-# 3. Ergebnis als DataFrame
-
-C_pca_df <- as.data.frame(C_pca$x)
-C_pca_df$Protein <- rownames(C_pca_df)  # Zeilennamen explizit in Spalte
-rownames(C_pca_df) <- NULL            # Zeilennamen löschen, damit keine Verwirrung
 
 
+# 2. PCA auf dem großen Datensatz
+T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
 
-# 5. Proteine, die hervorgehoben werden sollen
-highlight_proteins <- rownames(right_shift_ctrl)
+# 1. Sicherstellen, dass Zeilennamen gesetzt sind
+stopifnot(!is.null(rownames(T_rnase_df)))
+stopifnot(!is.null(rownames(right_shift_rnase)))
 
-# 6. Markierungsspalte
-C_pca_df$Highlight <- ifelse(C_pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
+# 3. PCA-Ergebnisse in DataFrame + Protein-Namen als Spalte
+pca_df <- as.data.frame(pca$x)
+pca_df$Protein <- rownames(T_rnase_df)
 
-# 7. Plot
+# 4. Proteine, die hervorgehoben werden sollen
+highlight_proteins <- rownames(right_shift_rnase)
+
+# 5. Markierungsspalte hinzufügen
+pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
+
+# 6. Plot mit ggplot2
 library(ggplot2)
 
 ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   geom_point(size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("Ja" = "hot pink", "Nein" = "light gray")) +
+  scale_color_manual(values = c("Ja" = "red", "Nein" = "gray")) +
   theme_minimal() +
   labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
 
 ```
 
+
 ```{r}
-str(pca_df)
+# 1. Zeilennamen korrekt setzen – wichtig!
+if (is.null(rownames(rnase_sva_df))) {
+  rownames(rnase_sva_df) <- paste0("Protein_", 1:nrow(rnase_sva_df))
+}
+
+# 2. PCA
+T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
+
+# 3. PCA-Ergebnisse + Protein-IDs
+pca_df <- as.data.frame(T_rnase_pca $x)
+pca_df$Protein <- rownames(rnase_sva_df)  # Jetzt korrekt
+
+# 4. Proteine, die hervorgehoben werden sollen
+highlight_proteins <- rownames(right_shift_rnase)
+
+# 5. Markierungsspalte
+pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
+
+# 6. Plot
+library(ggplot2)
+
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_color_manual(values = c("Ja" = "red", "Nein" = "grey")) +
+  theme_minimal() +
+  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
+
 ```
+
+
+
 
 
 
@@ -3911,14 +3897,29 @@ summary(model)
 
 
 ```{r}
+# visualization of linear regression using hyperplanes
 
-install.packages("scatterplot3d")  # falls noch nicht installiert
+install.packages("scatterplot3d") 
 library(scatterplot3d)
 
-# 3D-Streudiagramm
+
+depth <- df_complete$probability
+
+# Farbverlauf: dunkel-lila -> mittleres Lila -> helles Lila
+farben <- colorRampPalette(c("#b19cd9", "#7b59b9", "#4b0082"))(100)
+
+color_index <- cut(depth, breaks = 100, labels = FALSE)
+point_colors <- farben[color_index]
+
 s3d <- scatterplot3d(df_complete$pI, df_complete$Mass_kDa, df_complete$probability,
                      xlab = "pI", ylab = "Masse (kDa)", zlab = "Probability",
-                     pch = 16, highlight.3d = TRUE, type = "p", angle = 55)
+                     pch = 16, color = point_colors,
+                     highlight.3d = FALSE,
+                     type = "p", angle = 55)
+
+s3d$plane3d(model, col = "#4b0082")
+
+
 
 # Koordinaten der Regressionsfläche berechnen
 plane <- predict(model, 
@@ -3930,29 +3931,31 @@ s3d$plane3d(model)
 ```
 
 ```{r}
+# create interactive hyperplane 
 
 install.packages("plotly")
 library(plotly)
 
-# Gitter für die Regressionsfläche
-pI_seq <- seq(min(df_complete$pI), max(df_complete$pI), length.out = 30)
-Mass_seq <- seq(min(df_complete$Mass_kDa), max(df_complete$Mass_kDa), length.out = 30)
-grid <- expand.grid(pI = pI_seq, Mass_kDa = Mass_seq)
-grid$predicted <- predict(model, newdata = grid)
-
-# Neue Klassifikation
+# new classification
 df_complete$RBP_shift_category <- ifelse(df_complete$probability >= optimal_threshold,
                                          ifelse(df_complete$Shift_direction_ctrl_to_rnase == "left shift", "RBP_left",
                                                 ifelse(df_complete$Shift_direction_ctrl_to_rnase == "right shift", "RBP_right", "RBP")),
                                          "Non-RBP")
 
-# Farbdefinition
+
+# grid for regressionplane
+pI_seq <- seq(min(df_complete$pI), max(df_complete$pI), length.out = 30)
+Mass_seq <- seq(min(df_complete$Mass_kDa), max(df_complete$Mass_kDa), length.out = 30)
+grid <- expand.grid(pI = pI_seq, Mass_kDa = Mass_seq)
+grid$predicted <- predict(model, newdata = grid)
+
+# determine colors
 farben <- list("RBP_left" = "#c9a0dc",     # hell-lila
                "RBP_right" = "#7a42a6",    # dunkel-lila
                "RBP" = "purple",
                "Non-RBP" = "lightgray")
 
-# Plotly Plot mit separaten Gruppen und eigener Legendenbeschriftung
+# Plotly Plot 
 fig <- plot_ly()
 
 # RBP_left
@@ -3969,7 +3972,7 @@ fig <- fig %>%
               marker = list(color = farben[["RBP_right"]], size = 4),
               name = "RBP (right shift)")
 
-# RBP ohne Shift-Direction (optional)
+# RBP without Shift-Direction 
 fig <- fig %>%
   add_markers(data = subset(df_complete, RBP_shift_category == "RBP"),
               x = ~pI, y = ~Mass_kDa, z = ~probability,
@@ -3983,7 +3986,7 @@ fig <- fig %>%
               marker = list(color = farben[["Non-RBP"]], size = 4),
               name = "Non-RBP")
 
-# Regressionsfläche
+# Regressionplane
 fig <- fig %>%
   add_surface(x = ~pI_seq,
               y = ~Mass_seq,
