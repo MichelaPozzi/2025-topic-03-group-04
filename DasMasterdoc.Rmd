@@ -2442,16 +2442,24 @@ boxplot(weighted_score ~ label, data = df_all,
         main = "Distribution of Weighted Scores by Class")
 
 ```
-### test-model applied to testscores
+output: 
+- The regression estimate represents the influence of a given predictor on the log-odds of RNA binding. A higher estimate increases the predicted probability.
+- The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model.
+
+### test-model applied to testscores of remaining proteins
 Goal: predict probability of RNA binding proteins
 ```{r}
 #apply model to our data
-# 1. Calculate predicted probabilities (e.g., RNA-dependency) using the logistic model
+# 1. Calculate predicted probabilities of RNA-binding using the logistic model
 test_scores_combined_df$probability <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
 # 2. View the first few rows of the result
 head(test_scores_combined_df)
 ```
+
+## classification of RBPs and Non-RBPs
+Goal: Use the predicted probabilities from the logistic regression model to classify proteins as RBPs or non-RBPs
+-> Define a cutoff probability above which proteins are classified as RBPs.
 
 ##### define FDR
 Goal: look at different possible FDRs and define a FDR according to the best FDR and threshold ratio (looking at True and False Positives)
@@ -2583,6 +2591,8 @@ abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
 
+### overview of RBPs
+- 
 ```{r}
 #threshold is selected at FDR = 10%
 # Mark reference proteins in the full dataset
