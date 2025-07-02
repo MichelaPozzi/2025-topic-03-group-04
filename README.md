@@ -73,7 +73,6 @@ To achieve this, we investigate the influence of RNA on protein complexes by com
 
 ## Table Of Contents
 
-- [Data Description](#data-description)
 - [Data Normalization](#data-normalisation)
   - [Normalisation](#normalisation)
   - [Batch Removal](#batch-removal)
@@ -117,7 +116,7 @@ To achieve this, we investigate the influence of RNA on protein complexes by com
 ## **📃Steps:**
 
 
-### **📊normalisation**
+### **📊Normalisation**
 
 ```mermaid
 flowchart LR
@@ -153,7 +152,7 @@ flowchart LR
 3.  
 
 
-### **💥batch removal**
+### **💥Batch Removal**
 
 # **✅Shift Analysis**
 
@@ -176,9 +175,9 @@ flowchart LR
     F --> H
     G --> H
 ```
-### **📝tests**
+### **📝Tests**
 
-### **🤖logistic model**
+### **🤖Logistic Model**
 
 # **📈Linear Regression**
 
