@@ -65,28 +65,25 @@ unbehandelten Zelllysaten (Kontrollproben) und RNase-behandelten Lysaten (RNase-
 Die Lysate werden mittels Ultrazentrifugation in einem Sucrose-Dichtegradienten fraktioniert und in
 25 Fraktionen aufgeteilt. Anschließend erfolgt eine proteomweite Quantifizierung mittels
 Massenspektrometrie über drei Replikate je Treatment. Insgesamt ergibt sich daraus ein Datensatz mit
-3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten shift in den Dichteprofilen dienen
-als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer RNA-Abhängigkeit. Das entwickelte
-Programm ermöglicht erstmals eine automatisierte Auswertung solcher großskaligen Datensätze zur
-Identifikation RNA-abhängiger Proteine auf Basis experimentell messbarer Parameter.
+3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten Verteilungsänderungen (shift) in
+den Dichteprofilen dienen als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer
+RNA-Abhängigkeit. Das entwickelte Programm ermöglicht erstmals eine automatisierte Auswertung
+solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
+messbarer Parameter.
 
 # **Projekt Überblick**
 
-``` mermaid
-flowchart LR
-    A[Mass Spec Daten] --> B[Data Exploration]
-    B --> C[Daten Aufreinigen]
-    C --> D[Daten Beschreibung]
-    D --> E[Daten Normalisierung]
-    E --> F[Dimensionsreduktion]
-    F --> G[Lineare Regression]
-```
 
-## **Ziel:**
+## Inhaltsverzeichnis
+
+- [Daten Aufreinigung](#daten-aufreinigung)
+- [Daten Beschreibung](#daten-beschreibung)
+- [Daten Normalisierung](#daten-normalisierung)
+- [Shift Analyse](#shift-analyse)
+- [Dimensionsreduktion](#dimensionsreduktion)
+- [Lineare Regression](#lineare-regression)
 
 ## **Libraries:**
-
-## **Daten laden**
 
 # **Daten Aufreinigung**
 
@@ -110,7 +107,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-``` mermaid
+```mermaid
 flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
     B --> C[Normalisierung pro Protein]
@@ -154,7 +151,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-``` mermaid
+```mermaid
 flowchart LR
     A[biochemische Eigenschafte der Proteine laden] --> B[Auswahl der unabhängigen Variablen für die multiple Regression]
     B --> C[multiple Regression]
