@@ -4293,8 +4293,8 @@ fig
 ```
 
 ## check individual relation between predictors and probability
-### determine whether thre is a signifcant relation between a higher pI and an increased probability for RNA-binding
-- using a t-test the pIs od RBPs and Non-RBPs are compared
+### determine whether there is a signifcant relation between a higher pI and an increased probability for RNA-binding
+- using a t-test the pIs of RBPs and Non-RBPs are compared
 ```{r}
 #hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
 
@@ -4320,18 +4320,7 @@ output:
 - there is a signifcant difference between the pIs of RBPs and Non-RBPs
 -> RBPs tend to have a higher pI
 
-```{r}
-#check whether mass differs significantly between RBPs and Non-RBPs
-
-# Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
-t_test_result <- t.test(
-  df_complete$Mass_kDa[df_complete$RBP_group == "RBP"],
-  df_complete$Mass_kDa[df_complete$RBP_group == "Non-RBP"],
-)
-
-print(t_test_result)
-```
-
+### visualization of relation between pI and probability
 ```{r}
 
 # create boxplot
@@ -4356,6 +4345,24 @@ points(c(1, 2), c(mean_nonrbp, mean_rbp), pch = 19, col = "coral")
 legend("topright", legend = c("Mean"), col = "coral", pch = 19)
 
 ```
+
+
+### determine whether there is a signifcant relation between mass and the probability for RNA-binding
+- using a t-test the mass of RBPs and Non-RBPs are compared
+```{r}
+#check whether mass differs significantly between RBPs and Non-RBPs
+
+# Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
+t_test_result <- t.test(
+  df_complete$Mass_kDa[df_complete$RBP_group == "RBP"],
+  df_complete$Mass_kDa[df_complete$RBP_group == "Non-RBP"],
+)
+
+print(t_test_result)
+```
+output:
+- there is no significant relation between mass and probability
+-> the signficant relation only exists after accounting for pI in the context of the multiple regression model
 
 
 
