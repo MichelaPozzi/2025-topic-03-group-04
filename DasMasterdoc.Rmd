@@ -3730,8 +3730,7 @@ head(pca_df)
 ##ctrl
 
 
-=======
->>>>>>> 3de0ff0de2e4be85805188b368dc5873f23ab43a
+
 ```{r}
 
 
@@ -3825,6 +3824,7 @@ head(Table_HS_RBP)
 ```{r}
 # read Table_Non_RBP
 
+
 # whole table
 raw <- readLines("data/Table_HS_Non_RBP.txt")
 # extract everything below row 7
@@ -3875,6 +3875,7 @@ dim(merged_df)
 
 ```{r}
 # which parameters can be used in multiple regression: correlation between independent variables should be as low as possible
+
 cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
 cor(df_complete$Mass_kDa, df_complete$Length_AA, method = "pearson")
 cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
@@ -3885,6 +3886,7 @@ cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
 
 
 ```{r}
+
 # Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
 df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
 
@@ -3897,6 +3899,7 @@ summary(model)
 
 
 ```{r}
+
 # visualization of linear regression using hyperplanes
 
 install.packages("scatterplot3d") 
@@ -3932,6 +3935,7 @@ s3d$plane3d(model)
 
 ```{r}
 # create interactive hyperplane 
+
 
 install.packages("plotly")
 library(plotly)
@@ -4012,6 +4016,7 @@ fig
 
 ```{r}
 
+
 #hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
 
 # Group proteins based on optimal threshold:
@@ -4035,6 +4040,7 @@ print(t_test_result)
 
 ```{r}
 
+
 #check whether mass differs significantly between RBPs and Non-RBPs
 
 # Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
@@ -4047,6 +4053,7 @@ print(t_test_result)
 ```
 
 ```{r}
+
 
 # create boxplot
 boxplot(pI ~ RBP_group,
