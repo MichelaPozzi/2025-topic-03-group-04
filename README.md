@@ -46,60 +46,64 @@ interactions across the proteome.
 
 # **Group 4 Data Analysis Projekt**
 
-# Stille Signale: Proteinmerkmale als Prädiktoren für RNA-Interaktionen (Vorschlag von Jetty)
+# Silent Signals: Protein Features as Predictors of RNA Interaction
 
-RNA-Protein-Komplexe sind zentrale Regulatoren zahlreicher zellulärer Prozesse. Seit einiger Zeit
-gewinnen proteomweite experimentelle und computergestützte Methoden zur Untersuchung von
-RNA-Bindenden Proteinen an wissenschaftlicher Relevanz und Aufmerksamkeit. Neuere
-Forschungsergebnisse knüpfen einen Zusammenhang zwischen dysfunktionalen RBPs und der Entstehung
-verschiedener Krebsformen. Diese Erkenntnisse bieten nun
-Zugang zu einem bislang weniger erforschten Gebiet: RNA-abhängige Proteine, eine Klasse an
-Proteinen, deren Protein-Protein-Interaktom RNA-moduliert ist.
+RNA–protein complexes are key regulators of numerous cellular processes. 
+In recent years, proteome-wide experimental and computational approaches to study RNA-binding proteins (RBPs) have gained increasing scientific relevance and attention.
+Recent research has revealed a link between dysfunctional RBPs and the development of various types of cancer. 
+These findings now open the door to a previously underexplored area: RNA-dependent proteins — a class of proteins whose protein–protein interactome is modulated by RNA.
 
-**Ziel unseres Projekts** ist die automatisierte Identifizierung RNA-abhängiger Proteine aus einer
-nicht-synchronisierten A549-Zelllinie, die einem Adenokarzinom des Lungengewebes entspringen. Hierfür
-wird der Einfluss von RNA auf die Proteinkomplexe durch einen Vergleich der Proteinverteilungen in
-unbehandelten Zelllysaten (Kontrollproben) und RNase-behandelten Lysaten (RNase-Proben) untersucht.
-Die Lysate werden mittels Ultrazentrifugation in einem Sucrose-Dichtegradienten fraktioniert und in
-25 Fraktionen aufgeteilt. Anschließend erfolgt eine proteomweite Quantifizierung mittels
-Massenspektrometrie über drei Replikate je Treatment. Insgesamt ergibt sich daraus ein Datensatz mit
-3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten Verteilungsänderungen (shift) in
-den Dichteprofilen dienen als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer
-RNA-Abhängigkeit. Das entwickelte Programm ermöglicht eine automatisierte Auswertung
-solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
-messbarer Parameter.
+## **🎯 Project Objective**
 
+The aim of this project is the automated identification of RNA-dependent proteins in a non-synchronized A549 cell line, which originates from a lung adenocarcinoma.
+To achieve this, we investigate the influence of RNA on protein complexes by comparing protein distribution profiles between untreated cell lysates (control samples) and RNase-treated lysates (RNase samples)
+
+## **🧪 Experimental Design**
+- Lysates are fractionated via ultracentrifugation through a sucrose density gradient, resulting in 25 fractions per sample.
+- Proteins in each fraction are quantified proteome-wide using mass spectrometry, with three replicates per condition.
+- The final dataset consists of 3,680 proteins across 150 fractions (3,680 × 150 data points)
+
+## **📊 Data Analysis**
+- Changes in density distribution profiles (shifts) between control and RNase-treated samples are analyzed.
+- These shifts form the basis for the classification of proteins based on RNA-dependence.
+- The developed tool enables automated analysis of large-scale datasets to detect RNA-modulated proteins using experimentally measurable features.
 ![](images/clipboard-1052987459.png)
 
-# **Projekt Überblick**
+# **🔮Project Overview**
 
-## Inhaltsverzeichnis
+## Table Of Contents
 
-- [Daten Beschreibung](#daten-beschreibung)
-- [Daten Normalisierung](#daten-normalisierung)
-  - [Normalisierung](#normalisierung)
-  - [Batchentfernung](#batchentfernung)
-- [Shift Analyse](#shift-analyse)
+- [Data Normalization](#data-normalisation)
+  - [Normalisation](#normalisation)
+  - [Batch Removal](#batch-removal)
+- [Shift Analysis](#shift-analysis)
   - [Tests](#tests)
-  - [Logistisches Modell](#logistisches-modell)
-- [Dimensionsreduktion](#dimensionsreduktion)
+  - [Logistic Model](#logistisches-model)
+- [Dimension Reduction](#dimension-reduction)
   - [PCA](#pca)
   - [k-means](#k--means)
-- [Lineare Regression](#lineare-regression)
+- [Linear Regression](#linear-regression)
 
-## **Libraries:**
+## **📚Libraries:**
 
-# **Daten Aufreinigung**
+- limma
+- pheatmap
+- sva
+- stringr
+- emdist
+- DT
+- tidyr
+- ggplot2
+- dplyr
+- shiny
+- cluster
+- factoextra
+- scatterplot3d
+- plotly
 
-## **Ziel:**
+# **🧼Data Normalisation**
 
-# **Daten Beschreibung**
-
-## **Ziel:**
-
-# **Daten Normalisierung**
-
-## **Ziel:**
+## **🎯Objective:**
 
 -   Vergleichbarkeit herstellen:
     -   Methoden???
@@ -109,17 +113,17 @@ messbarer Parameter.
     -   Skalierung und Normierung
     -   Transformation
 
-## **Ablauf:**
+## **📃Steps:**
 
 
-### **Normalisierung**
+### **📊Normalisation**
 
 ```mermaid
 flowchart LR
-    A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
-    B --> C[Normalisierung pro Protein]
-    C --> D[Mittelwertberechung]
-    C --> E[Batchentfernung]
+    A[normalisation per fraction] --> B[mean filter]
+    B --> C[normalisation per protein]
+    C --> D[calculation of mean]
+    C --> E[batch removal]
 ```
 
 1.  **3 Replikate pro Fraktion werden normalisiert**:\
@@ -148,80 +152,69 @@ flowchart LR
 3.  
 
 
-# **Lineare Regression** {#lineare-regression}
+### **💥Batch Removal**
 
-### **Batchentfernung**
+# **✅Shift Analysis**
 
-# **Shift Analyse**
+## **🎯Objective**
 
-## **Ziel**
-
-## **Ablauf**
+## ️**📃Steps**
 
 ```mermaid
 flowchart LR
-    A[normalisierte Daten] --> B[Shift Distanz]
-    A --> C[Amplitudenveränderung]
-    A --> D[Earth Mover Test]
-    A --> E[Center Of Mass Test]
-    A --> F[Wilcoxon Test pro Protein]
-    A --> G[Wilcoxon Test für Globale Maxima]
-    B --> H[Logistisches Modell]
+    A[normalized data] --> B[shift distance]
+    A --> C[amplitude changes]
+    A --> D[earth mover test]
+    A --> E[center of mass test]
+    A --> F[wilcoxon test per protein]
+    A --> G[wilcoxon test for global maxima]
+    B --> H[logistic model]
     C --> H
     D --> H
     E --> H
     F --> H
     G --> H
 ```
-## **Tests**
+### **📝Tests**
 
-## **Logistisches Modell**
+### **🤖Logistic Model**
 
-# **Lineare Regression**
+# **📈Linear Regression**
 
-## **Ziel:**
+## **🎯Objective:**
 
--   Einfluss ausgewählter Prädiktoren (Masse und pI) auf die Wahrscheinlichkeit für RNA-Dependenz
-    untersuchen und auf Signifikanz prüfen
--   für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand experimentell zugänglicher Größen
-    vorhersagen
+-   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the probability of RNA dependence and assess their statistical significance
+-   for new data: predict RNA dependence based on experimentally accessible features
 
-## **Ablauf:**
+## **📃Steps**
 
 ``` mermaid
 flowchart LR
-    A[biochemische Eigenschafte der Proteine laden] --> B[Auswahl der unabhängigen Variablen für die multiple Regression]
+    A[load information on protein features] --> B[select independent variables for multiple regression]
     B --> C[multiple Regression]
-    C --> D[Einfluss der Prädiktoren auf Siginifkanz testen]
+    C --> D[test the significance of predictor effects]
 ```
 
-1.  **Biochemische Eigenschaften der Proteine laden**:\
-    Für alle betrachteten Proteine wurden aus der Datenbank RBP2GO Informationen zu Länge in AA,
-    Masse in kDa und dem pI geladen.
+1.  **select independent variables for multiple regression**:\
+    Independent variables should exhibit minimal correlation to avoid multicollinearity\
+    Therefore, the correlation between molecular weight, sequence length, and isoelectric point was examined\
+    A strong correlation was observed between molecular weight and sequence length\
+    Since molecular weight is more readily accessible experimentally than sequence length, 
+    it was used as a predictor in the multiple regression model along with the isoelectric point (pI).
 
-2.  **Auswahl der unabhängigen Variablen für die multiple Regression**:\
-    Unabhängige Variablen sollten möglichst wenig miteinander korrelieren, um Mehrfachkollinearität
-    zu vermeiden.\
-    Daher wurde die Korrelation zwischen Masse, Länge und pI untersucht.\
-    Es zeigte sich eine starke Korrelation zwischen Masse und Länge.\
-    Da die Masse leichter experimentell zugänglich ist als die Länge, wurde sie gemeinsam mit dem pI
-    als Prädiktor in der multiplen Regression eingesetzt.
 
-3.  **Multiple Regression**:\
-    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse
-    (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p \< 0.001). Der pI hat den
-    stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38). ![Beschreibung des
-    Bildes](images/3d_scatterplot.jpeg)\
-    Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple
-    Regression bestimmte Regressionsfläche.\
-    Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten
-    an.\
-    Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil
-    der Varianz erklären kann.\
-    Konkret erklärt das Modell etwa 10,8 % der Varianz (adjusted R² = 0,108).
+2.  **multiple regression**:\
+   The multiple regression analysis shows that both the isoelectric point (pI) and molecular weight (Mass_kDa) 
+   are significantly associated with the target variable (p < 0.001). The pI has the stronger effect (t = 21.12), 
+   followed by molecular weight (t = 3.38) 
+   ![Beschreibung des Bildes](images/3d_scatterplot.jpeg)\
+    This 3D scatterplot displays the actual data points alongside the regression plane determined by the multiple regression analysis.\
+    The closer the points lie to the plane, the better the model fits the observed data.
+    Large distances between the points and the plane indicate that the model explains only a small portion of the variance.\
+    Specifically, the model explains approximately 10.8% of the variance (adjusted R² = 0.108).
 
-4.  **Einfluss der Prädiktoren auf Signifikanz testen**:\
-    Mit t-Tests wurde geprüft, ob sich RBPs und Non-RBPs signifikant in pI und Masse unterscheiden.\
+3.  **test the significance of predictor effects**:\
+    T-tests were conducted to determine whether RBPs and non-RBPs differ significantly
+    in their isoelectric point (pI) and molecular weight\
     ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
-    Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter
-    RNA-Dependence-Wahrscheinlichkeit festgestellt.
+    A significant association was found between higher isoelectric point (pI) and increased probability of RNA dependence
