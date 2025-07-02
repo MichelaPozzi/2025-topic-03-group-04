@@ -4217,9 +4217,15 @@ ggplot(rnase_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
   scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
   labs(shape = "rbp_label")
 ```
+
+```{r}
+
+```
+
+
 ##rnase
 ```{r}
-rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
+rnase_data$is_rbp <- ifelse(rnase_data$is_rbp == "TRUE", "RBP", "non-RBP")
 rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  # optional: feste Cluster-Reihenfolge
 ```
 
@@ -4227,6 +4233,15 @@ rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  # optional: 
 r_tbl <- table(rnase_data$is_rbp, rnase_data$cluster)
 show(r_tbl)
 ```
+
+```{r}
+table(rnase_data$is_rbp, useNA = "ifany")
+str(rnase_data$is_rbp)
+```
+```{r}
+print(rnase_data)
+```
+
 
 ```{r}
 chisq.test(r_tbl)
