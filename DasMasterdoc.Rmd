@@ -1866,7 +1866,7 @@ normalized_ctrl_df$EMD_scaled_100 <- (normalized_ctrl_df$EMD_scaled/25)*100
 head(normalized_ctrl_df$EMD_scaled_100)
 ```
 ### center of mass test
-Goal: deterimine the center of mass of each protein for each treatment
+Goal: determine the center of mass of each protein for each treatment (in this case: mass = protein intensity)
 ```{r}
 # center of mass
 # function for calculating center of mass
@@ -1933,6 +1933,8 @@ relative_delta_com <- abs(delta_com) / max_delta_com
 head(center_of_mass_df)
 ```
 #### skewness of center of mass
+Goal: determine whether the delta center of mass values are skewed or not
+If skewed: scaling is needed
 ```{r}
 #skewness of center of mass
 # extract values
@@ -1954,7 +1956,10 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      col = "violet", pos = 4)
 
 ```
+Output: delta COM is left-skewed
+-> scaling is needed
 #### scaling
+Goal: transform testscore by centering at median and scaling based on the interquartile range
 ```{r}
 #robust scaling
 center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Delta_COM)
