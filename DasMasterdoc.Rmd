@@ -15,25 +15,37 @@ This is an R Markdown document. Markdown is a simple formatting syntax for autho
 
 When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
-```{r cars}
-summary(cars)
-```
+# Silent Signals: 
+# Projekt Overview
 
-## Including Plots
+## Objective
+The aim of this project is the automated identification of RNA-dependent proteins in a non-synchronized A549 cell line, which originates from a lung adenocarcinoma.
+To achieve this, we investigate the influence of RNA on protein complexes by comparing protein distribution profiles between untreated cell lysates (control samples) and RNase-treated lysates (RNase samples
 
-You can also embed plots, for example:
+## Steps
+- data exploration
+- data normalisation
+- shift analysis
+- dimension reduction
+- identification of predictors for RNA-dependence 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
+## libraries
+- limma
+- pheatmap
+- sva
+- stringr
+- emdist
+- DT
+- tidyr
+- ggplot2
+- dplyr
+- shiny
+- cluster
+- factoextra
+- scatterplot3d
+- plotly
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-######Part 1
-###Reproducability
-###Normalization
-###Batch-effect
-
+# load data
 ```{r}
 #load dataset
 url <- "https://hub.dkfz.de/s/QT3BfRperQqMxPF/download/RDeeP_A549_NS.csv.zip"
@@ -50,10 +62,8 @@ A549_NS <- read.csv(csv_file, sep = ";")
 print(A549_NS)
 ```
 
+# data exploration
 ```{r}
-#data exploration
-print(A549_NS)
-
 #number of rows and columns
 nrow(A549_NS)
 ncol(A549_NS)
@@ -65,8 +75,7 @@ sum(sapply(A549_NS, is.numeric))
 sum(is.na(A549_NS))
 ```
 
-##Data cleanup##
-
+## create separate dataframes for Ctrl and RNase
 ```{r}
 # all columns
 col_names <- colnames(A549_NS)
@@ -85,8 +94,8 @@ head(df_rnase)
 
 ```
 
-####Reproducibility####
-
+## Reproducibility
+###Reproducibility for Ctrl
 ```{r}
 # Reproducabilty of control measurments -> create dataframe for analysis of the replicates
 ctrl_correlations <- data.frame(
@@ -117,6 +126,7 @@ print(ctrl_correlations)
 plot(ctrl_correlations) 
 ```
 
+### Reproducibility for RNase
 ```{r}
 # Reproducabilty of rnase measurements 
 rnase_correlations <- data.frame(
@@ -147,8 +157,9 @@ print(rnase_correlations)
 plot(rnase_correlations)
 ```
 
-####Normalization###
-
+# data normalisation
+## normalisation
+### determine columnwise mean
 ```{r}
 # function to compute mean columnwise (except Protein_Name)
 compute_column_means <- function(df) {
@@ -1427,31 +1438,14 @@ head(corrected_expr_rnase)
  
 
  
-#PART 2
-##Data analysis
+# shift analysis
+Goal: Classify proteins as RNA-dependent (RDP) or non-RNA-dependent (non-RDP) based on differences between control and RNase condition
+## Tests
+Goal: characterize the differences between Ctrl and RNase for each protein
 ### Visualization of one protein
+Goal: get an idea of criteria that can be compared to determine significance of shift
 ```{r}
 #visualize distribution for one protein 
-protein_id <- "SPB6_HUMAN"
-
-# extract amount of protein
-intensities <- as.numeric(normalized_ctrl_df[4, 2:26 ])
-fraktionen <- 1:25
-
-# Plot 
-plot(fraktionen, intensities, type = "n",
-       xlab = "Fraktion (1–25)", ylab = "Normierte Intensität (Fläche = 1)",
-       main = paste("Dichte-Plot von", protein_id),
-       ylim = c(0, max(intensities)*1.1))
-
- polygon(c(fraktionen, rev(fraktionen)),
-          c(rep(0, length(fraktionen)), rev(intensities)),
-          col = "lavender", border = NA)
-  lines(fraktionen, intensities, col = "lavender", lwd = 2)
-```
-
-```{r}
-#visualize distribution for one protein ##REDUNDANT??
 protein_id <- "SPB6_HUMAN"
 
 # extract amount of protein
@@ -1572,7 +1566,7 @@ global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold = 2)
 head(global_ctrl)
 
 ```
-# Classification of RBP and Non-RBP according to test-model
+# Classification of RBP and Non-RBP according to logistic model
 Goal: Apply statistical testscores to our test-modell and thus determine the probability of the proteins being RBPs or Non-RBPS
 ## Statisitcal Tests
 Goal: determine testscores by testing different selection criteria
@@ -1601,6 +1595,9 @@ shift_result <- data.frame(
 head(shift_result)
 ```
 #### skewness of shift distance
+Goal: determine skewness of shift distance and check whether robust scaling can be applied
+-> if skewness > 1 or < -1, then robust scaling can be applied
+robust scaling: (x-median)/IQR -> generally used for asymmetrical distributions
 ```{r}
 #skewness of Shift Distance
 # extract values
@@ -1669,8 +1666,10 @@ get_global_amplitudes <- function(expression_df, global_ctrl) {
   )
 }
 
+#apply function to our data
 global_amplitudes_ctrl <- get_global_amplitudes(normalized_ctrl_df, global_ctrl)
 
+#depict result
 head(global_amplitudes_ctrl)
 
 ```
@@ -2131,7 +2130,7 @@ Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_sta
 head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 ```
 
-### wilcoxon test proteinwise (test udes for testscore)
+### wilcoxon test proteinwise (test used for testscore)
 ```{r}
 #Wilcoxon test proteinwise -> test statistic is used for testscore
 
@@ -2220,21 +2219,18 @@ test_scores_combined_df <- data.frame(
 #check that no NAs were created
 sum(is.na(test_scores_combined_df))
 ```
+# determine reference proteins
+- A dataframe from RDeeP is loaded, which indicates how often each protein has been classified as RNA-binding
+- This dataframe includes proteins identified as RNA-binding in any human cell type 
 
-<<<<<<< HEAD
-```{r}
-#calculate final testscores
+simplifications and limitations: 
+- By using this reference, we ignore cell line–specific variation in RNA-binding behavior
+- The dataset refers to RNA-binding proteins (RBPs), not necessarily to RNA-dependent proteins (RDPs)
+->Therefore, the model can only identify RNA-binding proteins, not all RNA-dependent ones
 
-test_scores_combined_df$testscores <- rowSums(test_scores_combined_df[, c(2,4,5,6,7,8)])
-
-#depict result
-head(test_scores_combined_df)
-```
-
-=======
->>>>>>> 07ebdc11c37714982e1c38a3d79bf5f46d52c3f1
-####create dataframes with reference proteins
-
+model setup:
+- A logistic regression model is trained using a 30/70 train-test split
+- The training set includes 550 positive control proteins (RBPs) and 550 negative control proteins (non-RBPs), which together represent ~30% of all proteins in the dataset
 ```{r}
 # install and load package
 
@@ -2261,6 +2257,9 @@ RBP_resources <- as.data.frame(data)
 head(RBP_resources)
 ```
 
+## negative control
+Goal: identify proteins that have never or just once been listed as RBPs
+-> increases probability that these proteins do not actually interact with RNA in our cell line
 ```{r}
 #identify proteins which can potentially be used as negative control
 
@@ -2271,6 +2270,10 @@ RNA_independent <- RBP_resources[RBP_resources[,4] %in% c(0,1), , drop = FALSE]
 head(RNA_independent)
 ```
 
+### select 550 porteins as negative control
+- compare potential negative control proteins (listed in RDeeP dataframe) to proteins from our datafram 
+-> find matches 
+-> select 550 of those, ideally only those proteins that have never been caracterized as RBPs 
 ```{r}
 # check which of the potential proteins for negative control are actually contained in our dataset
 
@@ -2315,7 +2318,6 @@ length(negative_control)
 ```
 
 ```{r}
-
 # create dataframe negative control
 # extract corresponding proteins from test_scores_combined_df
 df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% negative_control, ] 
@@ -2326,6 +2328,8 @@ max_negative <- max(df_negative_control$testscores)
 print(max_negative)
 ```
 
+## positive control
+Goal: identify proteins that have listed as RBPs most often
 ```{r}
 
 #identify proteins which can potentially be used as positive control
@@ -2335,6 +2339,10 @@ RNA_dependent <- RBP_resources[RBP_resources[,4] %in% c(8, 9, 10, 11, 12, 13, 14
 head(RNA_dependent)
 ```
 
+### select 550 porteins as positive control
+- compare potential positive control proteins (listed in RDeeP dataframe) to proteins from our datafram 
+-> find matches 
+-> select 550 of those
 ```{r}
 
 #check which of the potential proteins for negative control are actually contained in our dataset
@@ -2351,7 +2359,6 @@ positive_control <- common_proteins_positive
 ```
 
 ```{r}
-
 # create dataframe positive control 
 # extract corresponding proteins from test_scores_combined_df 
 df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% positive_control, ] 
@@ -2363,7 +2370,14 @@ max_positive <- max(df_positive_control$testscores)
 print(max_positive)
 ```
 
+# logistic model
+## model setup
+Goal: Use the reference proteins to train a logistic model that predicts the probability of RNA binding for the remaining proteins
+### comparison of positive and negative control
+- A significant difference between positive and negative controls is essential for the model to learn a meaningful separation
+- A Mann–Whitney U test is used to assess whether the positive and negative control groups perform significantly differently in the tests
 ```{r}
+
 #check whether positive and negative control are reliable and whether they differ significantly 
 # Vector of column indices to test
 cols_to_test <- c(2,4,5,6,7,8)
@@ -2393,8 +2407,11 @@ test_results_df <- data.frame(
 print(test_results_df)
 
 ```
+output: for all tests there is a significant difference in the performance of positive and negative control proteins
+-> reference proteins are suitable for training the logistic model
 
-
+## train model with reference proteins
+- model learns influence and significance of the different tests on RNA-binding behavior
 ```{r}
 # 1. Add labels to the datasets
 df_positive_control$label <- 1  # Positive control group labeled as 1
@@ -2485,23 +2502,16 @@ results_df_FDR <- do.call(rbind, lapply(results_list, as.data.frame))
 
 print(results_df_FDR)
 
-# Plot FDR vs Prediction Threshold with grape purple line
-plot(thresholds, fdr_values, type = "l", col = "#6F2DA8", lwd = 2,
+# plot FDR-graph and mark different FDRs and thresholds
+plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
      xlab = "Prediction Threshold", ylab = "FDR",
      main = "FDR vs Threshold")
-
-# Add horizontal lines for target FDRs with light purple to beige colors
-abline(h = target_fdrs, 
-       col = c("#D8BFD8", "#8E4585", "#C2B280", "#A39070"), lty = 2)
-
-# Add vertical lines and labels for optimal thresholds in warm wine red
+abline(h = target_fdrs, col = c("coral", "orange", "violet", "cyan"), lty = 2)
 for (res in results_list) {
-  abline(v = res$Optimal_threshold, col = "#722F37", lty = 3)
-  text(res$Optimal_threshold, 0.02, labels = round(res$Optimal_threshold, 3), 
-       col = "#722F37", srt = 90, pos = 3)
+  abline(v = res$Optimal_threshold, col = "darkgreen", lty = 3)
+  text(res$Optimal_threshold, 0.02, labels = round(res$Optimal_threshold, 3), col = "darkgreen", srt = 90, pos = 3)
 }
 ```
-
 ```{r}
 # define values and x-positions
 fdr_labels <- paste0(results_df_FDR$FDR_target * 100, "%")
@@ -2522,16 +2532,16 @@ axis(1, at = x_pos, labels = fdr_labels)
 # bar for true Positives
 rect(xleft = x_pos - bar_width, ybottom = 0, 
      xright = x_pos - bar_width/2, ytop = results_df_FDR$True_positives, 
-     col = "#e6ccff", border = NA)
+     col = "steelblue", border = NA)
 
 # bar for false Positives
 rect(xleft = x_pos + bar_width/2, ybottom = 0, 
      xright = x_pos + bar_width, ytop = results_df_FDR$False_positives, 
-     col = "steelblue", border = NA)
+     col = "tomato", border = NA)
 
 # legend
 legend("topright", legend = c("True Positives", "False Positives"), 
-       fill = c("#e6ccff", "steelblue"), bty = "n")
+       fill = c("steelblue", "tomato"), bty = "n")
 
 ```
 
@@ -2565,14 +2575,14 @@ optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) els
 cat("Threshold bei FDR ≤ 10%:", optimal_threshold, "\n")
 
 #visualize FDR
-plot(thresholds, fdr_values, type = "l", col = "#800080", lwd = 2,
+plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
      xlab = "Prediction Threshold", ylab = "FDR",
      main = "FDR vs Threshold")
-abline(h = 0.1, col = "#a6ccff", lty = 2)
-abline(v = optimal_threshold, col = "#b366ff", lty = 2)
+abline(h = 0.1, col = "violet", lty = 2)
+abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
-###### apply threshold on data
+
 ```{r}
 #threshold is selected at FDR = 10%
 # Mark reference proteins in the full dataset
@@ -2632,71 +2642,96 @@ print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
 ```
 
-### visualize test-model results
-#### Distribution of all Proteins
+### visualize test-modell results ### will ich so nicht haben
 ```{r}
-# Create a matrix for a single stacked bar (3 segments)
-counts_matrix_stacked <- matrix(c(
-  non_rbp_count,
-  right_shift_count,
-  left_shift_count
-), nrow = 3)
+# Calculate total number of proteins in the dataset
+total_proteins <- nrow(test_scores_combined_df)
 
-# Set row and column names
-rownames(counts_matrix_stacked) <- c("Non-RBPs", "RBPs (Right Shift)", "RBPs (Left Shift)")
-colnames(counts_matrix_stacked) <- c("Proteins")
+# Define the threshold to classify proteins as predicted shifted
+threshold <- optimal_threshold
 
-# Define pastel color scheme for segments
-colors1 <- c("#f2e6d9", "#b366ff", "#e6ccff")
+# Subset proteins predicted as shifted (probability above threshold)
+predicted_proteins <- test_scores_combined_df[test_scores_combined_df$probability > threshold, ]
 
-# Plot a stacked bar; use xlim to visually narrow the bar
-barplot(counts_matrix_stacked,
-        col = colors1,
+# Number of predicted shifted proteins (RBP)
+num_rbp <- nrow(predicted_proteins)
+
+# Number of right-shifted proteins (given)
+num_right_shift <- right_shift_count
+
+# Number of left-shifted proteins calculated as remainder of total shifts
+num_left_shift <- total_proteins - right_shift_count
+
+# Number of false positives among predicted proteins (given)
+num_false_positives <- neg_counts
+
+# Calculate true positives by subtracting false positives from predicted RBPs
+num_true_positives <- num_rbp - num_false_positives
+
+# Calculate number of proteins not predicted as RBPs
+num_non_rbp <- total_proteins - num_rbp
+
+# Extract numeric values from false_positives and true_positives if they are tables
+if (is.table(num_false_positives)) {
+  false_positives_num <- as.numeric(num_false_positives["TRUE"])
+} else {
+  false_positives_num <- num_false_positives
+}
+
+if (is.table(num_true_positives)) {
+  true_positives_num <- as.numeric(num_true_positives["TRUE"])
+} else {
+  true_positives_num <- num_true_positives
+}
+
+# Prepare counts for plotting (ensure numeric scalars)
+total_proteins_count <- as.numeric(total_proteins)
+significant_shifted <- as.numeric(num_rbp)
+false_positives_num <- as.numeric(false_positives_num)
+true_positives_num <- as.numeric(true_positives_num)
+
+# Create matrix for stacked barplot: 2 rows (segments) x 3 columns (bars)
+counts_matrix <- matrix(c(
+  # Bottom segments of bars
+  total_proteins_count - significant_shifted,  # Bar 1: Non-shifted
+  num_right_shift,                             # Bar 2: Right Shift
+  false_positives_num,                         # Bar 3: False Positives
+
+  # Top segments of bars
+  significant_shifted,                         # Bar 1: Shifted
+  num_left_shift,                             # Bar 2: Left Shift
+  true_positives_num                           # Bar 3: True Positives
+), nrow = 2, byrow = TRUE)
+
+# Assign column and row names
+colnames(counts_matrix) <- c("All Proteins", "Shifted Proteins", "Prediction Quality")
+rownames(counts_matrix) <- c("Bottom Segment", "Top Segment")
+
+# Print matrix and dimensions for debug
+print(counts_matrix)
+print(dim(counts_matrix))
+
+# Define colors for segments
+colors <- c("grey80", "darkblue")
+
+# Define legend labels (corresponding to segments)
+legend_labels <- c(
+  "Non-shifted / Right Shift / False Positives",
+  "Shifted / Left Shift / True Positives"
+)
+
+# Create stacked barplot (beside = FALSE stacks segments vertically)
+barplot(counts_matrix,
+        beside = FALSE,
+        col = colors,
         border = "white",
-        main = "Distribution of All Proteins",
+        main = "Protein Shift Classification",
         ylab = "Number of Proteins",
         las = 1,
-        xlim = c(0, 5))  # Expands x-axis range to make the bar appear narrower
+        names.arg = colnames(counts_matrix))
 
-# Add legend at bottom right
-legend("bottomright",
-       legend = rownames(counts_matrix_stacked),
-       fill = colors1,
-       bty = "n")
-```
-#### Prediction Performance
-```{r}
-# Get numeric counts of false positives and true positives
-false_positives_num <- nrow(predicted_negatives)
-true_positives_num  <- nrow(predicted_non_negative)
-
-# Create matrix for stacked bar (2 segments: false + true positives)
-counts_matrix_predictions <- matrix(c(
-  false_positives_num,
-  true_positives_num
-), nrow = 2)
-
-# Set row and column names
-rownames(counts_matrix_predictions) <- c("False Positives", "True Positives")
-colnames(counts_matrix_predictions) <- c("Predicted RBPs")
-
-# Define pastel color scheme for prediction performance
-colors2 <- c("#f2e6d9", "#b366ff")
-
-# Plot stacked bar (1 bar), use xlim to make bar appear narrower
-barplot(counts_matrix_predictions,
-        col = colors2,
-        border = "white",
-        main = "Prediction Performance",
-        ylab = "Number of Proteins",
-        las = 1,
-        xlim = c(0, 5))  # Visually narrows the bar
-
-# Add legend at bottom right
-legend("bottomright",
-       legend = rownames(counts_matrix_predictions),
-       fill = colors2,
-       bty = "n")
+# Add legend
+legend("topright", legend = legend_labels, fill = colors, bty = "n")
 
 ```
 
