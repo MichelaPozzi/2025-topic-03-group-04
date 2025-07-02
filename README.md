@@ -117,14 +117,14 @@ To achieve this, we investigate the influence of RNA on protein complexes by com
 ## **📃Steps:**
 
 
-### **📊Normalisation**
+### **📊normalisation**
 
 ```mermaid
 flowchart LR
-    A[Normalisation Per Fraction] --> B[Mean Filter]
-    B --> C[Normalisation Per Protein]
-    C --> D[Calculation Of Mean]
-    C --> E[Batch Removal]
+    A[normalisation per fraction] --> B[mean filter]
+    B --> C[normalisation per protein]
+    C --> D[calculation of mean]
+    C --> E[batch removal]
 ```
 
 1.  **3 Replikate pro Fraktion werden normalisiert**:\
@@ -153,7 +153,7 @@ flowchart LR
 3.  
 
 
-### **💥Batch Removal**
+### **💥batch removal**
 
 # **✅Shift Analysis**
 
@@ -163,7 +163,7 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    A[ormalized data] --> B[shift distance]
+    A[normalized data] --> B[shift distance]
     A --> C[amplitude changes]
     A --> D[earth mover test]
     A --> E[center of mass test]
@@ -176,9 +176,9 @@ flowchart LR
     F --> H
     G --> H
 ```
-## **📝Tests**
+### **📝tests**
 
-## **🤖Logistic Model**
+### **🤖logistic model**
 
 # **📈Linear Regression**
 
@@ -187,7 +187,7 @@ flowchart LR
 -   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the probability of RNA dependence and assess their statistical significance
 -   for new data: predict RNA dependence based on experimentally accessible features
 
-## **📃steps**
+## **📃Steps**
 
 ``` mermaid
 flowchart LR
