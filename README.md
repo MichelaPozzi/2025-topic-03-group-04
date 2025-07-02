@@ -48,9 +48,31 @@ interactions across the proteome.
 
 # Stille Signale: Proteinmerkmale als Prädiktoren für RNA-Interaktionen (Vorschlag von Jetty)
 
+RNA-Protein-Komplexe sind zentrale Regulatoren zahlreicher zellulären Prozesse. Seit einiger Zeit
+gewinnen proteomweite experimentelle und computergestützte Methoden zur Untersuchung von
+RNA-Bindenden Proteinen an wissenschaftlicher Relevanz und Aufmerksamkeit. Neuere
+Forschungsergebnisse knüpfen einen Zusammenhang zwischen dysfunktionalen RBPs und der Entstehung
+neurodegenerativer Erkrankungen sowie verschiedener Krebsformen. Diese Erkenntnisse bieten nun
+Zugang zu einem bislang weniger erforschten Gebiet: RNA-abhängige Proteine, eine Klasse an
+Proteinen, deren Funktion direkt oder indirekt von der Anwesenheit von RNA beeinflusst wird.
+Charakteristisch für diese Proteine ist eine RNA-vermittelte Modulation ihres
+Protein-Protein-Interaktoms.
+
+**Ziel unseres Projekts** ist die automatisierte Identifizierung RNA-abhängiger Proteine aus einer
+nicht-synchronisierten A549-Zelllinie, die einem Adenokarzinom des Lungengewebes entspringen Hierfür
+wird der Einfluss von RNA auf die Proteinkomplexe durch einen Vergleich der Proteinverteilungen in
+unbehandelten Zelllysaten (Kontrollproben) und RNase-behandelten Lysaten (RNase-Proben) untersucht.
+Die Lysate werden mittels Ultrazentrifugation in einem Sucrose-Dichtegradienten fraktioniert und in
+25 Fraktionen aufgeteilt. Anschließend erfolgt eine proteomweite Quantifizierung mittels
+Massenspektrometrie über drei Replikate je Treatment. Insgesamt ergibt sich daraus ein Datensatz mit
+3680 Proteinen über 150 Fraktionen (3680 × 150). Die analysierten shift in den Dichteprofilen dienen
+als Grundlage zur Klassifikation von Proteinen hinsichtlich ihrer RNA-Abhängigkeit. Das entwickelte
+Programm ermöglicht erstmals eine automatisierte Auswertung solcher großskaligen Datensätze zur
+Identifikation RNA-abhängiger Proteine auf Basis experimentell messbarer Parameter.
+
 # **Projekt Überblick**
 
-```mermaid
+``` mermaid
 flowchart LR
     A[Mass Spec Daten] --> B[Data Exploration]
     B --> C[Daten Aufreinigen]
@@ -59,7 +81,6 @@ flowchart LR
     E --> F[Dimensionsreduktion]
     F --> G[Lineare Regression]
 ```
-
 
 ## **Ziel:**
 
@@ -89,7 +110,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-```mermaid
+``` mermaid
 flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
     B --> C[Normalisierung pro Protein]
@@ -126,38 +147,47 @@ flowchart LR
 
 ## **Ziel:**
 
-- Einfluss ausgewählter Prädiktoren (Masse und pI) auf die Wahrscheinlichkeit für RNA-Dependenz untersuchen und auf Signifikanz prüfen
-- für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand experimentell zugänglicher Größen vorhersagen
+-   Einfluss ausgewählter Prädiktoren (Masse und pI) auf die Wahrscheinlichkeit für RNA-Dependenz
+    untersuchen und auf Signifikanz prüfen
+-   für neue Daten: Wahrscheinlichkeit für RNA-dependence anhand experimentell zugänglicher Größen
+    vorhersagen
 
 ## **Ablauf:**
 
-```mermaid
+``` mermaid
 flowchart LR
     A[biochemische Eigenschafte der Proteine laden] --> B[Auswahl der unabhängigen Variablen für die multiple Regression]
     B --> C[multiple Regression]
     C --> D[Einfluss der Prädiktoren auf Siginifkanz testen]
 ```
-1. **Biochemische Eigenschaften der Proteine laden**:\
-    Für alle betrachteten Proteine wurden aus der Datenbank RBP2GO Informationen zu Länge in AA, Masse in kDa und dem pI geladen. 
-    
-2. **Auswahl der unabhängigen Variablen für die multiple Regression**:\
-   Unabhängige Variablen sollten möglichst wenig miteinander korrelieren, um Mehrfachkollinearität zu vermeiden.\
-   Daher wurde die Korrelation zwischen Masse, Länge und pI untersucht.\
-   Es zeigte sich eine starke Korrelation zwischen Masse und Länge.\
-   Da die Masse leichter experimentell zugänglich ist als die Länge, wurde sie gemeinsam mit dem pI als Prädiktor in der multiplen Regression eingesetzt.
-    
-3. **Multiple Regression**:\
-    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p < 0.001). 
-    Der pI hat den stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38).
-    ![Beschreibung des Bildes](image/3d_scatterplot.jpeg)\
-    Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple Regression bestimmte Regressionsfläche.\
-    Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten an.\
-    Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil der Varianz erklären kann.\
+
+1.  **Biochemische Eigenschaften der Proteine laden**:\
+    Für alle betrachteten Proteine wurden aus der Datenbank RBP2GO Informationen zu Länge in AA,
+    Masse in kDa und dem pI geladen.
+
+2.  **Auswahl der unabhängigen Variablen für die multiple Regression**:\
+    Unabhängige Variablen sollten möglichst wenig miteinander korrelieren, um Mehrfachkollinearität
+    zu vermeiden.\
+    Daher wurde die Korrelation zwischen Masse, Länge und pI untersucht.\
+    Es zeigte sich eine starke Korrelation zwischen Masse und Länge.\
+    Da die Masse leichter experimentell zugänglich ist als die Länge, wurde sie gemeinsam mit dem pI
+    als Prädiktor in der multiplen Regression eingesetzt.
+
+3.  **Multiple Regression**:\
+    Die multiple Regression zeigt, dass sowohl der isoelektrische Punkt (pI) als auch die Masse
+    (Mass_kDa) signifikant mit der Zielvariable zusammenhängen (p \< 0.001). Der pI hat den
+    stärkeren Effekt (t = 21.12), gefolgt von der Masse (t = 3.38). ![Beschreibung des
+    Bildes](image/3d_scatterplot.jpeg)\
+    Dieser 3D-Scatterplot zeigt die tatsächlichen Datenpunkte sowie die durch die multiple
+    Regression bestimmte Regressionsfläche.\
+    Je näher die Punkte an der Fläche liegen, desto besser passt das Modell die beobachteten Daten
+    an.\
+    Deutliche Abstände zwischen Punkten und Fläche zeigen, dass das Modell nur einen kleinen Teil
+    der Varianz erklären kann.\
     Konkret erklärt das Modell etwa 10,8 % der Varianz (adjusted R² = 0,108).
-    
-4. **Einfluss der Prädiktoren auf Signifikanz testen**:\
+
+4.  **Einfluss der Prädiktoren auf Signifikanz testen**:\
     Mit t-Tests wurde geprüft, ob sich RBPs und Non-RBPs signifikant in pI und Masse unterscheiden.\
     ![Beschreibung des Bildes](image/comparison_pI.jpeg)\
-    Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter RNA-Dependence-Wahrscheinlichkeit festgestellt.
-
-
+    Dabei wurde ein signifikanter Zusammenhang zwischen höherem pI und erhöhter
+    RNA-Dependence-Wahrscheinlichkeit festgestellt.
