@@ -215,7 +215,7 @@ flowchart LR
 flowchart LR
     A[load information on protein features] --> B[select independent variables for multiple regression]
     B --> C[multiple Regression]
-    C --> D[test the significance of predictor effects]
+    C --> D[test the individual significance of predictor effects]
 ```
 
 1.  **select independent variables for multiple regression**:\
@@ -238,9 +238,9 @@ flowchart LR
     of the variance.\
     Specifically, the model explains approximately 10.8% of the variance (adjusted R² = 0.108).
 
-3.  **test the significance of predictor effects**:\
+3.  **test the individual significance of predictor effects**:\
     T-tests were conducted to determine whether RBPs and non-RBPs differ significantly in their
     isoelectric point (pI) and molecular weight\
     ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
     A significant association was found between higher isoelectric point (pI) and increased
-    probability of RNA dependence
+    probability of RNA dependence. Mass becomes a significant predictor only when pI is accounted for, as demonstrated by the multiple regression analysis.
