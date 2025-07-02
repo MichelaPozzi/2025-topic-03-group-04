@@ -3726,7 +3726,7 @@ head(pca_df)
 ```
 
 
-<<<<<<< HEAD
+
 ##ctrl
 
 
@@ -3874,6 +3874,9 @@ dim(merged_df)
 ```
 
 ```{r}
+
+# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
+df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
 # which parameters can be used in multiple regression: correlation between independent variables should be as low as possible
 
 cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
@@ -3887,8 +3890,6 @@ cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
 
 ```{r}
 
-# Nur Zeilen ohne fehlende Werte für pI, Mass_kDa und testscores
-df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
 
 # Regression: testscores ~ pI + Mass_kDa
 model <- lm(probability ~ pI + Mass_kDa, data = df_complete)

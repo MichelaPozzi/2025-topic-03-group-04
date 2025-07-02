@@ -75,21 +75,17 @@ messbarer Parameter.
 
 # **Projekt Überblick**
 
-``` mermaid
-flowchart LR
-    A[Mass Spec Daten] --> B[Data Exploration]
-    B --> C[Daten Aufreinigen]
-    C --> D[Daten Beschreibung]
-    D --> E[Daten Normalisierung]
-    E --> F[Dimensionsreduktion]
-    F --> G[Lineare Regression]
-```
 
-## **Ziel:**
+## Inhaltsverzeichnis
+
+- [Daten Aufreinigung](#daten-aufreinigung)
+- [Daten Beschreibung](#daten-beschreibung)
+- [Daten Normalisierung](#daten-normalisierung)
+- [Shift Analyse](#shift-analyse)
+- [Dimensionsreduktion](#dimensionsreduktion)
+- [Lineare Regression](#lineare-regression)
 
 ## **Libraries:**
-
-## **Daten laden**
 
 # **Daten Aufreinigung**
 
@@ -113,7 +109,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-``` mermaid
+```mermaid
 flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
     B --> C[Normalisierung pro Protein]
@@ -157,7 +153,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-``` mermaid
+```mermaid
 flowchart LR
     A[biochemische Eigenschafte der Proteine laden] --> B[Auswahl der unabhängigen Variablen für die multiple Regression]
     B --> C[multiple Regression]
