@@ -89,15 +89,15 @@ messbarer Parameter.
 
 ## **Libraries:**
 
-# **Daten Aufreinigung** {#daten-aufreinigung}
+# **Daten Aufreinigung**
 
 ## **Ziel:**
 
-# **Daten Beschreibung (Data Description)**
+# **Daten Beschreibung**
 
 ## **Ziel:**
 
-# **Daten Normalisierung** {#daten-normalisierung}
+# **Daten Normalisierung**
 
 ## **Ziel:**
 
