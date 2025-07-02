@@ -3067,19 +3067,20 @@ plot(2:10, sil_width, type = "b", pch = 19,
 
 ###kmeans 
 ```{r}
-kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
+C_kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
 ```
 
+
 ```{r}
-kmeans_result$cluster    
-kmeans_result$centers     
-kmeans_result$tot.withinss
+C_kmeans_result$cluster    
+C_kmeans_result$centers     
+C_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
 Ctrl_data <- as.data.frame(Ctrl_pca$x)
-Ctrl_data$cluster <- as.factor(kmeans_result$cluster)
+Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
 library(ggplot2)
 
@@ -3253,19 +3254,19 @@ plot(2:10, sil_width, type = "b", pch = 19,
 
 ###kmeans 
 ```{r}
-kmeans_result <- kmeans(rnase_pca$x, centers = 2, nstart = 25)
+R_kmeans_result <- kmeans(rnase_pca$x, centers = 2, nstart = 25)
 ```
 
 ```{r}
-kmeans_result$cluster    
-kmeans_result$centers     
-kmeans_result$tot.withinss
+R_kmeans_result$cluster    
+R_kmeans_result$centers     
+R_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
 rnase_data <- as.data.frame(rnase_pca$x)
-rnase_data$cluster <- as.factor(kmeans_result$cluster)
+rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
 library(ggplot2)
 
@@ -4085,3 +4086,108 @@ legend("topright", legend = c("Mean"), col = "coral", pch = 19)
 ```
 
 
+
+
+##isolieren rbp
+
+```{r}
+rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
+
+rbp_proteins <- rbp_only$Protein
+head(rbp_proteins)
+
+Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+```
+
+
+```{r}
+C_kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
+```
+
+
+```{r}
+C_kmeans_result$cluster    
+C_kmeans_result$centers     
+C_kmeans_result$tot.withinss
+```
+
+
+
+```{r}
+Ctrl_data <- as.data.frame(Ctrl_pca$x)
+Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
+
+#protein namen isolieren 
+Ctrl_data$protein_name <- rownames(Ctrl_data)
+#check if rbp present 
+Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+
+#farbe 
+Ctrl_data$color_group <- ifelse(Ctrl_data$is_rbp, "RBP", as.character(Ctrl_data$cluster))
+
+library(ggplot2)
+
+ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Gruppe",
+       shape = "Protein-Typ") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
+  scale_color_manual(values = c("1" = "blue", "2" = "light grey", "RBP" = "purple"))
+
+
+ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "Protein-Typ")
+```
+
+```{r}
+Ctrl_data$protein_name <- rownames(Ctrl_data)
+```
+
+
+```{r}
+head(Ctrl_data)
+colnames(Ctrl_data)
+```
+
+
+##rnase
+```{r}
+rnase_data <- as.data.frame(rnase_pca$x)
+rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
+
+#protein namen isolieren 
+rnase_data$protein_name <- rownames(rnase_data)
+#check if rbp present 
+rnase_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+
+#farbe 
+rnase_data$color_group <- ifelse(rnase_data$is_rbp, "RBP", as.character(rnase_data$cluster))
+
+#label
+Ctrl_data$rbp_label <- ifelse(Ctrl_data$is_rbp, "RBP", "non-RBP")
+
+library(ggplot2)
+
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Gruppe",
+       shape = "rbp") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
+  scale_color_manual(values = c("1" = "light blue", "2" = "light grey", "RBP" = "purple"))
+
+
+ggplot(rnase_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "rbp_label")
+```

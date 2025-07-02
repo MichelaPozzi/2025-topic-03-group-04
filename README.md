@@ -81,8 +81,14 @@ messbarer Parameter.
 - [Daten Aufreinigung](#daten-aufreinigung)
 - [Daten Beschreibung](#daten-beschreibung)
 - [Daten Normalisierung](#daten-normalisierung)
+  - [Normalisierung](#normalisierung)
+  - [Batchentfernung](#batchentfernung)
 - [Shift Analyse](#shift-analyse)
+  - [Tests](#tests)
+  - [Logistisches Modell](#logistisches-modell)
 - [Dimensionsreduktion](#dimensionsreduktion)
+  - [PCA](#pca)
+  - [k-means](#k--means)
 - [Lineare Regression](#lineare-regression)
 
 ## **Libraries:**
@@ -108,6 +114,8 @@ messbarer Parameter.
     -   Transformation
 
 ## **Ablauf:**
+
+### **Normalisierung**
 
 ```mermaid
 flowchart LR
@@ -141,6 +149,33 @@ flowchart LR
     mit den geglätteten Werten
 
 3.  
+
+### **Batchentfernung**
+
+# **Shift Analyse**
+
+## **Ziel**
+
+## **Ablauf**
+
+```mermaid
+flowchart LR
+    A[normalisierte Daten] --> B[Shift Distanz]
+    A --> C[Amplitudenveränderung]
+    A --> D[Earth Mover Test]
+    A --> E[Center Of Mass Test]
+    A --> F[Wilcoxon Test pro Protein]
+    A --> G[Wilcoxon Test für Globale Maxima]
+    B --> H[Logistisches Modell]
+    C --> H
+    D --> H
+    E --> H
+    F --> H
+    G --> H
+```
+## **Tests**
+
+## **Logistisches Modell**
 
 # **Lineare Regression**
 
