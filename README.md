@@ -71,23 +71,22 @@ RNA-Abhängigkeit. Das entwickelte Programm ermöglicht erstmals eine automatisi
 solcher großskaligen Datensätze zur Identifikation RNA-abhängiger Proteine auf Basis experimentell
 messbarer Parameter.
 
-![](images/clipboard-3286070548.png)
+![](images/clipboard-1052987459.png)
 
 # **Projekt Überblick**
 
-
 ## Inhaltsverzeichnis
 
-- [Daten Aufreinigung](#daten-aufreinigung)
-- [Daten Beschreibung](#daten-beschreibung)
-- [Daten Normalisierung](#daten-normalisierung)
-- [Shift Analyse](#shift-analyse)
-- [Dimensionsreduktion](#dimensionsreduktion)
-- [Lineare Regression](#lineare-regression)
+-   [Daten Aufreinigung](#daten-aufreinigung)
+-   [Daten Beschreibung](#daten-beschreibung)
+-   [Daten Normalisierung](#daten-normalisierung)
+-   [Shift Analyse](#shift-analyse)
+-   [Dimensionsreduktion](#dimensionsreduktion)
+-   [Lineare Regression](#lineare-regression)
 
 ## **Libraries:**
 
-# **Daten Aufreinigung**
+# **Daten Aufreinigung** {#daten-aufreinigung}
 
 ## **Ziel:**
 
@@ -95,7 +94,7 @@ messbarer Parameter.
 
 ## **Ziel:**
 
-# **Daten Normalisierung**
+# **Daten Normalisierung** {#daten-normalisierung}
 
 ## **Ziel:**
 
@@ -109,7 +108,7 @@ messbarer Parameter.
 
 ## **Ablauf:**
 
-```mermaid
+``` mermaid
 flowchart LR
     A[Normalisierung pro Fraktion] --> B[Mittelwertfilter]
     B --> C[Normalisierung pro Protein]
@@ -142,7 +141,7 @@ flowchart LR
 
 3.  
 
-# **Lineare Regression**
+# **Lineare Regression** {#lineare-regression}
 
 ## **Ziel:**
 
@@ -153,7 +152,7 @@ flowchart LR
 
 ## **Ablauf:**
 
-```mermaid
+``` mermaid
 flowchart LR
     A[biochemische Eigenschafte der Proteine laden] --> B[Auswahl der unabhängigen Variablen für die multiple Regression]
     B --> C[multiple Regression]
