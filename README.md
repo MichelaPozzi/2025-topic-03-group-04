@@ -87,8 +87,6 @@ messbarer Parameter.
 
 ## **Libraries:**
 
-## **Daten laden**
-
 # **Daten Aufreinigung**
 
 ## **Ziel:**
