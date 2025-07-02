@@ -156,7 +156,7 @@ flowchart LR
 
 ## **Ziel**
 
-## **Tests**
+## **Ablauf**
 
 ```mermaid
 flowchart LR
@@ -173,6 +173,7 @@ flowchart LR
     F --> H
     G --> H
 ```
+## **Tests**
 
 ## **Logistisches Modell**
 
