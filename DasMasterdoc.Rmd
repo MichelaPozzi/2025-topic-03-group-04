@@ -4428,7 +4428,10 @@ print(rnase_data)
 
 ```{r}
 chisq.test(r_tbl)
+
+# keinen zusammenhang mit cluter
 ```
+
 
 ##ctrl
 ```{r}
@@ -4448,6 +4451,8 @@ print(Ctrl_data)
 
 ```{r}
 chisq.test(c_tbl)
+
+#kein zusammenhang mit cluster
 ```
 
 
