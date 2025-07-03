@@ -2364,7 +2364,6 @@ test_results_df <- data.frame(
 
 # Print the results
 print(test_results_df)
-
 ```
 output: for all tests there is a significant difference in the performance of positive and negative control proteins
 -> reference proteins are suitable for training the logistic model
@@ -2397,11 +2396,57 @@ boxplot(weighted_score ~ label, data = df_all,
         names = c("Negative", "Positive"),
         xlab = "Class Label", ylab = "Weighted Score",
         main = "Distribution of Weighted Scores by Class")
-
 ```
 output: 
 - The regression estimate represents the influence of a given predictor on the log-odds of RNA binding. A higher estimate increases the predicted probability.
 - The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model.
+
+## ROC Curve Visualizing test-model performance
+Goal: evaluate the predictive accuracy of the logistic regression model by showing the trade-off between the true positive rate (sensitivity) and false positive rate (1 - specificity) across different classification thresholds
+```{r}
+# Predicted probabilities from the model (as before)
+predicted_probs <- predict(logistic_model, type = "response")
+
+# True labels
+labels <- df_all$label
+
+# Thresholds from 0 to 1 in small steps
+thresholds <- seq(0, 1, by = 0.01)
+
+# Initialize vectors for True Positive Rate (TPR) and False Positive Rate (FPR)
+tpr <- numeric(length(thresholds))
+fpr <- numeric(length(thresholds))
+
+for (i in seq_along(thresholds)) {
+  thresh <- thresholds[i]
+  
+  # Predictions based on the threshold
+  preds <- ifelse(predicted_probs >= thresh, 1, 0)
+  
+  # Calculate True Positives, False Positives, True Negatives, False Negatives
+  TP <- sum(preds == 1 & labels == 1)
+  FP <- sum(preds == 1 & labels == 0)
+  TN <- sum(preds == 0 & labels == 0)
+  FN <- sum(preds == 0 & labels == 1)
+  
+  # Calculate TPR and FPR
+  tpr[i] <- ifelse((TP + FN) == 0, 0, TP / (TP + FN))
+  fpr[i] <- ifelse((FP + TN) == 0, 0, FP / (FP + TN))
+}
+
+# Define colors: lavender for ROC curve, beige for diagonal line
+lavender <- "#C5A3FF"
+graygreen <- "#A9C1A6"
+
+# Plot ROC curve with lavender line
+plot(fpr, tpr, type = "l", col = lavender, lwd = 2,
+     xlab = "False Positive Rate (FPR)", ylab = "True Positive Rate (TPR)",
+     main = "ROC Curve")
+
+# Add diagonal line (random guess) in beige
+abline(a = 0, b = 1, lty = 2, col = graygreen)
+```
+
 
 ### test-model applied to testscores of remaining proteins
 Goal: predict probability of RNA binding proteins
