@@ -170,14 +170,12 @@ flowchart LR
     A --> C[amplitude changes]
     A --> D[earth mover test]
     A --> E[center of mass test]
-    A --> F[wilcoxon test per protein]
-    A --> G[wilcoxon test for global maxima]
-    B --> H[logistic model]
-    C --> H
-    D --> H
-    E --> H
-    F --> H
-    G --> H
+    A --> F[wilcoxon test for global maxima]
+    B --> G[logistic model]
+    C --> G
+    D --> G
+    E --> G
+    F --> G
 ```
 
 ### **📝Tests** 
@@ -212,8 +210,7 @@ flowchart LR
 2.  **multiple regression**:\
     The multiple regression analysis shows that both the isoelectric point (pI) and molecular weight
     (Mass_kDa) are significantly associated with the target variable (p \< 0.001). The pI has the
-    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des
-    Bildes](images/3d_scatterplot.jpeg)\
+    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des Bildes](images/3dscatterplotupdated.jpeg)\
     This 3D scatterplot displays the actual data points alongside the regression plane determined by
     the multiple regression analysis.\
     The closer the points lie to the plane, the better the model fits the observed data. Large
@@ -222,8 +219,10 @@ flowchart LR
     Specifically, the model explains approximately 10.8% of the variance (adjusted R² = 0.108).
 
 3.  **test the individual significance of predictor effects**:\
-    T-tests were conducted to determine whether RBPs and non-RBPs differ significantly in their
+    t-tests were conducted to determine whether RBPs and non-RBPs differ significantly in their
     isoelectric point (pI) and molecular weight\
     ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
     A significant association was found between higher isoelectric point (pI) and increased
-    probability of RNA dependence. Mass becomes a significant predictor only when pI is accounted for, as demonstrated by the multiple regression analysis.
+    probability of RNA dependence.\
+    On its own, mass is not a significant predictor of RNA-binding behavior.
+    Mass becomes a significant predictor only when pI is accounted for, as demonstrated by the multiple regression analysis. 

@@ -11,9 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+# Group 4 Data Analysis Project 
 
 # Silent Signals: 
 # Projekt Overview
@@ -64,6 +62,9 @@ print(A549_NS)
 
 # 1. data exploration
 ```{r}
+#data exploration
+print(A549_NS)
+
 #number of rows and columns
 nrow(A549_NS)
 ncol(A549_NS)
@@ -75,7 +76,6 @@ sum(sapply(A549_NS, is.numeric))
 sum(is.na(A549_NS))
 ```
 
-## create separate dataframes for Ctrl and RNase
 ```{r}
 # all columns
 col_names <- colnames(A549_NS)
@@ -93,6 +93,7 @@ head(df_rnase)
 
 
 ```
+
 
 # Reproducability
 Goal: evaluate the consistency of the measured replicates across the fractions for both treatments to determine the reproducability 
@@ -129,6 +130,7 @@ plot(ctrl_correlations)
 ```
 Output: very high correlation across the fractions shows reproducability for the control measurments
 -> all above 0.8 
+
 
 ## Reproducibility of rnase values
 ```{r}
@@ -167,7 +169,9 @@ Output: correlation amongst the rnase values is sporadically lower compared to t
 
 # 2. data normalisation
 ## normalisation
-### determine columnwise mean
+### normalisation per fraction
+Goal: receive basis for subsequent normalisation
+#### determine columnwise mean
 ```{r}
 # function to compute mean columnwise (except Protein_Name)
 compute_column_means <- function(df) {
@@ -198,7 +202,8 @@ sum(ctrl_means_df[, 2] == 0)
 sum(rnase_means_df[, 2]==0)
 
 ```
-
+### normalisation factor
+Goal: determine normalisation matrix with normalisation factors from the mean of the two most similar replicates
 ```{r}
 # create function to calculate the mean of the two most similar replicates (out of three replicates)
 mean_of_closest_pair <- function(x) {
@@ -242,63 +247,63 @@ closest_means_rnase <- data.frame(
 # depict result
 print(closest_means_ctrl)
 print(closest_means_rnase)
-
 ```
-
+#### create normalisation matrix
 ```{r}
 n_fractions <- 25
 n_replicates <- 3
 
-# ctrl_means_df und rnase_means_df enthalten alle Replikat-Mittelwerte in einer Spalte, z.B. 'Means'
-# ctrl_final_means_df und rnase_final_means_df enthalten je einen Mittelwert pro Fraktion in 'FinalMean'
+# ctrl_means_df and rnase_means_df contain all replicate means in one column, e.g. 'Mean'
+# ctrl_final_means_df and rnase_final_means_df contain one final mean per fraction in 'FinalMean'
 
-# create matrix for replicates of each fraction (25x3)
+# create matrices for replicates of each fraction (25 rows × 3 columns)
 ctrl_mat <- matrix(ctrl_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
 rnase_mat <- matrix(rnase_means_df$Mean, nrow = n_fractions, ncol = n_replicates, byrow = TRUE)
 
-# initialize normalization matrixes
+# initialize normalization matrices with NA values
 norm_ctrl_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 norm_rnase_mat <- matrix(NA, nrow = n_fractions, ncol = n_replicates)
 
-# loop over all fractions
+# loop over all fractions to calculate normalization factors
 for (r in 1:n_fractions) {
-  control_values <- ctrl_mat[r, ]  # 3 replicates Control
-  rnase_values <- rnase_mat[r, ]   # 3 replicates RNase
+  control_values <- ctrl_mat[r, ]  # 3 replicates for Control
+  rnase_values <- rnase_mat[r, ]   # 3 replicates for RNase
   
-  # FinalMean from Ctrl and RNAse dataframe
+  # retrieve FinalMean from control and RNase data frames
   mean_control <- closest_means_ctrl[r, 2]
   mean_rnase <- closest_means_rnase[r, 2]
   
-  # check if only one value per fraction
+  # ensure exactly one value per fraction
   if(length(mean_control) != 1 | length(mean_rnase) != 1) {
-    stop(paste("Mehr oder weniger als ein FinalMean für Fraktion", r))
+    stop(paste("More or less than one FinalMean found for fraction", r))
   }
   
-  # calculate normalization factors
+  # calculate normalization factors by dividing final mean by replicate values
   norm_ctrl_mat[r, ] <- mean_control / control_values
   norm_rnase_mat[r, ] <- mean_rnase / rnase_values
 }
 
-#depict results
+# show first few rows of normalization matrices
 head(norm_ctrl_mat)
 head(norm_rnase_mat)
 
-#check if any NAs were created
+# check for any NAs in normalization matrices
 sum(is.na(norm_ctrl_mat))
 sum(is.na(norm_rnase_mat))
 ```
-
+#### Apply Normalisation Matrix to Data
+Goal: Compensate deviations between replicates and the reference value by multiplying with normalisation factors
 ```{r}
-
 normalize_df <- function(df, norm_mat) {
-  # extract numeric data (not "Protein_Name")
+  # Extract numeric data excluding the first column ("Protein_Name")
   data_mat <- as.matrix(df[, -1])
   
-  # check dimensions
+  # Get the number of blocks (rows) and columns per block from normalization matrix
   n_blocks <- nrow(norm_mat)
   cols_per_block <- ncol(norm_mat)
   
-  # blockwise normalization: Normierungsmatrix wird spaltenweise durchlaufen und in dieser Reihenfolge auf die Spalten der Originaldaten angewendet
+  # Apply normalization blockwise:
+  # The normalization matrix is iterated column-wise and applied in this order to the columns of the original data
   for (i in 1:n_blocks) {
     for (j in 1:cols_per_block) {
       col_index <- (i - 1) * cols_per_block + j
@@ -306,23 +311,21 @@ normalize_df <- function(df, norm_mat) {
     }
   }
   
-  # create dataframe as result
+  # Combine Protein_Name column with normalized data and return as a dataframe
   result_df <- cbind(Protein_Name = df$Protein_Name, as.data.frame(data_mat))
   return(result_df)
 }
 
-# apply to our data
+# Apply normalization to control and RNase dataframes
 normed_ctrl_df  <- normalize_df(df_ctrl, norm_ctrl_mat)
 normed_rnase_df <- normalize_df(df_rnase, norm_rnase_mat)
 
-# depict results
+# Display the first few rows of the normalized dataframes
 head(normed_ctrl_df)
 head(normed_rnase_df)
-
-
 ```
-
-
+### Moving Average Filter & Sorting Data
+Goal: Smooth values per protein and replicate & arrange data
 ```{r}
 # Mean filter function for a row (preserving first and last value)
 smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
@@ -367,9 +370,8 @@ head(final_smoothed_rnase)
 #check if any NAs were created
 sum(is.na(final_smoothed_ctrl))
 sum(is.na(final_smoothed_rnase))
-
 ```
-
+#### apply moving average filter to data
 ```{r}
 # check for any rows with rowSum == 0 (per replicate)
 check_zero_replicates_detailed <- function(df) {
@@ -426,11 +428,9 @@ rnase_zero_summary <- check_zero_replicates_detailed(final_smoothed_rnase)
 # View examples
 head(ctrl_zero_summary)
 head(rnase_zero_summary)
-
-
 ```
-
-
+## Normalisation of Total Amount per Replicate to 100%
+Goal: Obtain normalized values per replicate
 ```{r}
 #normalize total amount per replicate to 100%
 calc_fraction_percentages <- function(df, zero_info, n_fractions = 25, n_replicates = 3) {
@@ -497,7 +497,8 @@ head(percent_rnase_df)
 sum(is.na(percent_ctrl_df))
 sum(is.na(percent_rnase_df))
 ```
-
+## Calculate Mean Over the Three Replicates per Fraction
+Goal: Obtain normalized values averaged across replicates to get average distribution per fraction
 ```{r}
 calculate_mean_per_fraction <- function(df, n_fractions = 25, n_replicates = 3) {
   proteins <- df[, 1]  # Protein-Names
@@ -531,7 +532,8 @@ head(mean_rnase_df)
 sum(is.na(mean_ctrl_df))
 sum(is.na(mean_rnase_df))
 ```
-
+## Normalisation of Amount of Protein to Equal 100%
+Goal: Obtain comparable relative distributions of protein amounts across fractions
 ```{r}
 # normalization of amount of protein to equal 100%
 
@@ -564,32 +566,29 @@ head(normalized_rnase_df)
 #check if any NAs were created
 sum(is.na(normalized_ctrl_df))
 sum(is.na(normalized_rnase_df))
-
-
 ```
-
+## Check for Empty Protein Distributions After Normalization
+Goal: Identify proteins with zero total abundance after normalization
 ```{r}
-#for Ctrl
-# are there rows with sum == 0 (starting with second column) for Ctrl
-zeilensummen <- rowSums(normalized_ctrl_df[, -1])
+# For Control data
+# Calculate row sums excluding the first column ("Protein_Name")
+row_sums_ctrl <- rowSums(normalized_ctrl_df[, -1])
 
-# boolean vector: TRUE for rows with sum == 0
-zeilen_mit_nullsumme <- zeilensummen == 0
+# Create a boolean vector: TRUE where row sum equals zero
+rows_with_zero_sum_ctrl <- row_sums_ctrl == 0
 
-# are there any such rows?
-any(zeilen_mit_nullsumme)
+# Check if any rows have a sum of zero
+any(rows_with_zero_sum_ctrl)
 
-#für RNase
-#are there rows with sum == (starting with second column) for Ctrl
-zeilensummen_rnase <- rowSums(normalized_rnase_df[, -1])
+# For RNase data
+# Calculate row sums excluding the first column ("Protein_Name")
+row_sums_rnase <- rowSums(normalized_rnase_df[, -1])
 
-# boolean vector: TRUE for rows with sum == 0
-zeilen_mit_nullsumme_rnase <- zeilensummen_rnase == 0
+# Create a boolean vector: TRUE where row sum equals zero
+rows_with_zero_sum_rnase <- row_sums_rnase == 0
 
-# are there any such rows?
-any(zeilen_mit_nullsumme_rnase)
-
- 
+# Check if any rows have a sum of zero
+any(rows_with_zero_sum_rnase)
 ```
 
 
@@ -868,17 +867,17 @@ par(mfrow = c(1, 1))
 ```{r}
 
 #protein name wieder rein
-L_ctrl_expr_corrected_df <- data.frame(
+ctrl_expr_corrected_df <- data.frame(
   Protein = final_smoothed_ctrl[, 1],  # ursprüngliche erste Spalte
-L_ctrl_expr_corrected,                # korrigierte Matrix
+ctrl_expr_corrected,                # korrigierte Matrix
   check.names = FALSE                  # verhindert Umbenennung von Spalten
 )
 
-colnames(L_ctrl_expr_corrected_df)
+colnames(ctrl_expr_corrected_df)
 ```
 
 ```{r}
-head(L_ctrl_expr_corrected_df)
+head(ctrl_expr_corrected_df)
 ```
 
 ##RNASE
@@ -1046,18 +1045,16 @@ par(mfrow = c(1, 1))
 
 ```{r}
 #protein name wieder rein
-L_rnase_expr_corrected_df <- data.frame(
+rnase_expr_corrected_df <- data.frame(
   Protein = final_smoothed_rnase[, 1],  # ursprüngliche erste Spalte
-  L_rnase_expr_corrected,                # korrigierte Matrix
+  rnase_expr_corrected,                # korrigierte Matrix
   check.names = FALSE                  # verhindert Umbenennung von Spalten
 )
-
-colnames(L_ctrl_expr_corrected_df)
 ```
 
 
 ```{r}
-head(L_rnase_expr_corrected_df)
+head(rnase_expr_corrected_df)
 ```
 
 
@@ -1467,7 +1464,9 @@ plot(fraktionen, intensities, type = "n",
           col = "lavender", border = NA)
   lines(fraktionen, intensities, col = "lavender", lwd = 2)
 ```
+
 ### maxima
+Goal: find all local maxima 
 ```{r}
 # IdentifY position of global maxima
 # recognize peaks with diff()
@@ -1573,8 +1572,6 @@ head(global_ctrl)
 Goal: Apply statistical testscores to our test-model and thus determine the probability of the proteins being RBPs or Non-RBPS
 -> logistic model is established using 30 % of the dataset to train the model
 -> applying the model to the remaining data yields the predicted probability of RNA-binding for each protein
-## Statisitcal Tests
-Goal: determine testscores by testing different selection criteria
 ### shift distance and direction test
 ```{r}
 #Shift Distance and direction based on changes in global maximum
@@ -1599,6 +1596,10 @@ shift_result <- data.frame(
 
 head(shift_result)
 ```
+- Determining the shift direction based on the position of the global maximum is not ideal, as some RBPs may later lack a clear shift direction.
+-> Therefore, this definition of shift direction will not be used.
+-> Instead, the shift direction is defined based on the center of mass test
+
 #### skewness of shift distance
 Goal: determine skewness of shift distance and check whether robust scaling can be applied
 -> if skewness > 1 or < -1, then robust scaling can be applied
@@ -1625,7 +1626,6 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 ```
 output: 
 - skewness < -1 -> robust scaling can be applied
-
 #### scaling
 scaling is needed as different tests are used for the logistic model
 -> tests need to be made comparable by scaling them to a common range
@@ -1675,11 +1675,10 @@ get_global_amplitudes <- function(expression_df, global_ctrl) {
     stringsAsFactors = FALSE
   )
 }
-
 #apply function to our data
 global_amplitudes_ctrl <- get_global_amplitudes(normalized_ctrl_df, global_ctrl)
 
-#depict result
+# depict results
 head(global_amplitudes_ctrl)
 
 ```
@@ -1768,7 +1767,6 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 ```
 output: 
 - skewness > 1 -> robust scaling can be applied
-
 #### scaling
 ```{r}
 #robust scaling
@@ -1820,17 +1818,15 @@ abline(a = 0, b = 1, col = "grey",lty=2)
 write.table(right_shift_df, file = "Right_Shift_Proteins.txt", sep = "\t", row.names = FALSE, quote = FALSE)
 
 ```
-
 ### earth mover test
-
-```{r}#
+principle of earth mover test: 
+- test calculates the work that needs to be done in order to transform one distribution into the other
+-> determines masss (amount of protein) that needs to be moved a certain distance in order to compute said transformation
+```{r}
 install.packages("emdist")  
 
 ```
 
-principle of earth mover test: 
-- test calculates the work that needs to be done in order to transform one distribution into the other
--> determines masss (amount of protein) that needs to be moved a certain distance in order to compute said transformation
 ```{r}
 library(emdist)
 
@@ -1905,7 +1901,6 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
 ```
 output:
 - skewness > 1 -> robust scaling can be applied
-
 #### scaling 
 ```{r}
 #robust scaling
@@ -1955,7 +1950,18 @@ center_of_mass_df <- data.frame(
 # View first few results
 head(center_of_mass_df)
 ```
-
+## classification: left or right shift
+if delta_COM > 0: right shift
+if delta_COM < 0: left shift
+-> for proteins that are later on classifies as non-shifting this categtory is ignored
+```{r}
+# define direction of shift
+center_of_mass_df$shift_direction <- ifelse(center_of_mass_df$Delta_COM > 0, "right shift",
+                    ifelse(center_of_mass_df$Delta_COM < 0, "left shift",
+                           "No Shift"))
+# show results
+head(center_of_mass_df)
+```
 #### skewness of center of mass
 Goal: determine whether the delta center of mass values are skewed or not
 If skewed: robust scaling is possible
@@ -2082,7 +2088,7 @@ print(global_max_rnase_df)
 print(fraktion_pos_rnase_df)
 
 ```
-compare whether there is a signficant difference in the position of global maxima between Ctrl and RNase
+
 ```{r}
 #paired Wilxocon test to compare the global maxima positions between control und rnase
 # Prepare vectors to store results
@@ -2123,7 +2129,6 @@ head(Wilcoxon_Pos_Max)
 #### skewness of Wilcoxon-statistic
 ```{r}
 #skewness of Wilcoxon-statistic Position of maxima
-
 # extract values
 x <- Wilcoxon_Pos_Max$Wilcoxon_statistic
 
@@ -2155,92 +2160,18 @@ Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_sta
 head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 ```
 
-### wilcoxon test proteinwise
-for each protein the amount protein per fraction are compared between Ctrl and RNase
-```{r}
-#Wilcoxon test proteinwise -> test statistic is used for testscore
-
-# define variables used
-protein_names <- normalized_ctrl_df[, 1]
-stat_values <- numeric(length(protein_names))
-p_values <- numeric(length(protein_names))
-
-# iterate over all proteins
-for (i in seq_along(protein_names)) {
-  ctrl_values <- as.numeric(normalized_ctrl_df[i, 2:26])
-  rnase_values <- as.numeric(normalized_rnase_df[i, 2:26])
-  
-  test_result <- wilcox.test(ctrl_values, rnase_values, alternative = "two.sided", paired = TRUE, exact = FALSE)
-  
-  stat_values[i] <- test_result$statistic
-  
- 
-}
-
-# save result as dataframe
-Wilcoxon_df <- data.frame(
-  Protein = protein_names,
-  Wilcox_Statistic = stat_values
-)
-
-
-# depict result
-head(Wilcoxon_df)
-
-```
-#### skewness fo wilcoxon-statistic
-```{r}
-#skewness of Wilcoxon-statistic proteinwise
-
-# extract values
-x <- Wilcoxon_df$Wilcox_Statistic
-
-# calculate skewness (Fisher-Pearson Skewness)
-n <- length(x)
-m3 <- sum((x - mean(x, na.rm = TRUE))^3, na.rm = TRUE) / n
-s3 <- (sum((x - mean(x, na.rm = TRUE))^2, na.rm = TRUE) / n)^(3/2)
-skewness <- m3 / s3
-print(paste("Skewness:", round(skewness, 4)))
-
-# plot histogram
-hist(x, breaks = 50, col = "lavender", main = "Wilcoxon-statistic proteinwise",
-     xlab = "Wilcoxon-statistic proteinwise", border = "white")
-abline(v = mean(x, na.rm = TRUE), col = "violet", lwd = 2)
-text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
-     labels = paste0("Mean = ", round(mean(x, na.rm = TRUE), 2)),
-     col = "violet", pos = 4)
-```
-output:
-- skewness > 1 -> robust scaling can be conducted
-
-#### scaling
-```{r}
-#robust scaling
-
-Wilcoxon_df$Wilcox_Statistic_scaled <- robust_scale(Wilcoxon_df$Wilcox_Statistic)
-
-#calculate test statstic for testscore (max. 20%)
-#paired Wilcoxon test: W(min) = 0, W(max) = 325
-Wilcoxon_df$Wilcox_Statistic_scaled_100 <- (Wilcoxon_df$Wilcox_Statistic_scaled / 325) * 100
-
-#depict results
-head(Wilcoxon_df$Wilcox_Statistic_scaled_100)
-```
-
 ### test score dataframe
-contains the results of all tests
+- contains the results of all tests
 ```{r}
 #define dataframe for all test scores of all proteines
-
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
   Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_100,
-  Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
+  Shift_direction_ctrl_to_rnase = center_of_mass_df$shift_direction,
   amplitude_changes = amplitude_changes$changes_scaled_100,
   EMD = normalized_ctrl_df$EMD_scaled_100,
   Center_of_Mass = center_of_mass_df$COM_scaled_100,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100,
-  Wilcoxon_statistic = Wilcoxon_df$Wilcox_Statistic_scaled_100
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100
 )
 #depict result
   head(test_scores_combined_df)
@@ -2248,6 +2179,8 @@ test_scores_combined_df <- data.frame(
 #check that no NAs were created
 sum(is.na(test_scores_combined_df))
 ```
+
+
 # determine reference proteins
 - A dataframe from RDeeP is loaded, which indicates how often each protein has been classified as RNA-binding
 - This dataframe includes proteins identified as RNA-binding in any human cell type 
@@ -2262,7 +2195,6 @@ model setup:
 - The training set includes 550 positive control proteins (RBPs) and 550 negative control proteins (non-RBPs), which together represent ~30% of all proteins in the dataset
 ```{r}
 # install and load package
-
 install.packages("DT")
 library(DT)
 
@@ -2291,21 +2223,18 @@ Goal: identify proteins that have never or just once been listed as RBPs
 -> increases probability that these proteins do not actually interact with RNA in our cell line
 ```{r}
 #identify proteins which can potentially be used as negative control
-
 # proteins which were identified as RDPs not more than once
 RNA_independent <- RBP_resources[RBP_resources[,4] %in% c(0,1), , drop = FALSE]
 
 # depict result
 head(RNA_independent)
 ```
-
 ### select 550 porteins as negative control
 - compare potential negative control proteins (listed in RDeeP dataframe) to proteins from our datafram 
 -> find matches 
 -> select 550 of those, ideally only those proteins that have never been caracterized as RBPs 
 ```{r}
 # check which of the potential proteins for negative control are actually contained in our dataset
-
 row_subset <- RNA_independent[,1]
 ref_row <- normalized_ctrl_df[,1]
 
@@ -2352,15 +2281,11 @@ length(negative_control)
 df_negative_control <- test_scores_combined_df[test_scores_combined_df$Protein %in% negative_control, ] 
 # depict result
 print(df_negative_control)
-
-max_negative <- max(df_negative_control$testscores)
-print(max_negative)
 ```
 
 ## positive control
 Goal: identify proteins that have listed as RBPs most often
 ```{r}
-
 #identify proteins which can potentially be used as positive control
 RNA_dependent <- RBP_resources[RBP_resources[,4] %in% c(8, 9, 10, 11, 12, 13, 14, 15,16, 17, 18), , drop = FALSE]
 
@@ -2373,7 +2298,6 @@ head(RNA_dependent)
 -> find matches 
 -> select 550 of those
 ```{r}
-
 #check which of the potential proteins for negative control are actually contained in our dataset
 row_subset <- RNA_dependent[,1]
 ref_row <- normalized_ctrl_df[,1]
@@ -2394,9 +2318,6 @@ df_positive_control <- test_scores_combined_df[test_scores_combined_df$Protein %
 # depict result
 print(df_positive_control)
 dim(df_positive_control)
-
-max_positive <- max(df_positive_control$testscores)
-print(max_positive)
 ```
 
 # logistic model
@@ -2406,10 +2327,9 @@ Goal: Use the reference proteins to train a logistic model that predicts the pro
 - A significant difference between positive and negative controls is essential for the model to learn a meaningful separation
 - A Mann–Whitney U test is used to assess whether the positive and negative control groups perform significantly differently in the tests
 ```{r}
-
 #check whether positive and negative control are reliable and whether they differ significantly 
 # Vector of column indices to test
-cols_to_test <- c(2,4,5,6,7,8)
+cols_to_test <- c(2,4,5,6,7)
 
 # Empty list to store test results
 test_results <- list()
@@ -2439,8 +2359,6 @@ print(test_results_df)
 output: for all tests there is a significant difference in the performance of positive and negative control proteins
 -> reference proteins are suitable for training the logistic model
 
-## train model with reference proteins
-- model learns influence and significance of the different tests on RNA-binding behavior
 ```{r}
 # 1. Add labels to the datasets
 df_positive_control$label <- 1  # Positive control group labeled as 1
@@ -2448,12 +2366,12 @@ df_negative_control$label <- 0  # Negative control group labeled as 0
 
 # 2. Combine the datasets and keep the relevant columns (features + label)
 df_all <- rbind(
-  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "Wilcoxon_statistic", "label")],
-  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "Wilcoxon_statistic", "label")]
+  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "label")],
+  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "label")]
 )
 
 # 3. Fit logistic regression model with multiple predictors
-logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Center_of_Mass + Wilcoxon_statistic + Wilcoxon_statistic_Max,
+logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Center_of_Mass + Wilcoxon_statistic_Max,
                       data = df_all,
                       family = binomial)
 
@@ -2485,107 +2403,10 @@ test_scores_combined_df$probability <- predict(logistic_model, newdata = test_sc
 # 2. View the first few rows of the result
 head(test_scores_combined_df)
 ```
-
-## classification of RBPs and Non-RBPs
-Goal: Use the predicted probabilities from the logistic regression model to classify proteins as RBPs or non-RBPs
--> Define a cutoff probability above which proteins are classified as RBPs.
-
-##### define FDR
-Goal: look at different possible FDRs and define a FDR according to the best FDR and threshold ratio (looking at True and False Positives)
-```{r}
-# FDR-Levels which could be possibly used
-target_fdrs <- c(0.05, 0.07, 0.10, 0.12)
-
-# compute reference columns
-test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
-test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
-
-# compute FDR for multiple thresholds (0 to 1)
-thresholds <- seq(0, 1, by = 0.001)
-fdr_values <- sapply(thresholds, function(thresh) {
-  selected <- test_scores_combined_df[test_scores_combined_df$probability > thresh, ]
-  if (nrow(selected) == 0) return(NA)
-  sum(selected$is_negative, na.rm = TRUE) / nrow(selected)
-})
-
-# determine for every target FDR the optimal threshold & save results
-results_list_FDR <- lapply(target_fdrs, function(target_fdr) {
-  valid_thresholds <- thresholds[which(fdr_values <= target_fdr)]
-  optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) else NA
-  
-  # proteins with significant shift selected according to optimal threshold
-  selected_proteins <- test_scores_combined_df[test_scores_combined_df$probability > optimal_threshold, ]
-  
-  # how many positive control proteins (True Positives) are in optimal threshold
-  true_positives <- sum(selected_proteins$is_reference, na.rm = TRUE)
-  
-  # how many negative control proteins (False Positives) are in optimal threshold
-  false_positives <- sum(selected_proteins$is_negative, na.rm = TRUE)
-  
-  # total of selected proteins
-  total_selected <- nrow(selected_proteins)
-  
-  list(
-    FDR_target = target_fdr,
-    Optimal_threshold = optimal_threshold,
-    True_positives = true_positives,
-    False_positives = false_positives,
-    Total_selected = total_selected
-  )
-})
-
-# create dataframe
-results_df_FDR <- do.call(rbind, lapply(results_list, as.data.frame))
-
-print(results_df_FDR)
-
-# plot FDR-graph and mark different FDRs and thresholds
-plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
-     xlab = "Prediction Threshold", ylab = "FDR",
-     main = "FDR vs Threshold")
-abline(h = target_fdrs, col = c("coral", "orange", "violet", "cyan"), lty = 2)
-for (res in results_list) {
-  abline(v = res$Optimal_threshold, col = "darkgreen", lty = 3)
-  text(res$Optimal_threshold, 0.02, labels = round(res$Optimal_threshold, 3), col = "darkgreen", srt = 90, pos = 3)
-}
-```
-```{r}
-# define values and x-positions
-fdr_labels <- paste0(results_df_FDR$FDR_target * 100, "%")
-bar_width <- 0.35
-x_pos <- 1:length(fdr_labels)
-
-# define Y-achsis max 
-y_max <- max(c(results_df_FDR$True_positives, results_df$False_positives)) * 1.2
-
-# empty plot
-plot(NA, xlim = c(0.5, length(fdr_labels) + 0.5), ylim = c(0, y_max), 
-     xaxt = "n", xlab = "FDR-Goal", ylab = "Number of Proteins", 
-     main = "True Positives and False Positives at different FDR-Levels")
-
-# x-axis description
-axis(1, at = x_pos, labels = fdr_labels)
-
-# bar for true Positives
-rect(xleft = x_pos - bar_width, ybottom = 0, 
-     xright = x_pos - bar_width/2, ytop = results_df_FDR$True_positives, 
-     col = "steelblue", border = NA)
-
-# bar for false Positives
-rect(xleft = x_pos + bar_width/2, ybottom = 0, 
-     xright = x_pos + bar_width, ytop = results_df_FDR$False_positives, 
-     col = "tomato", border = NA)
-
-# legend
-legend("topright", legend = c("True Positives", "False Positives"), 
-       fill = c("steelblue", "tomato"), bty = "n")
-
-```
-
 #### threshold
 Goal: define threshold with a 10% FDR
 ```{r}
-#calculate threshold
+#calculate threshold automatically
 # 1. predictions
 test_scores_combined_df$predicted_prob <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
@@ -2619,7 +2440,6 @@ abline(h = 0.1, col = "violet", lty = 2)
 abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
 ```
-
 ### overview of RBPs
 - Evaluate the composition of proteins classified as RNA-binding by the logistic model:
 -> How many belong to the positive control set?
@@ -2627,33 +2447,33 @@ abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 -> How many are novel predictions outside of the control sets?
 ```{r}
 #threshold is selected at FDR = 10%
-# Mark reference proteins in the full dataset
+# 1. Mark reference proteins in the full dataset
 test_scores_combined_df$is_reference <- test_scores_combined_df$Protein %in% df_positive_control$Protein
 
-# Make predictions using the logistic model
+# 2. Make predictions using the logistic model
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# Apply threshold (e.g., 0.95) to get predicted positives
+# 3. Apply threshold (e.g., 0.95) to get predicted positives
 selected_proteins <- test_scores_combined_df[predictions > optimal_threshold, ]
 selected_proteins$is_reference <- selected_proteins$Protein %in% df_positive_control$Protein
 
 
-# Count how many of the selected proteins are reference proteins
+# 4. Count how many of the selected proteins are reference proteins
 ref_counts <- table(selected_proteins$is_reference)
 names(ref_counts) <- c("Not positive control protein (FALSE)", "Positive Control protein (TRUE)")
 print(ref_counts)
 
 #how many proteins of negative control are found at this threshold
-# Mark negative control proteins in the full dataset
+# 1. Mark negative control proteins in the full dataset
 test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
 
-# Make predictions using the existing logistic model
+# 2. Make predictions using the existing logistic model
 predictions <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# Apply threshold
+# 3. Apply threshold (z.B. gleich wie oben: 0.3899612)
 selected_proteins <- test_scores_combined_df[predictions > optimal_threshold, ]
 
-# Count how many of the selected proteins are from the negative control
+# 4. Count how many of the selected proteins are from the negative control
 neg_counts <- table(selected_proteins$is_negative)
 names(neg_counts) <- c("Not negative control protein (FALSE)", "Negative control protein (TRUE)")
 print(neg_counts)
@@ -2663,30 +2483,108 @@ predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 
 # Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
+
 ```
 ### right shift proteins
 Goal: define right shift proteins according to their delta COM
 ```{r}
-# Filter proteins for significant right shift based on Delta_COM > 0 and a minimum probability threshold
+# filter proteins for significant right shift with defined threshold
 filtered_df <- test_scores_combined_df[
-  center_of_mass_df$Delta_COM > 0 &
+  test_scores_combined_df$Shift_direction_ctrl_to_rnase == "right shift" &
   test_scores_combined_df$probability >= optimal_threshold, 
 ]
 
-# Extract protein names from the first column, save as a new dataframe
+# Extract protein names from first column, save as dataframe
 right_shift_proteins_df <- data.frame(Protein = filtered_df[[1]])
 
-# Count number of right-shifted proteins
+# Number of filtered proteins
 right_shift_count <- nrow(filtered_df)
 
-# Display results
+# Depict results
 print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
+
 ```
 
 # visualisation of test-model results 
 ## composition of found RBPS
-### will ich so nicht haben
+```{r}
+colors1 <- c("#F5E1A4","#C5A3FF")  # Segment 1: light beige, Segment 2: light purple
+
+# 1. Plot: Total Proteins vs. Significantly Shifted Proteins
+counts_matrix1 <- matrix(c(
+  total_proteins - num_rbp,  # Number of proteins not shifted
+  num_rbp                    # Number of proteins shifted significantly
+), nrow = 2, byrow = TRUE)
+
+colnames(counts_matrix1) <- c("All Proteins")
+rownames(counts_matrix1) <- c("Non-shifted", "Shifted")
+
+barplot(counts_matrix1,
+        beside = FALSE,
+        col = colors1,
+        border = "white",
+        main = "All Proteins vs. Significant Shifts",
+        ylab = "Number of Proteins",
+        las = 1)
+
+legend("topright",
+       legend = rownames(counts_matrix1),
+       fill = colors1,
+       bty = "n")
+
+# Define colors for next plot (reversed order)
+colors2 <- c("#C5A3FF", "#F5E1A4")
+
+# 2. Plot: Direction of Protein Shifts (Left vs. Right)
+counts_matrix2 <- matrix(c(
+  num_right_shift,  # Number of proteins shifted to the right
+  num_left_shift    # Number of proteins shifted to the left
+), nrow = 2, byrow = TRUE)
+
+colnames(counts_matrix2) <- c("Shifted Proteins")
+rownames(counts_matrix2) <- c("Right Shift", "Left Shift")
+
+barplot(counts_matrix2,
+        beside = FALSE,
+        col = colors2,
+        border = "white",
+        main = "Direction of Protein Shifts",
+        ylab = "Number of Proteins",
+        las = 1)
+
+legend("topright",
+       legend = rownames(counts_matrix2),
+       fill = colors2,
+       bty = "n")
+
+# Extract counts from logical vectors (assuming TRUE/FALSE stored as characters)
+false_positives_num <- sum(predicted_negatives == "TRUE")  # Number of false positives
+true_positives_num <- sum(predicted_non_negative == "TRUE") # Number of true positives
+
+counts_matrix3 <- matrix(c(
+  false_positives_num,
+  true_positives_num
+), nrow = 2, byrow = TRUE)
+
+colnames(counts_matrix3) <- c("Prediction Quality")
+rownames(counts_matrix3) <- c("False Positives", "True Positives")
+
+barplot(counts_matrix3,
+        beside = FALSE,
+        col = colors1,
+        border = "white",
+        main = "Prediction Quality",
+        ylab = "Number of Proteins",
+        las = 1)
+
+legend("topright",
+       legend = rownames(counts_matrix3),
+       fill = colors1,
+       bty = "n")
+
+```
+
 ```{r}
 # Calculate total number of proteins in the dataset
 total_proteins <- nrow(test_scores_combined_df)
@@ -2778,6 +2676,7 @@ barplot(counts_matrix,
 legend("topright", legend = legend_labels, fill = colors, bty = "n")
 
 ```
+
 ## show result for any desired protein
 Enter a protein name to visualize its distribution across conditions (Control and RNase).
 The code will also return the predicted probability of RNA-binding and the corresponding classification as either RBP or Non-RBP
@@ -2856,7 +2755,7 @@ install.packages("shiny")
 more userfriendly way to depict results: distributions, probability and classification
 be mindful: this chunk has to be closed or newly opened window has to be closed for following chunks to run
 ```{r}
-# Load required packages
+# load libraries
 library(shiny)
 library(ggplot2)
 library(dplyr)
@@ -2882,6 +2781,21 @@ server <- function(input, output, session) {
   observeEvent(input$plot_button, {
     protein_name <- input$protein_name
     
+    if (!exists("normalized_ctrl_df") || !exists("normalized_rnase_df") || 
+    !exists("test_scores_combined_df") || !exists("optimal_threshold")) {
+  output$proteinPlot <- renderPlot(NULL)
+  showNotification("One or more required data objects are missing.", type = "error")
+  return()
+}
+    
+    # Select columns 1 (name) and 2:26 (Fraction1 to Fraction25)
+    ctrl <- normalized_ctrl_df[, c(1, 2:26)]
+    rnase <- normalized_rnase_df[, c(1, 2:26)]
+    
+    # Filter for selected protein
+    ctrl_data <- ctrl %>% filter(Protein == protein_name)
+    rnase_data <- rnase %>% filter(Protein == protein_name)
+    
     # Check if required data objects are available
     if (!exists("normalized_ctrl_df") || 
         !exists("normalized_rnase_df") || 
@@ -2893,37 +2807,22 @@ server <- function(input, output, session) {
       return()
     }
     
-    # Subset to protein abundance across fractions (columns 2–26)
-    ctrl <- normalized_ctrl_df[, c(1, 2:26)]
-    rnase <- normalized_rnase_df[, c(1, 2:26)]
-    
-    # Filter for the selected protein
-    ctrl_data <- ctrl %>% filter(Protein == protein_name)
-    rnase_data <- rnase %>% filter(Protein == protein_name)
-    
-    if (nrow(ctrl_data) == 0 | nrow(rnase_data) == 0) {
-      output$proteinPlot <- renderPlot(NULL)
-      showNotification("Protein not found in Control or RNase dataset.", type = "error")
-      return()
-    }
-    
-    # Add condition labels
+    # Label condition
     ctrl_data$Condition <- "Control"
     rnase_data$Condition <- "RNase"
     
-    # Combine both datasets and convert to long format
+    # Combine and reshape
     combined <- bind_rows(ctrl_data, rnase_data)
     long_df <- combined %>%
       pivot_longer(cols = starts_with("Fraction"),
                    names_to = "Fraction", values_to = "Intensity") %>%
       mutate(Fraction = as.numeric(gsub("Fraction", "", Fraction)))
     
-    # Retrieve predicted probability and RBP classification
+    # Get model probability and RBP classification
     prob <- test_scores_combined_df$probability[test_scores_combined_df$Protein == protein_name]
     if (length(prob) == 0) prob <- NA
     classification <- ifelse(!is.na(prob) & prob > optimal_threshold, "RBP", "Non-RBP")
     
-    # Plot profile
     output$proteinPlot <- renderPlot({
       ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condition)) +
         geom_area(alpha = 0.3, position = "identity", show.legend = FALSE) +
@@ -2946,8 +2845,11 @@ server <- function(input, output, session) {
   })
 }
 
-# Launch the Shiny app
 shinyApp(ui, server)
+
+
+
+
 
 ```
 
@@ -2965,7 +2867,6 @@ writeLines(protein_names, "right_shift_proteins.txt")
 #### visualization positive control
 ```{r}
 #visualize positive control
-
 # for example: top 10 proteins with highest probability score
 top10_proteins_df <- test_scores_combined_df[order(-test_scores_combined_df$probability), ][1:10, ]
 print(top10_proteins_df)
@@ -3034,7 +2935,6 @@ legend("topright",
 
 #### visualization negative control
 ```{r}
-
 #visualize negative control
 # 10 proteins with lowest probability score
 bottom10_proteins_df <- test_scores_combined_df[order(test_scores_combined_df$probability), ][1:10, ]
@@ -3097,7 +2997,6 @@ legend("topright",
 
 #### violinplots
 ```{r}
-
 # visualize the shift/non-shift of three selected proteins as violinplot
 proteins <- c("RLA1_HUMAN", "APC16_HUMAN", "CH033_HUMAN")
 
@@ -3191,12 +3090,9 @@ legend("topright",
 
 # 4. dimension reduction
 ## PCA
-
 ###Control
 
-
 ```{r}
-
 ctrl_sva_df <- as.data.frame(S_corrected_expr_ctrl)
 rownames(ctrl_sva_df) <- ctrl_sva_df$X
 C_test <- ctrl_sva_df
@@ -3205,12 +3101,10 @@ str(C_test)
 ```
 
 ```{r}
-
 apply(C_test, 2, mean) 
 ```
 
 ```{r}
-
 apply(C_test, 2, sd)
 ```
 
@@ -4023,6 +3917,7 @@ head(pca_df)
 
 ```{r}
 
+
 # 2. PCA auf dem großen Datensatz
 T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
 T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
@@ -4092,6 +3987,7 @@ Goal: Identify experimentally accessible predictors of RNA-binding
 
 ### load data with protein features 
 -> dataframe from RBP2GO is loaded that contains information on pI, Mass in kDa and length in AA as possible predictors for RNA-binding
+
 ```{r}
 ### read Table_RBPs
 
@@ -4111,6 +4007,7 @@ Table_HS_RBP = read.delim("cleaned_table.txt",
 head(Table_HS_RBP)
 
 ```
+
 
 ```{r}
 # read Table_Non_RBP
@@ -4142,9 +4039,10 @@ proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
 
 is_in_rbp_or_nonrbp <- test_scores_combined_df %in% proteins_rbp | test_scores_combined_df %in% proteins_non_rbp
 
-all(is_in_rbp_or_nonrbp)#
+all(is_in_rbp_or_nonrbp)
 
 ```
+
 
 ```{r}
 # Select only relevant columns from the RBP and Non-RBP tables
@@ -4154,13 +4052,11 @@ non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_A
 # Combine both subsets into a single table
 Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
 
-# Merge with test score dataframe 
-# column names differ ("Protein" vs. "Entry_Name") → use by.x / by.y to align
+# # 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
 merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
                    by.x = "Protein", by.y = "Entry_Name",
                    all.x = TRUE)  # keep all entries from test_scores_combined_df
-
-# depict result
+#depict result
 head(merged_df)
 dim(merged_df)
 ```
@@ -4183,6 +4079,7 @@ output:
 - a strong correlation was observed between molecular weight and sequence length
 -> since molecular weight is more readily accessible experimentally than sequence length, it was used as a predictor in the multiple regression model along with the isoelectric point (pI)
 
+
 ## multiple regression
 goal: assess whether isoelectric point (pI) and molecular mass are reliable predictors of RNA-binding probability
 ```{r}
@@ -4202,6 +4099,7 @@ output:
 ### visualization of multiple regression
 - hyperplane depicts relation between probability and predictors according to the multiple regression model
 ```{r}
+
 # visualization of linear regression using hyperplanes
 
 install.packages("scatterplot3d") 
@@ -4243,6 +4141,7 @@ output:
 interactive hyperplane displays the same relatins as the chunk above but offers a better spacial unterstanding
 ```{r}
 # create interactive hyperplane 
+
 
 install.packages("plotly")
 library(plotly)
@@ -4320,11 +4219,11 @@ fig
 
 
 ```
-
 ## check individual relation between predictors and probability
 ### determine whether there is a signifcant relation between a higher pI and an increased probability for RNA-binding
 - using a t-test the pIs of RBPs and Non-RBPs are compared
 ```{r}
+
 #hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
 
 # Group proteins based on optimal threshold:
@@ -4352,6 +4251,7 @@ output:
 ### visualization of relation between pI and probability
 ```{r}
 
+
 # create boxplot
 boxplot(pI ~ RBP_group,
         data = df_complete,
@@ -4374,8 +4274,6 @@ points(c(1, 2), c(mean_nonrbp, mean_rbp), pch = 19, col = "coral")
 legend("topright", legend = c("Mean"), col = "coral", pch = 19)
 
 ```
-
-
 ### determine whether there is a signifcant relation between mass and the probability for RNA-binding
 - using a t-test the mass of RBPs and Non-RBPs are compared
 ```{r}
@@ -4395,8 +4293,7 @@ output:
 
 
 
-
-
+##isolieren rbp
 
 ```{r}
 rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
@@ -4430,11 +4327,12 @@ Ctrl_data$protein_name <- rownames(Ctrl_data)
 #check if rbp present 
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
-
+#farbe 
+Ctrl_data$color_group <- ifelse(Ctrl_data$is_rbp, "RBP", as.character(Ctrl_data$cluster))
 
 library(ggplot2)
 
-ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "K-Means Cluster im PCA-Raum",
        x = "Hauptkomponente 1 (PC1)",
@@ -4443,7 +4341,7 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
        shape = "Protein-Typ") +
   theme_minimal() +
   scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
-  scale_color_manual(values = c("1" = "blue", "2" = "light grey"))
+  scale_color_manual(values = c("1" = "blue", "2" = "light grey", "RBP" = "purple"))
 
 
 ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
@@ -4465,6 +4363,7 @@ colnames(Ctrl_data)
 
 
 ```{r}
+
 rnase_data <- as.data.frame(rnase_pca$x)
 
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
@@ -4474,14 +4373,15 @@ rnase_data$protein_name <- rownames(rnase_data)
 #check if rbp present 
 rnase_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
-
+#farbe 
+rnase_data$color_group <- ifelse(rnase_data$is_rbp, "RBP", as.character(rnase_data$cluster))
 
 #label
-rnase_data$rbp_label <- ifelse(rnase_data$is_rbp, "RBP", "non-RBP")
+Ctrl_data$rbp_label <- ifelse(Ctrl_data$is_rbp, "RBP", "non-RBP")
 
 library(ggplot2)
 
-ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "K-Means Cluster im PCA-Raum",
        x = "Hauptkomponente 1 (PC1)",
@@ -4490,7 +4390,7 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
        shape = "rbp") +
   theme_minimal() +
   scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
-  scale_color_manual(values = c("1" = "light blue", "2" = "light grey"))
+  scale_color_manual(values = c("1" = "light blue", "2" = "light grey", "RBP" = "purple"))
 
 
 ggplot(rnase_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
@@ -4552,5 +4452,3 @@ chisq.test(c_tbl)
 
 #kein zusammenhang mit cluster
 ```
-
-
