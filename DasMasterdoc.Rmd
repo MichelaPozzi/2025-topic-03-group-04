@@ -1120,7 +1120,7 @@ par(mfrow = c(1, 1))
 install.packages("pheatmap")
 library(pheatmap)
 
-# Auswahl einer Teilmenge der Proteine (z. B. Top 100 variabelsten)
+# Auswahl einer Teilmenge der Proteine (z.B. Top 100 variabelsten)
 select_top_var <- function(mat, top_n = 100) {
   vars <- apply(mat, 1, var)
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
@@ -2051,20 +2051,23 @@ fractions_rnase   <- normalized_rnase_df[, 2:26]
 com_control <- apply(fractions_control, 1, center_of_mass)
 com_rnase   <- apply(fractions_rnase, 1, center_of_mass)
 
-# Delta COM
+# Delta COM (Difference in Center of Mass)
 delta_com <- com_rnase - com_control
 
+# Absolute Delta COM
+delta_com_abs <- abs(delta_com)
 
-# define dataframe with results and difference between both treatments
+# Dataframe with results
 center_of_mass_df <- data.frame(
-  Protein     = normalized_ctrl_df[[1]],  # extract protein names from the first column
+  Protein = normalized_ctrl_df[[1]],
   COM_Control = com_control,
-  COM_RNase   = com_rnase,
-  Delta_COM   = delta_com
+  COM_RNase = com_rnase,
+  Delta_COM = delta_com,
+  Absolute_Delta_COM = delta_com_abs
 )
 
-# View first few results
-head(center_of_mass_df)
+# Output to check results
+print(head(center_of_mass_df))
 ```
 ## classification: left or right shift
 if delta_COM > 0: right shift
@@ -2078,6 +2081,8 @@ center_of_mass_df$shift_direction <- ifelse(center_of_mass_df$Delta_COM > 0, "ri
 # show results
 head(center_of_mass_df)
 ```
+
+
 #### skewness of center of mass
 Goal: determine whether the delta center of mass values are skewed or not
 If skewed: robust scaling is possible
@@ -2108,15 +2113,15 @@ Output: delta COM is left-skewed
 Goal: transform testscore by centering at median and scaling based on the interquartile range
 ```{r}
 #robust scaling
-center_of_mass_df$COM_scaled <-robust_scale(center_of_mass_df$Delta_COM)
+center_of_mass_df$COM_scaled <- robust_scale(center_of_mass_df$Absolute_Delta_COM)
 
-# devide by maximal fraction delta (24)
+# Normalize scaled values by max fraction delta (24)
 center_of_mass_df$COM_scaled_norm <- center_of_mass_df$COM_scaled / 24
 
-# scale to 100 (24 fractions as max Delta)
+# Scale normalized values to percentage (0-100)
 center_of_mass_df$COM_scaled_100 <- center_of_mass_df$COM_scaled_norm * 100
 
-# depict results
+# Show first rows of final dataframe
 head(center_of_mass_df[, c("Protein", "Delta_COM", "COM_scaled", "COM_scaled_100")])
 ```
 ### wilcoxon statistic: position of maxima between replicates of conditions are compared
@@ -2470,7 +2475,6 @@ test_results_df <- data.frame(
 
 # Print the results
 print(test_results_df)
-
 ```
 output: for all tests there is a significant difference in the performance of positive and negative control proteins
 -> reference proteins are suitable for training the logistic model
@@ -2503,11 +2507,57 @@ boxplot(weighted_score ~ label, data = df_all,
         names = c("Negative", "Positive"),
         xlab = "Class Label", ylab = "Weighted Score",
         main = "Distribution of Weighted Scores by Class")
-
 ```
 output: 
 - The regression estimate represents the influence of a given predictor on the log-odds of RNA binding. A higher estimate increases the predicted probability.
 - The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model.
+
+## ROC Curve Visualizing test-model performance
+Goal: evaluate the predictive accuracy of the logistic regression model by showing the trade-off between the true positive rate (sensitivity) and false positive rate (1 - specificity) across different classification thresholds
+```{r}
+# Predicted probabilities from the model (as before)
+predicted_probs <- predict(logistic_model, type = "response")
+
+# True labels
+labels <- df_all$label
+
+# Thresholds from 0 to 1 in small steps
+thresholds <- seq(0, 1, by = 0.01)
+
+# Initialize vectors for True Positive Rate (TPR) and False Positive Rate (FPR)
+tpr <- numeric(length(thresholds))
+fpr <- numeric(length(thresholds))
+
+for (i in seq_along(thresholds)) {
+  thresh <- thresholds[i]
+  
+  # Predictions based on the threshold
+  preds <- ifelse(predicted_probs >= thresh, 1, 0)
+  
+  # Calculate True Positives, False Positives, True Negatives, False Negatives
+  TP <- sum(preds == 1 & labels == 1)
+  FP <- sum(preds == 1 & labels == 0)
+  TN <- sum(preds == 0 & labels == 0)
+  FN <- sum(preds == 0 & labels == 1)
+  
+  # Calculate TPR and FPR
+  tpr[i] <- ifelse((TP + FN) == 0, 0, TP / (TP + FN))
+  fpr[i] <- ifelse((FP + TN) == 0, 0, FP / (FP + TN))
+}
+
+# Define colors: lavender for ROC curve, beige for diagonal line
+lavender <- "#C5A3FF"
+graygreen <- "#A9C1A6"
+
+# Plot ROC curve with lavender line
+plot(fpr, tpr, type = "l", col = lavender, lwd = 2,
+     xlab = "False Positive Rate (FPR)", ylab = "True Positive Rate (TPR)",
+     main = "ROC Curve")
+
+# Add diagonal line (random guess) in beige
+abline(a = 0, b = 1, lty = 2, col = graygreen)
+```
+
 
 ### test-model applied to testscores of remaining proteins
 Goal: predict probability of RNA binding proteins
@@ -2523,13 +2573,13 @@ head(test_scores_combined_df)
 Goal: define threshold with a 10% FDR
 ```{r}
 #calculate threshold automatically
-# 1. predictions
+# predictions
 test_scores_combined_df$predicted_prob <- predict(logistic_model, newdata = test_scores_combined_df, type = "response")
 
-# 2. Marks for reference
+# Marks for reference
 test_scores_combined_df$is_negative <- test_scores_combined_df$Protein %in% df_negative_control$Protein
 
-# 3. Evaluate thresholds 
+# Evaluate thresholds 
 thresholds <- seq(0, 1, by = 0.001)
 fdr_values <- sapply(thresholds, function(thresh) {
   selected <- test_scores_combined_df[test_scores_combined_df$predicted_prob > thresh, ]
@@ -2541,7 +2591,7 @@ fdr_values <- sapply(thresholds, function(thresh) {
   return(fdr)
 })
 
-# 4. Find threshold at FDR ≤ 10% 
+# Find threshold at FDR ≤ 10% 
 target_fdr <- 0.10
 valid_thresholds <- thresholds[which(fdr_values <= target_fdr)]
 optimal_threshold <- if (length(valid_thresholds) > 0) min(valid_thresholds) else NA
@@ -2555,6 +2605,13 @@ plot(thresholds, fdr_values, type = "l", col = "lavender", lwd = 2,
 abline(h = 0.1, col = "violet", lty = 2)
 abline(v = optimal_threshold, col = "lightgreen", lty = 2)
 
+# Proteins with prediction scores above the optimal threshold
+significant_shifted_proteins <- test_scores_combined_df[test_scores_combined_df$probability > optimal_threshold, ]
+
+# Number of significantly shifting proteins
+num_significant_shifted <- nrow(significant_shifted_proteins)
+
+cat("Number of significantly shifted proteins:", num_significant_shifted, "\n")
 ```
 ### overview of RBPs
 - Evaluate the composition of proteins classified as RNA-binding by the logistic model:
@@ -2599,7 +2656,6 @@ predicted_negatives <- selected_proteins[selected_proteins$is_negative, ]
 
 # Extract predicted hits that are NOT from the negative control -> TRUE: number of proteins from negative-control that are classified as shifting from the model
 predicted_non_negative <- selected_proteins[!selected_proteins$is_negative, ]
-
 ```
 ### right shift proteins
 Goal: define right shift proteins according to their delta COM
@@ -2619,7 +2675,6 @@ right_shift_count <- nrow(filtered_df)
 # Depict results
 print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
-
 ```
 
 # visualisation of test-model results 
@@ -2653,6 +2708,11 @@ legend("topright",
 colors2 <- c("#C5A3FF", "#F5E1A4")
 
 # 2. Plot: Direction of Protein Shifts (Left vs. Right)
+
+# define number of proteins
+num_right_shift <- right_shift_count
+num_left_shift <- num_significant_shifted - right_shift_count
+
 counts_matrix2 <- matrix(c(
   num_right_shift,  # Number of proteins shifted to the right
   num_left_shift    # Number of proteins shifted to the left
@@ -2667,130 +2727,50 @@ barplot(counts_matrix2,
         border = "white",
         main = "Direction of Protein Shifts",
         ylab = "Number of Proteins",
-        las = 1)
+        las = 1,
+        ylim = c(0, num_significant_shifted))
 
 legend("topright",
        legend = rownames(counts_matrix2),
        fill = colors2,
        bty = "n")
 
-# Extract counts from logical vectors (assuming TRUE/FALSE stored as characters)
-false_positives_num <- sum(predicted_negatives == "TRUE")  # Number of false positives
-true_positives_num <- sum(predicted_non_negative == "TRUE") # Number of true positives
+# Colors: True Positives purple, False Positives beige, Newly Identified RBPs gray-green
+colors3 <- c("Beige" = "#F5E1A4", "True Positives" = "#8B6AA5", "New RBPs" = "#A9C1A6")
 
-counts_matrix3 <- matrix(c(
-  false_positives_num,
-  true_positives_num
-), nrow = 2, byrow = TRUE)
+# Number of each group
+false_positives_num <- sum(predicted_negatives == "TRUE")  # Number of False Positives
+true_positives_num <- sum(predicted_non_negative == "TRUE") # Number of True Positives
+
+# Total number of predicted proteins (example)
+total_predicted_proteins <- num_significant_shifted  # Or another appropriate number
+
+# Number of newly identified RBPs
+new_rbps_num <- total_predicted_proteins - (false_positives_num + true_positives_num)
+if (new_rbps_num < 0) new_rbps_num <- 0  # Safety check
+
+# Matrix for barplot: order = False Positives, True Positives, New RBPs
+counts_matrix3 <- matrix(c(false_positives_num, true_positives_num, new_rbps_num),
+                         nrow = 3, byrow = TRUE)
 
 colnames(counts_matrix3) <- c("Prediction Quality")
-rownames(counts_matrix3) <- c("False Positives", "True Positives")
+rownames(counts_matrix3) <- c("False Positives", "True Positives", "New RBPs")
 
+# Create barplot
 barplot(counts_matrix3,
         beside = FALSE,
-        col = colors1,
+        col = colors3,
         border = "white",
-        main = "Prediction Quality",
-        ylab = "Number of Proteins",
-        las = 1)
-
-legend("topright",
-       legend = rownames(counts_matrix3),
-       fill = colors1,
-       bty = "n")
-
-```
-
-```{r}
-# Calculate total number of proteins in the dataset
-total_proteins <- nrow(test_scores_combined_df)
-
-# Define the threshold to classify proteins as predicted shifted
-threshold <- optimal_threshold
-
-# Subset proteins predicted as shifted (probability above threshold)
-predicted_proteins <- test_scores_combined_df[test_scores_combined_df$probability > threshold, ]
-
-# Number of predicted shifted proteins (RBP)
-num_rbp <- nrow(predicted_proteins)
-
-# Number of right-shifted proteins (given)
-num_right_shift <- right_shift_count
-
-# Number of left-shifted proteins calculated as remainder of total shifts
-num_left_shift <- total_proteins - right_shift_count
-
-# Number of false positives among predicted proteins (given)
-num_false_positives <- neg_counts
-
-# Calculate true positives by subtracting false positives from predicted RBPs
-num_true_positives <- num_rbp - num_false_positives
-
-# Calculate number of proteins not predicted as RBPs
-num_non_rbp <- total_proteins - num_rbp
-
-# Extract numeric values from false_positives and true_positives if they are tables
-if (is.table(num_false_positives)) {
-  false_positives_num <- as.numeric(num_false_positives["TRUE"])
-} else {
-  false_positives_num <- num_false_positives
-}
-
-if (is.table(num_true_positives)) {
-  true_positives_num <- as.numeric(num_true_positives["TRUE"])
-} else {
-  true_positives_num <- num_true_positives
-}
-
-# Prepare counts for plotting (ensure numeric scalars)
-total_proteins_count <- as.numeric(total_proteins)
-significant_shifted <- as.numeric(num_rbp)
-false_positives_num <- as.numeric(false_positives_num)
-true_positives_num <- as.numeric(true_positives_num)
-
-# Create matrix for stacked barplot: 2 rows (segments) x 3 columns (bars)
-counts_matrix <- matrix(c(
-  # Bottom segments of bars
-  total_proteins_count - significant_shifted,  # Bar 1: Non-shifted
-  num_right_shift,                             # Bar 2: Right Shift
-  false_positives_num,                         # Bar 3: False Positives
-
-  # Top segments of bars
-  significant_shifted,                         # Bar 1: Shifted
-  num_left_shift,                             # Bar 2: Left Shift
-  true_positives_num                           # Bar 3: True Positives
-), nrow = 2, byrow = TRUE)
-
-# Assign column and row names
-colnames(counts_matrix) <- c("All Proteins", "Shifted Proteins", "Prediction Quality")
-rownames(counts_matrix) <- c("Bottom Segment", "Top Segment")
-
-# Print matrix and dimensions for debug
-print(counts_matrix)
-print(dim(counts_matrix))
-
-# Define colors for segments
-colors <- c("grey80", "darkblue")
-
-# Define legend labels (corresponding to segments)
-legend_labels <- c(
-  "Non-shifted / Right Shift / False Positives",
-  "Shifted / Left Shift / True Positives"
-)
-
-# Create stacked barplot (beside = FALSE stacks segments vertically)
-barplot(counts_matrix,
-        beside = FALSE,
-        col = colors,
-        border = "white",
-        main = "Protein Shift Classification",
+        main = "Prediction Quality with Newly Identified RBPs",
         ylab = "Number of Proteins",
         las = 1,
-        names.arg = colnames(counts_matrix))
+        ylim = c(0, total_predicted_proteins))
 
 # Add legend
-legend("topright", legend = legend_labels, fill = colors, bty = "n")
-
+legend("topright",
+       legend = rownames(counts_matrix3),
+       fill = colors3,
+       bty = "n")
 ```
 
 ## show result for any desired protein
