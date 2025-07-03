@@ -674,32 +674,39 @@ text(x = mean(c(fraktionen[max_ctrl_idx], fraktionen[max_rnase_idx])),
 Goal: Determine if there is a batch effect and remove it. Batch effect in this case refers to differences in data not related to biological reasons but rather technological faults. 
 
 ##CONTROL
+
+
+##load data and creat matrix
+```{r}
+# 1. Extract expression data and save it as matrix, delete protein names
+ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
+```
+
+##create batch vector 
+```{r}
+# 1. Extract sample names to create batch labels 
+LC_sample_names <- colnames(ctrl_expr_matrix)
+
+# 2. Create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
+LC_batch <- sub(".*_(Rep\\d)", "\\1", LC_sample_names)
+LC_batch <- factor(LC_batch, levels = c("Rep1", "Rep2", "Rep3"))
+
+# 3. Assign colors 
+LC_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+colors <- LC_batch_colors[as.character(LC_batch)]
+
+#4.shorten labels 
+short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_expr_matrix))
+
+```
+
 ##boxplot
 Goal:
 Visualize data in a boxplot in order to observe first differences 
 ```{r}
-# 1. Extract expression data and save it as matrix, delete protein names
-ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
-# 2. extract sample names to create batch labels 
-sample_names <- colnames(ctrl_expr_matrix)
-
-# 3. create batch labels out of sample names 
-#create batches from replicates in order to have comparable batches  
-
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-#check names for "Rep 1 " etc. 
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-#save as categorial vector 
-
-# 4. assign colors 
-batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
-colors <- batch_colors[as.character(batch)]
-
-#5. shorten labels 
-short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_expr_matrix))
-
-# 6. create boxplot
+# 1. create boxplot
 boxplot(ctrl_expr_matrix,
         main = "Expression by sample (batch coloured)",
         ylab = "Expression",
@@ -710,7 +717,7 @@ boxplot(ctrl_expr_matrix,
         cex.axis = 0.6,
         names = short_labels)            
 
-# 7. add key
+# 2. add key
 legend("topright",
        legend = names(batch_colors),
        fill = batch_colors,
@@ -742,33 +749,20 @@ first trial of removing the batch effect using limma
 
 library(limma)
 
-# 1. Extract expression data and save it as matrix, delete protein names
-ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
-# 2. extract sample names to create batch labels 
-sample_names <- colnames(ctrl_expr_matrix)
-
-# 3. create batch labels out of sample names 
-#create batches from replicates in order to have comparable batches
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-
-#shorten labels 
-short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_expr_matrix))
-
-# 4. apply a log 2 transformation 
+# 1. apply a log 2 transformation 
 # necessary for limma, stabilizes variance, improves interpretability , reduces outlier effects 
 
 #add +1 in order to prevent log2(0)
 
 ctrl_expr_matrix_log <- log2(ctrl_expr_matrix + 1)
 
-# 5. Correction with limma
+# 2. Correction with limma
 L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
 
 
 
-# 5. draw boxplot beofre correction 
+# 3. draw boxplot beofre correction 
 #use log2 transformed matrix for comparison 
  
 boxplot(ctrl_expr_matrix_log,
@@ -787,7 +781,7 @@ legend("topright",
        fill = batch_colors,
        title = "Batch")
 
-# 6.Boxplot after correction
+# 4.Boxplot after correction
 boxplot(L_ctrl_expr_corrected,
         main = "Expression after correction (batch coloured)",
         ylab = "Expression",
@@ -810,55 +804,43 @@ legend("topright",
 #Interpretation 
 There is no severe change visible, and the data is now log transformed making it hard to use it for further steps 
 
-#more visualizing
 
 ## Batch effect pca 
 #expectation
 before: clusters of the same batch with distinct separation of clusters 
 after: no separation visible
 ```{r}
-# Prepare PCA
+# 1. Prepare PCA
 pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(L_ctrl_expr_corrected), scale. = TRUE)
 
 
-# 2. extract sample names to create batch labels 
+#2. plot
 
-sample_names <- colnames(ctrl_expr_matrix_log)
-
-# 3. create batch labels out of sample names 
-#create batches from replicates in order to have comparable batches
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-
-# 4. assign colors 
-batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
-colors <- batch_colors[as.character(batch)]
-
-# 5.Plot next to each other
+# next to each other
 par(mfrow = c(1, 2))
 
-#6.plot
+
 
 # PCA before correction
 plot(pca_before$x[, 1:2],
      col = colors,
      pch = 19,
      main = "PCA before correction")
-legend("topright", legend = levels(batch), col = colors, pch = 19)
+legend("topright", legend = levels(LC_batch), col = colors, pch = 19)
 
 # PCA after correction
 plot(pca_after$x[, 1:2],
      col = colors,
      pch = 19,
      main = "PCA after correction")
-legend("topright", legend = levels(batch), col = colors, pch = 19)
+legend("topright", legend = levels(LC_batch), col = colors, pch = 19)
 
 
 ```
 
 #interpretation
-There is no severe change visible, also there is no distinct differences between replicates, which rules out a servere batch effect 
+There is no severe change visible, also there is no distinct differences between replicates, which rules out a severe batch effect 
 
 ##heatmap
 #expectation: 
@@ -921,42 +903,32 @@ par(mfrow = c(1, 1))
 ```
  
 ```{r}
-# 1. extract sample names to create batch labels 
-sample_names <- colnames(ctrl_expr_matrix_log)
-
-# 2. create batch labels out of sample names 
-#create batches from replicates in order to have comparable batches
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-
-# 3. assign colors 
-batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
-colors <- batch_colors[as.character(batch)]
-
-# 4. create annotation for Heatmap
-annotation_col <- data.frame(Batch = batch)
+#1. create annotation for Heatmap
+annotation_col <- data.frame(LC_Batch = LC_batch)
 rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
 
+#2 plot heatmao
 library(pheatmap)
 
-# --- Heatmap vor Korrektur ---
+# heatmap before correction
 pheatmap(ctrl_expr_matrix_log,
          annotation_col = annotation_col,
-         annotation_colors = list(Batch = batch_colors),
+         annotation_colors = list(LC_Batch = LC_batch_colors),
          main = "Heatmap before batch correction")
 
 
 
-# --- Heatmap nach Korrektur ---
+# heatmap after correction
 pheatmap(L_ctrl_expr_corrected,
          annotation_col = annotation_col,
-         annotation_colors = list(Batch = batch_colors),
+         annotation_colors = list(LC_Batch = LC_batch_colors),
          main = "Heatmap after batch correction")
 
 ```
 #interpretation 
 before the correction there is no separation visible, after the correction there is a slight switch visible which does not seem to improve the dataset 
 
+##protein names back
 ```{r}
 
 #add column with protein names again 
@@ -978,27 +950,40 @@ head(L_ctrl_expr_corrected_df)
 ##boxplot 
 Goal:
 Visualize data in a boxplot in order to observe first differences 
-
+##load data and creat matrix
 ```{r}
 # 1. Extract expression data and save it as matrix, delete protein names
 rnase_expr_matrix <- as.matrix(final_smoothed_rnase[, -1])  
+```
 
-# 2. extract sample names to create batch labels 
-sample_names <- colnames(rnase_expr_matrix)
+##create batch vector 
+```{r}
 
-# 3. create batch labels out of sample names 
+# 1. Extract sample names to create batch labels 
+LR_sample_names <- colnames(rnase_expr_matrix)
+
+# 2. Create batch labels out of sample names 
 #create batches from replicates in order to have comparable batches
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-#shorten labels 
+LR_batch <- sub(".*_(Rep\\d)", "\\1", LR_sample_names)
+LR_batch <- factor(LR_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
+# 3. Assign colors 
+LR_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+colors <- LR_batch_colors[as.character(LR_batch)]
+
+#4.shorten labels 
 short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(rnase_expr_matrix))
 
-# 4. assign colors
-batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
-colors <- batch_colors[as.character(batch)]
+```
 
-# 5. draw boxplot
+
+##boxplot 
+Goal:
+Visualize data in a boxplot in order to observe first differences 
+```{r}
+
+
+# 1. draw boxplot
 boxplot(rnase_expr_matrix,
         main = "Expression nach Sample (Batch gefärbt)",
         ylab = "Expression",
@@ -1009,7 +994,7 @@ boxplot(rnase_expr_matrix,
         cex.axis = 0.6,
         names = short_labels)              
 
-# 6. add key
+# 2. add key
 legend("topright",
        legend = names(batch_colors),
        fill = batch_colors,
@@ -1029,51 +1014,60 @@ first trial of removing the batch effect using limma
 ```{r}
 library(limma)
 
-# 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
-rnase_expr_matrix <- as.matrix(final_smoothed_rnase[, -1])  
-
-# 2. Sample-Namen extrahieren
-sample_names <- colnames(rnase_expr_matrix)
-
-# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-
-# 4. Log2-Transformation (falls nötig, empfohlen wegen Skalenproblem)
+#1. Apply a log 2 transformation 
+# necessary for limma, stabilizes variance, improves interpretability, reduces outlier effects 
+#add +1 in order to prevent log2(0)
 rnase_expr_matrix_log <- log2(rnase_expr_matrix + 1)
 
-# 5. Batch-Korrektur mit limma
-L_rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, batch = batch)
+#2. Correction with limma
+L_rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, LR_batch = LR_batch)
 
-# 5. Boxplot zeichnen vor korrektur 
+#3. Plot
+#use log2-transformed matrix for comparison 
+# Boxplot before correction
+
 boxplot(rnase_expr_matrix_log,
-        main = "Expression vor Korrektur (Batch gefärbt)",
+        main = "Expression before correction (batch coloured)",
         ylab = "Expression",
         xlab = "Samples",
-        las = 2,                      # X-Achse: senkrechte Labels
+        las = 2,                      
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+        cex.axis = 0.6,
+        names=short_labels)             
 
-# Boxplot nach Korrektur 
-boxplot(L_rnase_expr_corrected,
-        main = "Expression nach Korrektur (Batch gefärbt)",
-        ylab = "Expression",
-        xlab = "Samples",
-        las = 2,                      # X-Achse: senkrechte Labels
-        col = colors,
-        outline = FALSE,
-        cex.axis = 0.6)              # kleinere Achsenbeschriftung
-
-
-# 6. Legende hinzufügen
-llegend_labels <- c("Batch A", "Batch B", "Batch C")
+#add key 
+legend_labels <- c("Rep1", "Rep2", "Rep 3")
 legend("topright",
        legend = legend_labels,
-       fill = batch_colors,
-       title = "Batch")
+       fill = LR_batch_colors,
+       title = "Batch",
+       cex=0.4)
+
+
+# Boxplot after correction
+boxplot(L_rnase_expr_corrected,
+        main = "Expression after correction (batch coloured)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,                      
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6,
+        names=short_labels)             
+
+
+#add key
+llegend_labels <- c("Rep1", "Rep2", "Rep 3")
+legend("topright",
+       legend = legend_labels,
+       fill = LR_batch_colors,
+       title = "Batch",
+       cex=0.4)
 ```
 
+#Interpretation 
+There is no severe change visible, and the data is now log transformed, making it hard to use it for further steps 
 
 #more visualizing
 
@@ -1082,39 +1076,42 @@ legend("topright",
 before: clusters of the same batch with distinct separation of clusters 
 after: no separation visible
 ```{r}
-# PCA-Analyse vorbereiten
+#1. Prepare PCA
 pca_before <- prcomp(t(rnase_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(L_rnase_expr_corrected), scale. = TRUE)
 
-# Batch-Zuordnung erneut für Farben
-# 2. Sample-Namen extrahieren
-sample_names <- colnames(rnase_expr_matrix_log)
-
-# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-# Plot nebeneinander
+#2. plot
+#plot next to eachother
 par(mfrow = c(1, 2))
 
-# PCA vor Korrektur
+
+# PCA before correction
 plot(pca_before$x[, 1:2],
-     col = rainbow(length(levels(batch)))[batch],
+     col = colors,
      pch = 19,
-     main = "PCA vor Batch-Korrektur")
-legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+     main =  "PCA before correction")
+legend("topright", legend = levels(LR_batch), col = colors, pch = 19)
 
-# PCA nach Korrektur
+# PCA after correction
 plot(pca_after$x[, 1:2],
-     col = rainbow(length(levels(batch)))[batch],
+     col = colors,
      pch = 19,
-     main = "PCA nach Batch-Korrektur")
-legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+     main = "PCA after correction")
+legend("topright", legend = levels(LR_batch), col = colors, pch = 19)
 
-# Reset Layout
-par(mfrow = c(1, 1))
 ```
 
+#interpretation
+There is no severe change visible, also there are no distinct differences between replicates, which rules out a severe batch effect 
+
+
+
 ##heatmap
+#expectation: 
+Before: Samples are grouped by batch, and there is a clear separation of batches shown in the annotation 
+after: samples are grouped according to biological feature, no separation
+
+##läuft nicht
 ```{r}
 # Optional: Wenn du pheatmap noch nicht hast
 install.packages("pheatmap")
@@ -1154,12 +1151,43 @@ par(mfrow = c(1, 1))
 
 ```
 
+##läuft :)
 ```{r}
-#protein name wieder rein
+
+#1. Create annotation for Heatmap
+annotation_col <- data.frame(LR_Batch = LR_batch)
+rownames(annotation_col) <- colnames(rnase_expr_matrix_log)
+
+#5 plot heatmao
+library(pheatmap)
+
+# heatmap before correction
+pheatmap(rnase_expr_matrix_log,
+         annotation_col = annotation_col,
+         annotation_colors = list(LR_Batch = LR_batch_colors),
+         main = "Heatmap before batch correction")
+
+
+
+# heatmap after correction
+pheatmap(L_rnase_expr_corrected,
+         annotation_col = annotation_col,
+         annotation_colors = list(LR_Batch = LR_batch_colors),
+         main = "Heatmap after batch correction")
+
+```
+
+#interpretation 
+no change visible 
+
+
+
+```{r}
+#add column with protein names again 
 rnase_expr_corrected_df <- data.frame(
-  Protein = final_smoothed_rnase[, 1],  # ursprüngliche erste Spalte
-  rnase_expr_corrected,                # korrigierte Matrix
-  check.names = FALSE                  # verhindert Umbenennung von Spalten
+  Protein = final_smoothed_rnase[, 1],  
+  rnase_expr_corrected,                
+  check.names = FALSE                 # Prevents renaming of columns
 )
 ```
 
@@ -1169,7 +1197,10 @@ head(rnase_expr_corrected_df)
 ```
 
 
+
 ##SVA
+SVA is used as alternative packages. SVA is a more flexible package as it does not need any exact batch annotation and can detect more hidden disruptive factors. For experiments with many replicates and fractions this package appears more suitable 
+
 
 ```{r}##
 if (!require("BiocManager", quietly = TRUE))
@@ -1179,148 +1210,214 @@ BiocManager::install("sva")
 ```
 
 
+```{r}##
+install.packages("sva")
+```
+
 ##control
 ```{r}
-install.packages("sva")
 
-# Lade benötigte Libraries
+# load libraries 
 library(sva)
 library(stringr)
 library(limma)
 
-# 1) Expressionsmatrix (ohne Protein-Spalte)
-ctrl_expression_matrix <- as.matrix(final_smoothed_ctrl[, -1])
-rownames(ctrl_expression_matrix) <- final_smoothed_ctrl$Protein
+# 1 Create the expression matrix without column of protein names 
+ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
-# 2) Metadaten (sampleInfo) aus Spaltennamen erzeugen
-ctrl_samples <- colnames(ctrl_expression_matrix)
 
-# Extrahiere "Fraction" und "Replicate" Informationen aus Spaltennamen
+# 2. create sampleInfo 
+ctrl_samples <- colnames(ctrl_expr_matrix)
+
+# Extract "fraction" and "replicate" information out of colnames
 fraction <- str_extract(ctrl_samples, "Fraction\\d+")
 replicate <- str_extract(ctrl_samples, "Rep\\d+")
 
-# sampleInfo DataFrame erstellen
+# create sampleInfo dataframe
 C_sampleInfo <- data.frame(
   fraction = factor(fraction),
   replicate = factor(replicate)
 )
 
-# 3) Designmatrix für das Modell erstellen
+# 3.Create a design matrix for the model
+#mod full model with known factors
 mod <- model.matrix(~ fraction + replicate, data = C_sampleInfo)
+#mod0 null model without descriptive factors but standard
 mod0 <- model.matrix(~ 1, data = C_sampleInfo)  # Nullmodell ohne Prädiktoren
+#models needed in order to estimate surrogate variables which model unexplained variability 
 
-# 4) SVA durchführen
-sva_res_ctrl <- sva(ctrl_expression_matrix, mod, mod0)
+# 4.Execute SVA 
+sva_res_ctrl <- sva(ctrl_expr_matrix, mod, mod0)
+#SVA checks for hidden variables that can be explained by replicates or fractions
+#returns a list with surrogate variables (SV) that function as batch variables 
 
-# 5) Designmatrix um die gefundenen Surrogate Variablen (SVs) erweitern
+# 5. extent design matrix with SVs
 mod_sv <- cbind(mod, sva_res_ctrl$sv)
 
-# 6) OPTIONAL: Wenn du einen bekannten Batch hast, kannst du alternativ ComBat verwenden
-# Beispiel (nur wenn du 'batch' hast):
+# (6) OPTIONAL:If batch is known, ComBat can be used 
+# if batch is known, not the case 
 # batch <- sampleInfo$batch_variable
 # expression_corrected <- ComBat(dat = expression_matrix, batch = batch, mod = mod)
 
-# 7) Korrektur mit Surrogate Variablen durch lineare Regression (empfohlen bei unbekanntem Batch)
-# Fit des linearen Modells mit Surrogate Variablen
-fit <- lmFit(ctrl_expression_matrix, mod_sv)
+# 7) Correct data with SV using linear regression 
+# lmFit and eBayes are tools from limma used to fit linear regression to expressions data
+fit <- lmFit(ctrl_expr_matrix, mod_sv)
 fit <- eBayes(fit)
 
-# Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
-S_corrected_expr_ctrl <- residuals(fit, ctrl_expression_matrix)
+# extract residues: expressions data - modelled effects (fraction + replicate + SVs) 
+S_corrected_expr_ctrl <- residuals(fit, ctrl_expr_matrix)
 
-# 'corrected_expr' enthält die bereinigten Expressionswerte
+# 'S_corrected_expr_ctrl' contains the corrected dataset 
 
 ```
 
 
+
+##create batch vector for following visualization
 ```{r}
+# 1. extract sample names to create batch labels 
+SC_sample_names <- colnames(ctrl_expr_matrix)
+# 2. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
+SC_batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+SC_batch <- factor(SC_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
-# Batch-Vektor: z.B. basierend auf 'Rep' in den Spaltennamen
-batch <- factor(str_extract(colnames(ctrl_expression_matrix), "Rep\\d+"))
+# 3. assign colors 
+SC_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+colors <- SC_batch_colors[as.character(SC_batch)]
 
-# Farben je Batch
-batch_levels <- levels(batch)
-batch_colors <- rainbow(length(batch_levels))
-names(batch_colors) <- batch_levels
-colors <- batch_colors[batch]
+#4.shorten labels 
+SC_short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_expr_matrix))
 
 ```
 
 ##boxplot
-
+#expectation
+before: big differences between replicates and not in replicates themselves. Also different levels of medians 
+after: reduced differences
 
 ```{r}
-# 1. Boxplot vor Korrektur
-boxplot(ctrl_expression_matrix,
-        main = "Expression vor Korrektur (Replicate gefärbt)",
+# 1. Boxplot before correction
+boxplot(ctrl_expr_matrix,
+        main = "Expression before SVA correction (replicate colored)",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)
-
-# 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
-boxplot(S_corrected_expr_ctrl,
-        main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
-        ylab = "Expression",
-        xlab = "Samples",
-        las = 2,
-        col = colors,
-        outline = FALSE,
-        cex.axis = 0.6)
-
-# 3. Legende
+        cex.axis = 0.6,
+        names=SC_short_labels)
+#add key 
 legend("topright",
-       legend = names(batch_colors),
-       fill = batch_colors,
-       title = "Replicate")
+       legend = names(SC_batch_colors),
+       fill = SC_batch_colors,
+       title = "Replicate",
+       cex=0.4)
+
+
+# 2. Boxplot after correction
+boxplot(S_corrected_expr_ctrl,
+        main = "Expression after SVA correction (replicate colored)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6,
+        names=SC_short_labels)
+
+# add key 
+legend("topright",
+       legend = names(SC_batch_colors),
+       fill = SC_batch_colors,
+       title = "Replicate",
+       cex=0.4)
 
 ```
 
+#Interpretation 
+before: there is no big differences between replicates visible and median appears to be on a similar level 
+after: big shifts and no visible improvement  
+
+
 ##PCA
+#expectations 
+before: clusters of the same batch with distinct separation of clusters 
+after: no separation visible
+
 ```{r}
 
 # 1) PCA vorbereiten
-pca_before <- prcomp(t(ctrl_expression_matrix), scale. = TRUE)
+pca_before <- prcomp(t(ctrl_expr_matrix), scale. = TRUE)
 pca_after  <- prcomp(t(S_corrected_expr_ctrl), scale. = TRUE)
 
-# 2) Batch-Zuordnung erneut für Farben
-sample_names <- colnames(ctrl_expression_matrix)
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 
-# 3) Farben definieren für die Replikate
-batch_colors <- rainbow(length(levels(batch)))
+#2. Plot: 
 
-# 4) PCA-Plot: nebeneinander
+#next to each other
 par(mfrow = c(1, 2))  # Zwei Plots nebeneinander
 
-# --- PCA vor Korrektur ---
+#PCA before correction
 plot(pca_before$x[, 1:2],
-     col = batch_colors[batch],
+     col = colors,
      pch = 19,
-     main = "PCA vor Batch-Korrektur",
+     main = "PCA before SVA correction",
      xlab = "PC1", ylab = "PC2")
-legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
 
-# --- PCA nach Korrektur ---
+legend("topright", legend = levels(SC_batch), col = colors, pch = 19, cex=0.4)
+
+
+# PCA after correction
 plot(pca_after$x[, 1:2],
-     col = batch_colors[batch],
+     col = colors,
      pch = 19,
-     main = "PCA nach SVA-Korrektur",
+     main = "PCA after SVA correction ",
      xlab = "PC1", ylab = "PC2")
-legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
 
-# 5) Layout zurücksetzen
-par(mfrow = c(1, 1))
+legend("topright", legend = levels(SC_batch), col = colors, pch = 19, cex=0.4)
+
+
+
+```
+#Interpretation 
+before: There is no severe change visible, also there are no distinct differences between replicates, which rules out a severe batch effect 
+after: bigger difference visible but there appear to be more clusters between batches
+
+
+##Heatmap
+#expectations
+Before: Samples are grouped by batch, and there is a clear separation of batches shown in the annotation 
+after: samples are grouped according to biological feature, no separation 
+
+```{r}
+# 1. create annotation for Heatmap
+annotation_col <- data.frame(SC_Batch = SC_batch)
+rownames(annotation_col) <- colnames(ctrl_expr_matrix)
+
+#2. 
+library(pheatmap)
+
+# heatmap before correction
+pheatmap(ctrl_expr_matrix,
+         annotation_col = annotation_col,
+         annotation_colors = list(SC_Batch = SC_batch_colors),
+         main = "Heatmap before batch correction")
+
+
+
+# heatmap after correction
+pheatmap(S_corrected_expr_ctrl,
+         annotation_col = annotation_col,
+         annotation_colors = list(SC_Batch = SC_batch_colors),
+         main = "Heatmap after batch correction")
+
 
 ```
 
-##Heatmap
+#Interpretation
+before: there is no extreme clustering but still some visible 
+after: it does not seem to have improved, instead more clusters are visible
 ```{r}
-# 1) Falls noch nicht installiert:
-# install.packages("pheatmap")
 library(pheatmap)
 
 # 2) Hilfsfunktion: Top-N variabelste Proteine auswählen
@@ -1330,12 +1427,12 @@ select_top_var <- function(mat, top_n = 100) {
 }
 
 # 3) Top 100 variabelsten Proteine extrahieren
-heat_before <- select_top_var(ctrl_expression_matrix, 100)
-heat_after  <- select_top_var(S_corrected_expr_ctrl, 100)
+heat_before <- select_top_var(rnase_expression_matrix, 100)
+heat_after  <- select_top_var(S_corrected_expr_rnase, 100)
 
 # 4) Spaltenannotation: Replikate als Batch
 annotation_col <- data.frame(Batch = batch)
-rownames(annotation_col) <- colnames(ctrl_expression_matrix)
+rownames(annotation_col) <- colnames(rnase_expression_matrix)
 
 # 5) Heatmaps zeichnen (jeweils mit Annotation)
 # Hinweis: pheatmap unterstützt kein par(mfrow), daher separate Plots empfohlen
@@ -1362,148 +1459,215 @@ pheatmap(heat_after,
 head(S_corrected_expr_ctrl)
 ```
  
-##RNASE
+
+
+
+
+## SVA RNASE
 
 ```{r}
 
-install.packages("sva")
 
-# Lade benötigte Libraries
+# load libraries 
 library(sva)
 library(stringr)
 library(limma)
 
-# 1) Expressionsmatrix (ohne Protein-Spalte)
-rnase_expression_matrix <- as.matrix(final_smoothed_rnase[, -1])
-rownames(rnase_expression_matrix) <- final_smoothed_rnase$Protein
+#1. create expression matrix without column of protein names 
+rnase_expr_matrix <- as.matrix(final_smoothed_rnase[, -1])
 
-# 2) Metadaten (sampleInfo) aus Spaltennamen erzeugen
-rnase_samples <- colnames(rnase_expression_matrix)
+# 2.create sampleInfo 
+rnase_samples <- colnames(rnase_expr_matrix)
 
-# Extrahiere "Fraction" und "Replicate" Informationen aus Spaltennamen
+# Extract "fraction" and "replicate" information out of colnames
 rnase_fraction <- str_extract(rnase_samples, "Fraction\\d+")
 rnase_replicate <- str_extract(rnase_samples, "Rep\\d+")
 
-# sampleInfo DataFrame erstellen
+# create sampleInfo dataframe
 sampleInfo_R <- data.frame(
   rnase_fraction = factor(rnase_fraction),
   rnase_fraction = factor(rnase_fraction)
 )
 
-# 3) Designmatrix für das Modell erstellen
+# 3. Create a design matrix for the model
+#mod full model with known factors
 mod <- model.matrix(~ fraction + replicate, data = sampleInfo_R)
-mod0 <- model.matrix(~ 1, data = sampleInfo_R)  # Nullmodell ohne Prädiktoren
+#mod0 null model without descriptive factors but standard
+mod0 <- model.matrix(~ 1, data = sampleInfo_R)  
+#models needed in order to estimate surrogate variables that model unexplained variability 
 
-# 4) SVA durchführen
-sva_res_rnase <- sva(rnase_expression_matrix, mod, mod0)
+# 4. Execute SVA 
+sva_res_rnase <- sva(rnase_expr_matrix, mod, mod0)
+#SVA checks for hidden variables that can be explained by replicates or fractions
+#returns a list with surrogate variables (SV) that function as batch variables 
 
-# 5) Designmatrix um die gefundenen Surrogate Variablen (SVs) erweitern
+
+# 5. extent design matrix with SVs
 R_mod_sv <- cbind(mod, sva_res_rnase$sv)
 
-# 6) OPTIONAL: Wenn du einen bekannten Batch hast, kannst du alternativ ComBat verwenden
-# Beispiel (nur wenn du 'batch' hast):
+# (6) OPTIONAL:If batch is known, ComBat can be used 
+# if batch is known, not the case 
 # batch <- sampleInfo$batch_variable
 # expression_corrected <- ComBat(dat = expression_matrix, batch = batch, mod = mod)
 
-# 7) Korrektur mit Surrogate Variablen durch lineare Regression (empfohlen bei unbekanntem Batch)
-# Fit des linearen Modells mit Surrogate Variablen
+# 7. Correct data with SV using linear regression 
+# lmFit and eBayes are tools from limma used to fit linear regression to expression data
 fit <- lmFit(rnase_expression_matrix, mod_sv)
 fit <- eBayes(fit)
 
-# Residuen extrahieren = korrigierter Datensatz ohne die erklärten Effekte (fraction + replicate + SVs)
+# extract residues: expressions data - modelled effects (fraction + replicate + SVs) 
+
 S_corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
 
-# 'corrected_expr' enthält die bereinigten Expressionswerte
+# S_corrected_expr_rnase contains the corrected dataset
 
 ```
 
 
 ```{r}
+##create batch vector for following visualization
+# 1. extract sample names to create batch labels 
+SR_sample_names <- colnames(rnase_expr_matrix)
 
-# Batch-Vektor: z.B. basierend auf 'Rep' in den Spaltennamen
-batch <- factor(str_extract(colnames(rnase_expression_matrix), "Rep\\d+"))
+# 2. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
+SR_batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+SR_batch <- factor(SR_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
-# Farben je Batch
-batch_levels <- levels(batch)
-batch_colors <- rainbow(length(batch_levels))
-names(batch_colors) <- batch_levels
-colors <- batch_colors[batch]
+# 2. assign colors
+SR_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+colors <- SR_batch_colors[as.character(SR_batch)]
+
+#4.shorten labels 
+short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(rnase_expr_matrix))
 
 ```
+
+
 
 ##boxplot
-
+#expectation 
+before: big differences between replicates and not in replicates themselves. Als, different levels of medians 
+after: reduced differences
 
 ```{r}
-# 1. Boxplot vor Korrektur
-boxplot(rnase_expression_matrix,
-        main = "Expression vor Korrektur (Replicate gefärbt)",
+# 1. Boxplot before correction
+boxplot(rnase_expr_matrix,
+        main = "Expression before SVA correction (replicate colored)",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)
-
-# 2. Boxplot nach SVA-Korrektur (z. B. residuals oder sva-adjusted)
-boxplot(S_corrected_expr_rnase,
-        main = "Expression nach SVA-Korrektur (Replicate gefärbt)",
-        ylab = "Expression",
-        xlab = "Samples",
-        las = 2,
-        col = colors,
-        outline = FALSE,
-        cex.axis = 0.6)
-
-# 3. Legende
+        cex.axis = 0.6,
+        names=short_labels)
+#add key 
 legend("topright",
-       legend = names(batch_colors),
-       fill = batch_colors,
-       title = "Replicate")
+       legend = names(SR_batch_colors),
+       fill = SR_batch_colors,
+       title = "Replicate",
+       cex=0.4)
+
+
+# 2. Boxplot after correction
+boxplot(S_corrected_expr_rnase,
+        main = "Expression after SVA correction (replicate colored)",
+        ylab = "Expression",
+        xlab = "Samples",
+        las = 2,
+        col = colors,
+        outline = FALSE,
+        cex.axis = 0.6,
+        names=short_labels)
+
+# add key 
+legend("topright",
+       legend = names(SR_batch_colors),
+       fill = SR_batch_colors,
+       title = "Replicate",
+       cex=0.4)
+
 
 ```
+
+#Interpretation 
+Before: There are no big differences between replicates visible, andthe  median appears to be on a similar level 
+After: big shifts and no visible improvement  
 
 
 ##PCA
+#expectations 
+Before: clusters of the same batch with distinct separation of clusters 
+after: no separation visible
+
 ```{r}
 
 # 1) PCA vorbereiten
-pca_before <- prcomp(t(rnase_expression_matrix), scale. = TRUE)
+pca_before <- prcomp(t(rnase_expr_matrix), scale. = TRUE)
 pca_after  <- prcomp(t(S_corrected_expr_rnase), scale. = TRUE)
 
-# 2) Batch-Zuordnung erneut für Farben
-sample_names <- colnames(rnase_expression_matrix)
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+#2. plot
+#next to each other
+par(mfrow = c(1, 2))  
 
-# 3) Farben definieren für die Replikate
-batch_colors <- rainbow(length(levels(batch)))
-
-# 4) PCA-Plot: nebeneinander
-par(mfrow = c(1, 2))  # Zwei Plots nebeneinander
-
-# --- PCA vor Korrektur ---
+#PCA before correction
 plot(pca_before$x[, 1:2],
-     col = batch_colors[batch],
+     col = colors,
      pch = 19,
-     main = "PCA vor Batch-Korrektur",
+     main = "PCA before SVA correction",
      xlab = "PC1", ylab = "PC2")
-legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
 
-# --- PCA nach Korrektur ---
+legend("topright", legend = levels(SR_batch), col = batch_colors, pch = 19,cex=0.4)
+
+# PCA after correction
 plot(pca_after$x[, 1:2],
-     col = batch_colors[batch],
+     col = colors,
      pch = 19,
-     main = "PCA nach SVA-Korrektur",
+     main = "PCA after SVA correction ",
      xlab = "PC1", ylab = "PC2")
-legend("topright", legend = levels(batch), col = batch_colors, pch = 19)
+legend("topright", legend = levels(SC_batch), col = colors, pch = 19,cex=0.4)
 
 # 5) Layout zurücksetzen
 par(mfrow = c(1, 1))
 
 ```
+#Interpretation 
+before: There is no severe change visible, also there are no distinct differences between replicates, which rules out a severe batch effect 
+after: bigger difference visible but there appear to be more clusters between batches
 
 ##Heatmap
+#expectations
+Before: Samples are grouped by batch, and there is a clear separation of batches shown in the annotation 
+After: samples are grouped according to biological feature, no separation 
+
+```{r}
+# 1. create annotation for Heatmap
+annotation_col <- data.frame(SR_Batch = SR_batch)
+rownames(annotation_col) <- colnames(rnase_expr_matrix)
+
+#2. 
+library(pheatmap)
+
+# heatmap before correction
+pheatmap(rnase_expr_matrix,
+         annotation_col = annotation_col,
+         annotation_colors = list(SR_Batch = SR_batch_colors),
+         main = "Heatmap before batch correction")
+
+
+
+# heatmap after correction
+pheatmap(S_corrected_expr_rnase,
+         annotation_col = annotation_col,
+         annotation_colors = list(SR_Batch = SR_batch_colors),
+         main = "Heatmap after batch correction")
+
+```
+#Interpretation
+Before: There is no extreme clustering, but still some visible 
+After: it does not seem to have improved; instead, more clusters are visible
+
+
 ```{r}
 # 1) Falls noch nicht installiert:
 # install.packages("pheatmap")
