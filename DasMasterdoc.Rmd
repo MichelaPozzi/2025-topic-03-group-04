@@ -718,10 +718,14 @@ boxplot(ctrl_expr_matrix,
         names = short_labels)            
 
 # 2. add key
+legend_labels <- levels(LC_batch)
+legend_colors <- LC_batch_colors[legend_labels]
+
 legend("topright",
-       legend = names(batch_colors),
-       fill = batch_colors,
+       legend = legend_labels,
+       fill = legend_colors,
        title = "Batch")
+
 ```
 
 
@@ -774,11 +778,12 @@ boxplot(ctrl_expr_matrix_log,
         outline = FALSE,
         cex.axis = 0.6,
         names = short_labels) 
-#add key 
-legend_labels <- c("Rep1", "Rep2", "Rep 3")
+#add key
+legend_labels <- c("Rep1", "Rep2", "Rep3")
+legend_colors <- LC_batch_colors[legend_labels]
 legend("topright",
        legend = legend_labels,
-       fill = batch_colors,
+       fill = legend_colors,
        title = "Batch")
 
 # 4.Boxplot after correction
@@ -794,10 +799,11 @@ boxplot(L_ctrl_expr_corrected,
 
 
 # add key
-legend_labels <- c("Rep1", "Rep2", "Rep 3")
+legend_labels <- c("Rep1", "Rep2", "Rep3")
+legend_colors <- LC_batch_colors[legend_labels]
 legend("topright",
        legend = legend_labels,
-       fill = batch_colors,
+       fill = legend_colors,
        title = "Batch")
 ```
 
@@ -945,9 +951,11 @@ boxplot(rnase_expr_matrix,
         names = short_labels)              
 
 # 2. add key
+legend_labels <- c("Rep1", "Rep2", "Rep3")
+legend_colors <- LR_batch_colors[legend_labels]
 legend("topright",
-       legend = names(batch_colors),
-       fill = batch_colors,
+       legend = names(LR_batch_colors),
+       fill = legend_colors,
        title = "Batch")
 ```
 
@@ -1962,7 +1970,9 @@ write.table(right_shift_df, file = "Right_Shift_Proteins.txt", sep = "\t", row.n
 ### earth mover test
 principle of earth mover test: 
 - test calculates the work that needs to be done in order to transform one distribution into the other
--> determines masss (amount of protein) that needs to be moved a certain distance in order to compute said transformation
+-> determines mass (amount of protein) that needs to be moved a certain distance in order to compute said transformation
+-> for a 1D-EMD the distance between CDFs is determined (distance is positive by definition)
+emd <- sum(abs(ecdf(P)(x) - ecdf(Q)(x))) * (max(x) - min(x)) / length(x)
 ```{r}
 install.packages("emdist")  
 
@@ -2535,7 +2545,49 @@ boxplot(weighted_score ~ label, data = df_all,
 ```
 output: 
 - The regression estimate represents the influence of a given predictor on the log-odds of RNA binding. A higher estimate increases the predicted probability.
-- The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model.
+- The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model (+ the less likely is the relation coincidental)
+
+## visulaization of the tests' influence on the final probability score
+```{r}
+# Check if the model is a logistic regression (binomial family)
+if (inherits(logistic_model, "glm") && family(logistic_model)$family == "binomial") {
+  
+  # Extract coefficients (excluding intercept)
+  coeffs <- coef(logistic_model)
+  coeffs <- coeffs[-1]  # Remove intercept
+  
+  # Create a data frame for plotting
+  df_coeffs <- data.frame(
+    Feature = names(coeffs),
+    Coefficient = coeffs,
+    Importance = abs(coeffs)
+  )
+  
+  # Optional: sort by absolute importance descending
+  df_coeffs <- df_coeffs[order(-df_coeffs$Importance), ]
+  
+  # Visualization using ggplot2
+  library(ggplot2)
+  ggplot(df_coeffs, aes(x = reorder(Feature, Importance), y = Coefficient, fill = Coefficient > 0)) +
+    geom_col() +
+    coord_flip() +  # horizontal bars
+    scale_fill_manual(values = c("TRUE" = "#c9a0dc", "FALSE" = "#63A9D8"), guide = FALSE) +
+    labs(
+      subtitle = "Feature Importance in Logistic Regression Model",
+      x = "Feature",
+      y = "Regression Coefficient"
+    ) +
+    theme_minimal(base_size = 14)
+  
+} else {
+  stop("The model is not a logistic regression with binomial family.")
+}
+
+```
+output:
+- positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
+- negative coefficients (red bars) indicate features that decrease the probability of RNA-binding
+-> EMD has the strongest influence on the probability of RNA-binding
 
 ## ROC Curve Visualizing test-model performance
 Goal: evaluate the predictive accuracy of the logistic regression model by showing the trade-off between the true positive rate (sensitivity) and false positive rate (1 - specificity) across different classification thresholds
@@ -2571,7 +2623,7 @@ for (i in seq_along(thresholds)) {
 }
 
 # Define colors: lavender for ROC curve, beige for diagonal line
-lavender <- "#C5A3FF"
+lavender <- "#c9a0dc"
 graygreen <- "#A9C1A6"
 
 # Plot ROC curve with lavender line
@@ -2705,7 +2757,7 @@ print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_thr
 # visualisation of test-model results 
 ## composition of found RBPS
 ```{r}
-colors1 <- c("#F5E1A4","#C5A3FF")  # Segment 1: light beige, Segment 2: light purple
+colors1 <- c("#F5E1A4","#c9a0dc")  # Segment 1: light beige, Segment 2: light purple
 
 # 1. Plot: Total Proteins vs. Significantly Shifted Proteins
 counts_matrix1 <- matrix(c(
@@ -2730,7 +2782,7 @@ legend("topright",
        bty = "n")
 
 # Define colors for next plot (reversed order)
-colors2 <- c("#C5A3FF", "#F5E1A4")
+colors2 <- c("#c9a0dc", "#F5E1A4")
 
 # 2. Plot: Direction of Protein Shifts (Left vs. Right)
 
@@ -2761,7 +2813,7 @@ legend("topright",
        bty = "n")
 
 # Colors: True Positives purple, False Positives beige, Newly Identified RBPs gray-green
-colors3 <- c("Beige" = "#F5E1A4", "True Positives" = "#8B6AA5", "New RBPs" = "#A9C1A6")
+colors3 <- c("Beige" = "#F5E1A4", "True Positives" = "#c9a0dc", "New RBPs" = "#A9C1A6")
 
 # Number of each group
 false_positives_num <- sum(predicted_negatives == "TRUE")  # Number of False Positives
@@ -2855,8 +2907,8 @@ ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condi
   # Linie zeichnen (erscheint in der Legende)
   geom_line(linewidth = 1) +
   # Farben manuell setzen
-  scale_color_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
-  scale_fill_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
+  scale_color_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
+  scale_fill_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
   labs(
     title = paste("Profile for Protein:", protein_name),
     subtitle = paste0("Predicted Probability: ", round(prob, 3),
@@ -2948,8 +3000,8 @@ server <- function(input, output, session) {
       ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condition)) +
         geom_area(alpha = 0.3, position = "identity", show.legend = FALSE) +
         geom_line(linewidth = 1) +
-        scale_color_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
-        scale_fill_manual(values = c("Control" = "mediumpurple", "RNase" = "steelblue")) +
+        scale_color_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
+        scale_fill_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
         scale_x_continuous(breaks = seq(5, 25, by = 5), limits = c(1, 25)) +
         labs(
           title = paste("Profile for Protein:", protein_name),
