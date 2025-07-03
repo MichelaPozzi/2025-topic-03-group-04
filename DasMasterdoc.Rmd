@@ -1525,7 +1525,12 @@ head(df_peaks_CTRL)
 head(df_peaks_RNAse)
 
 ```
+Output: all maxima for each protein were identified and localised
+protein concentration can be found in multiple fractions 
+
 ### global maxima positions
+Goal: the indifference in number of maxima between the samples for each protein pose a difficulty for the analysis of the shift
+-> evaluate shift based on the global maximum 
 ```{r}
 # Identify global maxima and their position, if present
 find_global_maxima <- function(x, threshold = 2) {
@@ -1649,8 +1654,10 @@ shift_result$Shift_Distance_scaled_100 <- (shift_result$Shift_Distance_scaled/25
 ```
 
 ### change in amplitude of global maximum test
+Goal:uncover a possible change in protein-complex assembly after rnase treatment
+calculate the amplitude of the global maximum and wheter a gain or loss took place 
 ```{r}
-# calculate change in amplitude of global maximum for control measurments
+# calculate amplitude of global maximum for control measurments
 get_global_amplitudes <- function(expression_df, global_ctrl) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
     max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))
@@ -1661,7 +1668,6 @@ get_global_amplitudes <- function(expression_df, global_ctrl) {
     
     intensities <- as.numeric(expression_df[row_idx, max_positions + 1])
     
-    # if there are multiple maxima connect them as strings -> WIESO wenn globale maxima!????
     paste(intensities, collapse = ",")
   },
   row_idx = 1:nrow(expression_df),
@@ -1684,7 +1690,7 @@ head(global_amplitudes_ctrl)
 ```
 
 ```{r}
-#calculate change in amplitude of global maximum for rnase measurments
+#calculate amplitude of global maximum for rnase measurments
 get_global_amplitudes <- function(expression_df, global_rnase) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
     max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))
@@ -1714,8 +1720,6 @@ global_amplitudes_rnase <- get_global_amplitudes(normalized_rnase_df, global_rna
 head(global_amplitudes_rnase)
 
 ```
-
-
 ### gain and loss of amplitude in peak test
 ```{r}
 ##Gain and loss of amplitude in peak 
@@ -1739,7 +1743,7 @@ amplitude_changes <- data.frame(
 
 head(amplitude_changes)
 ```
-
+Goal: to establish a general shift we only need to asses wheter a change in amplitude occured regardless of the direction
 ```{r}
 ###Addition of all amplitude changes
 amplitude_changes$changes <- amplitude_changes$loss + amplitude_changes$gain
@@ -2996,6 +3000,7 @@ legend("topright",
 ```
 
 #### violinplots
+Goal: show the distribution of the protein in direct comparison 
 ```{r}
 # visualize the shift/non-shift of three selected proteins as violinplot
 proteins <- c("RLA1_HUMAN", "APC16_HUMAN", "CH033_HUMAN")
@@ -3087,6 +3092,7 @@ legend("topright",
        bty="n")
 
 ```
+Output: visualization of a negative control and positive control protein, as well as one newly identified as shifting
 
 # 4. dimension reduction
 ## PCA
@@ -3872,7 +3878,7 @@ dim(T_rnase_df)
 
 ```{r}
 # 1. Sicherstellen, dass die Protein-Namen in den Zeilennamen stehen
-# (Falls sie in einer Spalte sind – z. B. "Protein" –, dann so:)
+# (Falls sie in einer Spalte sind – z.B. "Protein" –, dann so:)
 # T_rnase_df <- column_to_rownames(T_rnase_df, var = "Protein")  # falls tidyverse
 # oder base R:
 # rownames(T_rnase_df) <- T_rnase_df$Protein
@@ -4007,7 +4013,6 @@ Table_HS_RBP = read.delim("cleaned_table.txt",
 head(Table_HS_RBP)
 
 ```
-
 
 ```{r}
 # read Table_Non_RBP
