@@ -145,8 +145,7 @@ flowchart LR
 3.  **Step 3: Normalization Across Replicates and Fractions per Protein**\
     Each replicate measurement is normalized individually → each replicate sums to 100%.\
     Then, for each fraction, the mean across replicates is calculated and normalized again to sum to
-
-    100. 
+    100.
 
     **Output:**\
     Two data frames (for Control and RNase), each with 25 columns containing the final normalized
