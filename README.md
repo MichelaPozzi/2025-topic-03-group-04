@@ -93,7 +93,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     -   [k-means](#k--means)
 -   [Linear Regression](#linear-regression)
 
-# **🧼Data Normalisation** 
+# **🧼Data Normalisation** {#data-normalisation}
 
 ## **🎯Objective:**
 
@@ -107,7 +107,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 
 ## **📃Steps:**
 
-### **📊Normalisation** 
+### **📊Normalisation** {#normalisation}
 
 ``` mermaid
 flowchart LR
@@ -145,7 +145,8 @@ flowchart LR
 3.  **Step 3: Normalization Across Replicates and Fractions per Protein**\
     Each replicate measurement is normalized individually → each replicate sums to 100%.\
     Then, for each fraction, the mean across replicates is calculated and normalized again to sum to
-    100.
+
+    100. 
 
     **Output:**\
     Two data frames (for Control and RNase), each with 25 columns containing the final normalized
@@ -156,9 +157,9 @@ flowchart LR
     **Normalized RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
-### **💥Batch Removal** 
+### **💥Batch Removal** {#batch-removal}
 
-# **✅Shift Analysis** 
+# **✅Shift Analysis** {#shift-analysis}
 
 ## **🎯Objective**
 
@@ -178,11 +179,68 @@ flowchart LR
     F --> G
 ```
 
-### **📝Tests** 
+### **📝Tests** {#tests}
 
-### **🤖Logistic Model**
+### **🤖Logistic Model (Von Jetty zusammengefasst, passt das so Lauraaaa)**
 
-# **📈Linear Regression** 
+### Goal
+
+A logistic regression model is trained using reference proteins to predict the probability of
+RNA-binding for other proteins from our dataset.
+
+### Comparison of Positive and Negative Controls
+
+-   It is crucial that positive and negative control groups differ significantly to enable
+    meaningful model discrimination.
+
+-   A Mann–Whitney U test (Wilcoxon rank-sum test) is applied on selected features to verify
+    differences between control groups.
+
+### Model Construction
+
+1.  **Label controls:**\
+    Positive controls labeled as `1`, negative controls as `0`.
+
+2.  **Combine data:**\
+    Features and labels from both groups are merged into one dataset.
+
+3.  **Fit logistic regression:**\
+    Multiple predictors (EMD, Shift Distance, Amplitude Changes, Center of Mass, Wilcoxon statistic)
+    are used to fit the model.
+
+4.  **Model output:**\
+    Coefficients indicate how strongly each predictor influences the log-odds of RNA binding.
+
+5.  **Weighted score:**\
+    A combined score is calculated for each protein based on the coefficients.
+
+6.  **Visualization:**\
+    Boxplots display the distribution of weighted scores by class (positive vs. negative). (Soll das
+    rein?????)
+
+    ![](images/clipboard-2044063727.png){width="528"}
+
+### Test-model Results
+
+<p float="left">
+
+<img src="images/clipboard-1003858263.png" width="30%"/>
+<img src="images/clipboard-3056729007.png" width="30%"/>
+<img src="images/clipboard-116030427.png" width="30%"/>
+
+</p>
+
+### Interpretation of Results
+
+-   Higher coefficients increase the likelihood of RNA-binding.
+
+-   Significant predictors (low p-values) contribute substantially to model performance.
+
+-   visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy
+    lies way above the "coincidence line"\
+    ![](images/clipboard-3562156733.png){width="400"}
+
+# **📈Linear Regression** {#linear-regression}
 
 ## **🎯Objective:**
 
@@ -210,7 +268,8 @@ flowchart LR
 2.  **multiple regression**:\
     The multiple regression analysis shows that both the isoelectric point (pI) and molecular weight
     (Mass_kDa) are significantly associated with the target variable (p \< 0.001). The pI has the
-    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des Bildes](images/3dscatterplotupdated.jpeg)\
+    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des
+    Bildes](images/3dscatterplotupdated.jpeg)\
     This 3D scatterplot displays the actual data points alongside the regression plane determined by
     the multiple regression analysis.\
     The closer the points lie to the plane, the better the model fits the observed data. Large
@@ -224,5 +283,6 @@ flowchart LR
     ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
     A significant association was found between higher isoelectric point (pI) and increased
     probability of RNA dependence.\
-    On its own, mass is not a significant predictor of RNA-binding behavior.
-    Mass becomes a significant predictor only when pI is accounted for, as demonstrated by the multiple regression analysis. 
+    On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
+    significant predictor only when pI is accounted for, as demonstrated by the multiple regression
+    analysis.
