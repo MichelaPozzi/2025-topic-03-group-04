@@ -671,40 +671,55 @@ text(x = mean(c(fraktionen[max_ctrl_idx], fraktionen[max_rnase_idx])),
 
 
 ###Batch Effect###
+Goal: Determine if there is a batch effect and remove it. Batch effect in this case refers to differences in data not related to biological reasons but rather technological faults. 
 
 ##CONTROL
 ##boxplot
+Goal:
+Visualize data in a boxplot in order to observe first differences 
 ```{r}
-# 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
+# 1. Extract expression data and save it as matrix, delete protein names
 ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
-# 2. Sample-Namen extrahieren
+# 2. extract sample names to create batch labels 
 sample_names <- colnames(ctrl_expr_matrix)
 
-# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
-batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
-batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+# 3. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches  
 
-# 4. Farben zuordnen
-batch_colors <- c("Rep1" = "red", "Rep2" = "green", "Rep3" = "blue")
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+#check names for "Rep 1 " etc. 
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+#save as categorial vector 
+
+# 4. assign colors 
+batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
 colors <- batch_colors[as.character(batch)]
 
-# 5. Boxplot zeichnen
+#5. shorten labels 
+short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_expr_matrix))
+
+# 6. create boxplot
 boxplot(ctrl_expr_matrix,
-        main = "Expression nach Sample (Batch gefärbt)",
+        main = "Expression by sample (batch coloured)",
         ylab = "Expression",
         xlab = "Samples",
-        las = 2,                      # X-Achse: senkrechte Labels
+        las = 2,                     
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+        cex.axis = 0.6,
+        names = short_labels)            
 
-# 6. Legende hinzufügen
+# 7. add key
 legend("topright",
        legend = names(batch_colors),
        fill = batch_colors,
        title = "Batch")
 ```
+
+
+# interpretation 
+there is no distinct differences between replicates, which rules out a servere batch effect  
 
 ```{r}
 head(ctrl_expr_matrix)
@@ -719,118 +734,160 @@ BiocManager::install("limma")
 
 ```##
 
-##limma
+##limma ctrl
+first trial of removing the batch effect using limma
+
 ```{r}
 
 
 library(limma)
 
-# 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
+# 1. Extract expression data and save it as matrix, delete protein names
 ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
-# 2. Sample-Namen extrahieren
+# 2. extract sample names to create batch labels 
 sample_names <- colnames(ctrl_expr_matrix)
 
-# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
+# 3. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
 
-# 4. Log2-Transformation (falls nötig, empfohlen wegen Skalenproblem)
+#shorten labels 
+short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_expr_matrix))
+
+# 4. apply a log 2 transformation 
+# necessary for limma, stabilizes variance, improves interpretability , reduces outlier effects 
+
+#add +1 in order to prevent log2(0)
+
 ctrl_expr_matrix_log <- log2(ctrl_expr_matrix + 1)
 
-# 5. Batch-Korrektur mit limma
+# 5. Correction with limma
 L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
 
 
 
-# 5. Boxplot zeichnen vor korrektur 
+# 5. draw boxplot beofre correction 
+#use log2 transformed matrix for comparison 
+ 
 boxplot(ctrl_expr_matrix_log,
-        main = "Expression vor Korrektur (Batch gefärbt)",
+        main = "Expression before correction (batch coloured)",
         ylab = "Expression",
         xlab = "Samples",
-        las = 2,                      # X-Achse: senkrechte Labels
+        las = 2,                     
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+        cex.axis = 0.6,
+        names = short_labels) 
+#add key 
+legend_labels <- c("Rep1", "Rep2", "Rep 3")
+legend("topright",
+       legend = legend_labels,
+       fill = batch_colors,
+       title = "Batch")
 
-# Boxplot nach Korrektur 
+# 6.Boxplot after correction
 boxplot(L_ctrl_expr_corrected,
-        main = "Expression nach Korrektur (Batch gefärbt)",
+        main = "Expression after correction (batch coloured)",
         ylab = "Expression",
         xlab = "Samples",
-        las = 2,                      # X-Achse: senkrechte Labels
+        las = 2,                    
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+        cex.axis = 0.6,
+        names = short_labels)             
 
 
-# 6. Legende hinzufügen
-legend_labels <- c("Batch A", "Batch B", "Batch C")
+# add key
+legend_labels <- c("Rep1", "Rep2", "Rep 3")
 legend("topright",
        legend = legend_labels,
        fill = batch_colors,
        title = "Batch")
 ```
 
+#Interpretation 
+There is no severe change visible, and the data is now log transformed making it hard to use it for further steps 
 
-## PCA
+#more visualizing
+
+## Batch effect pca 
+#expectation
+before: clusters of the same batch with distinct separation of clusters 
+after: no separation visible
 ```{r}
-# PCA-Analyse vorbereiten
+# Prepare PCA
 pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(L_ctrl_expr_corrected), scale. = TRUE)
 
-# Batch-Zuordnung erneut für Farben
-# 2. Sample-Namen extrahieren
+
+# 2. extract sample names to create batch labels 
+
 sample_names <- colnames(ctrl_expr_matrix_log)
 
-# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
+# 3. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
-# Plot nebeneinander
+
+# 4. assign colors 
+batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+colors <- batch_colors[as.character(batch)]
+
+# 5.Plot next to each other
 par(mfrow = c(1, 2))
 
-# PCA vor Korrektur
+#6.plot
+
+# PCA before correction
 plot(pca_before$x[, 1:2],
-     col = rainbow(length(levels(batch)))[batch],
+     col = colors,
      pch = 19,
-     main = "PCA vor Batch-Korrektur")
-legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+     main = "PCA before correction")
+legend("topright", legend = levels(batch), col = colors, pch = 19)
 
-# PCA nach Korrektur
+# PCA after correction
 plot(pca_after$x[, 1:2],
-     col = rainbow(length(levels(batch)))[batch],
+     col = colors,
      pch = 19,
-     main = "PCA nach Batch-Korrektur")
-legend("topright", legend = levels(batch), col = rainbow(length(levels(batch))), pch = 19)
+     main = "PCA after correction")
+legend("topright", legend = levels(batch), col = colors, pch = 19)
 
-# Reset Layout
-par(mfrow = c(1, 1))
+
 ```
 
+#interpretation
+There is no severe change visible, also there is no distinct differences between replicates, which rules out a servere batch effect 
+
 ##heatmap
+#expectation: 
+before: samples are grouped by batch, there is a clear separation of batches shown in the annotation 
+after: samples are goruped according to biological feature, no separation 
 ```{r}
-# Optional: Wenn du pheatmap noch nicht hast
-install.packages("pheatmap")
+
 library(pheatmap)
 
-# Auswahl einer Teilmenge der Proteine (z.B. Top 100 variabelsten)
+# 1.Selection of a subset of the proteins, here top 100 most variable 
 select_top_var <- function(mat, top_n = 100) {
   vars <- apply(mat, 1, var)
   mat[order(vars, decreasing = TRUE)[1:top_n], ]
 }
 
-
+#2.create subsets for heatmap
 heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
 heat_after  <- select_top_var(L_ctrl_expr_corrected, 100)
 
+
+#3.plot heatmaps
 pheatmap(heat_before,
-         main = "Vor Korrektur",
+         main = "before correction",
          cluster_cols = TRUE,
          cluster_rows = TRUE,
          annotation_col = annotation_col)
 
 pheatmap(heat_after,
-         main = "Nach Korrektur",
+         main = "after correction",
          cluster_cols = TRUE,
          cluster_rows = TRUE,
          annotation_col = annotation_col)
@@ -838,7 +895,7 @@ pheatmap(heat_after,
 
 # Top 100 Gene mit höchster Varianz (vorher/nachher)
 heat_before <- select_top_var(ctrl_expr_matrix_log, 100)
-heat_after  <- select_top_var(ctrl_expr_corrected, 100)
+heat_after  <- select_top_var(Lctrl_expr_corrected, 100)
 
 # Spaltenannotation nach Batch
 annotation_col <- data.frame(Batch = batch)
@@ -862,64 +919,113 @@ pheatmap(heat_after,
 # Reset Layout
 par(mfrow = c(1, 1))
 ```
+ 
+```{r}
+# 1. extract sample names to create batch labels 
+sample_names <- colnames(ctrl_expr_matrix_log)
 
+# 2. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
+batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+
+# 3. assign colors 
+batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+colors <- batch_colors[as.character(batch)]
+
+# 4. create annotation for Heatmap
+annotation_col <- data.frame(Batch = batch)
+rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
+
+library(pheatmap)
+
+# --- Heatmap vor Korrektur ---
+pheatmap(ctrl_expr_matrix_log,
+         annotation_col = annotation_col,
+         annotation_colors = list(Batch = batch_colors),
+         main = "Heatmap before batch correction")
+
+
+
+# --- Heatmap nach Korrektur ---
+pheatmap(L_ctrl_expr_corrected,
+         annotation_col = annotation_col,
+         annotation_colors = list(Batch = batch_colors),
+         main = "Heatmap after batch correction")
+
+```
+#interpretation 
+before the correction there is no separation visible, after the correction there is a slight switch visible which does not seem to improve the dataset 
 
 ```{r}
 
-#protein name wieder rein
+#add column with protein names again 
 ctrl_expr_corrected_df <- data.frame(
-  Protein = final_smoothed_ctrl[, 1],  # ursprüngliche erste Spalte
-ctrl_expr_corrected,                # korrigierte Matrix
-  check.names = FALSE                  # verhindert Umbenennung von Spalten
+  Protein = final_smoothed_ctrl[, 1],  
+L_ctrl_expr_corrected,               
+  check.names = FALSE                  # Prevents renaming of columns
 )
 
-colnames(ctrl_expr_corrected_df)
+colnames(L_ctrl_expr_corrected_df)
 ```
 
 ```{r}
-head(ctrl_expr_corrected_df)
+head(L_ctrl_expr_corrected_df)
 ```
 
 ##RNASE
 
 ##boxplot 
+Goal:
+Visualize data in a boxplot in order to observe first differences 
+
 ```{r}
-# 1. Matrix mit Expressionswerten extrahieren (ohne Protein-Spalte)
+# 1. Extract expression data and save it as matrix, delete protein names
 rnase_expr_matrix <- as.matrix(final_smoothed_rnase[, -1])  
 
-# 2. Sample-Namen extrahieren
+# 2. extract sample names to create batch labels 
 sample_names <- colnames(rnase_expr_matrix)
 
-# 3. Batch-Labels aus Sample-Namen ziehen (Rep1, Rep2, Rep3)
+# 3. create batch labels out of sample names 
+#create batches from replicates in order to have comparable batches
 batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 batch <- factor(batch, levels = c("Rep1", "Rep2", "Rep3"))
+#shorten labels 
 
-# 4. Farben zuordnen
-batch_colors <- c("Rep1" = "red", "Rep2" = "green", "Rep3" = "blue")
+short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(rnase_expr_matrix))
+
+# 4. assign colors
+batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
 colors <- batch_colors[as.character(batch)]
 
-# 5. Boxplot zeichnen
+# 5. draw boxplot
 boxplot(rnase_expr_matrix,
         main = "Expression nach Sample (Batch gefärbt)",
         ylab = "Expression",
         xlab = "Samples",
-        las = 2,                      # X-Achse: senkrechte Labels
+        las = 2,                     
         col = colors,
         outline = FALSE,
-        cex.axis = 0.6)              # kleinere Achsenbeschriftung
+        cex.axis = 0.6,
+        names = short_labels)              
 
-# 6. Legende hinzufügen
+# 6. add key
 legend("topright",
        legend = names(batch_colors),
        fill = batch_colors,
        title = "Batch")
 ```
 
+#interpretation 
+there is no distinct differences between replicates, which rules out a servere batch effect 
+
+
 ```{r}
 head(rnase_expr_matrix)
 ```
 
-
+#limma
+first trial of removing the batch effect using limma
 ```{r}
 library(limma)
 
@@ -969,7 +1075,12 @@ legend("topright",
 ```
 
 
-## PCA
+#more visualizing
+
+## Batch effect pca 
+#expectation
+before: clusters of the same batch with distinct separation of clusters 
+after: no separation visible
 ```{r}
 # PCA-Analyse vorbereiten
 pca_before <- prcomp(t(rnase_expr_matrix_log), scale. = TRUE)
