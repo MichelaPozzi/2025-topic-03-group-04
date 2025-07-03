@@ -93,7 +93,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     -   [k-means](#k--means)
 -   [Linear Regression](#linear-regression)
 
-# **🧼Data Normalisation** {#data-normalisation}
+# **🧼Data Normalisation** 
 
 ## **🎯Objective:**
 
@@ -107,7 +107,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 
 ## **📃Steps:**
 
-### **📊Normalisation** {#normalisation}
+### **📊Normalisation** 
 
 ``` mermaid
 flowchart LR
@@ -156,9 +156,9 @@ flowchart LR
     **Normalized RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
-### **💥Batch Removal** {#batch-removal}
+### **💥Batch Removal** 
 
-# **✅Shift Analysis** {#shift-analysis}
+# **✅Shift Analysis** {
 
 ## **🎯Objective**
 
@@ -178,7 +178,7 @@ flowchart LR
     F --> G
 ```
 
-### **📝Tests** {#tests}
+### **📝Tests**
 
 ### **🤖Logistic Model (Von Jetty zusammengefasst, passt das so Lauraaaa)**
 
@@ -188,54 +188,53 @@ A logistic regression model is trained using reference proteins to predict the p
 RNA-binding for other proteins from our dataset.
 
 ### Comparison of Positive and Negative Controls
+-   Proteins are assigned as positive or negative controls based on how frequently they have been previously reported as RNA-binding proteins (RBPs)
+
+-   A 30/70 split is used to establish the logistic regression model - meaning 30 % of the proteins in the dataset are used to train the logistc model
 
 -   It is crucial that positive and negative control groups differ significantly to enable
     meaningful model discrimination.
 
--   A Mann–Whitney U test (Wilcoxon rank-sum test) is applied on selected features to verify
+-   A Mann–Whitney U test (Wilcoxon rank-sum test) is applied on the testscores of the referene proteins to verify
     differences between control groups.
 
 ### Model Construction
 
-1.  **Label controls:**\
-    Positive controls labeled as `1`, negative controls as `0`.
+1.  **Fit logistic regression:**\
+   The logistic model was trained on reference proteins assigned as positive or negative controls.\ 
+   The input features — EMD, shift distance, amplitude changes, center of mass, and the Wilcoxon statistic — reflect the outcomes of computational tests performed on these proteins, capturing their RNA-binding behavior.
+   
+   ![](images/clipboard-2044063727.png)
+   
+   During training, the model estimates a regression coefficient for each test-derived feature in order to maximize the discrimination between the positive and negative control groups.
 
-2.  **Combine data:**\
-    Features and labels from both groups are merged into one dataset.
+2.  **Regression Coefficients:**\
+    The results indicate that all predictors significantly affect RNA-binding classification.
+    The regression coefficients reflect the strength and direction with which each predictor influences the log-odds of a protein being RNA-binding.
+    
+    ![Beschreibung des Bildes](images/featuresimportancelogistic.jpeg)\
 
-3.  **Fit logistic regression:**\
-    Multiple predictors (EMD, Shift Distance, Amplitude Changes, Center of Mass, Wilcoxon statistic)
-    are used to fit the model.
-
-4.  **Model output:**\
-    Coefficients indicate how strongly each predictor influences the log-odds of RNA binding.
-
-5.  **Weighted score:**\
-    A combined score is calculated for each protein based on the coefficients.
-
-6.  **Visualization:**\
-    Boxplots display the distribution of weighted scores by class (positive vs. negative). (Soll das
-    rein?????)
-
-    ![](images/clipboard-2044063727.png)
-
-### Test-model Results
+    - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
+    - negative coefficients (red bars) indicate features that decrease the probability of RNA-binding
+    -> EMD has the strongest influence on the probability of RNA-binding
+    
+3.  **Model output:**\
+    The trained model was applied to the remaining 70% of proteins, yielding RNA-binding probability scores for each case.
+    To classify proteins as RBPs or non-RBPs based on their predicted scores, a threshold corresponding to a false discovery rate (FDR) of 10% was applied.
 
 <p float="left">
 
-<img src="images/clipboard-1003858263.png" width="30%"/>
-<img src="images/clipboard-3056729007.png" width="30%"/>
-<img src="images/clipboard-116030427.png" width="30%"/>
+<img src="images/shifts.jpeg" width="30%"/>
+<img src="images/directionofproteinshift.jpeg" width="30%"/>
+<img src="images/compositionsRBP.jpeg" width="30%"/>
 
 </p>
 
-### Interpretation of Results
+    Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. Excluding the proteins used for model training, XX novel RBPs were identified. 
 
--   Higher coefficients increase the likelihood of RNA-binding.
-
--   Significant predictors (low p-values) contribute substantially to model performance.
-
--   visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy
+4.  **Accuracy of Model:**\
+    
+    visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy
     lies way above the "coincidence line"\
     ![](images/clipboard-3562156733.png)
 
