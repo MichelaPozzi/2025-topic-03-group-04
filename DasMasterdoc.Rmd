@@ -1014,7 +1014,7 @@ there is no distinct differences between replicates, which rules out a servere b
 head(rnase_expr_matrix)
 ```
 
-#limma
+#limma rnase
 first trial of removing the batch effect using limma
 ```{r}
 library(limma)
@@ -1220,7 +1220,7 @@ BiocManager::install("sva")
 install.packages("sva")
 ```
 
-##control
+##control SVA
 ```{r}
 
 # load libraries 
@@ -1297,7 +1297,7 @@ SC_short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctr
 
 ```
 
-##boxplot
+##after and before boxplot
 #expectation
 before: big differences between replicates and not in replicates themselves. Also different levels of medians 
 after: reduced differences
@@ -1346,7 +1346,7 @@ before: there is no big differences between replicates visible and median appear
 after: big shifts and no visible improvement  
 
 
-##PCA
+## visualisierung mittels PCA
 #expectations 
 before: clusters of the same batch with distinct separation of clusters 
 after: no separation visible
@@ -1553,7 +1553,7 @@ short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(rnase_
 
 
 
-##boxplot
+## after and before boxplot
 #expectation 
 before: big differences between replicates and not in replicates themselves. Als, different levels of medians 
 after: reduced differences
@@ -1603,7 +1603,7 @@ Before: There are no big differences between replicates visible, andthe  median 
 After: big shifts and no visible improvement  
 
 
-##PCA
+## visualisierung mittels PCA
 #expectations 
 Before: clusters of the same batch with distinct separation of clusters 
 after: no separation visible
