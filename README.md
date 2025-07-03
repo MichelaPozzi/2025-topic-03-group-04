@@ -206,10 +206,11 @@ RNA-binding for other proteins from our dataset.
    
    ![](images/clipboard-2044063727.png)
    
-&nbsp;&nbsp;&nbsp;&nbsp;During training, the model estimates a regression coefficient for each test-derived feature in order to maximize the discrimination between the positive and negative control groups.
+&nbsp;&nbsp;&nbsp;&nbsp;During training, the model estimates a regression coefficient for each test-derived feature 
+&nbsp;&nbsp;&nbsp;&nbsp;in order to maximize the discrimination between the positive and negative control groups.
 
 2.  **Regression Coefficients:**\
-    The results indicate that all predictors significantly affect RNA-binding classification.
+    The results indicate that all predictors - meaning test-derived features - significantly affect RNA-binding classification.
     The regression coefficients reflect the strength and direction with which each predictor influences the log-odds of a protein being RNA-binding.
     
     ![Beschreibung des Bildes](images/featureimportancelogistic.jpeg)
@@ -230,7 +231,8 @@ RNA-binding for other proteins from our dataset.
 
 </p>
 
-&nbsp;&nbsp;&nbsp;&nbsp;Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. Excluding the proteins used for model training, XX novel RBPs were identified.
+&nbsp;&nbsp;&nbsp;&nbsp;Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. 
+&nbsp;&nbsp;&nbsp;&nbsp;Excluding the proteins used for model training, XX novel RBPs were identified.
      
 4.  **Accuracy of Model:**\
     visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy

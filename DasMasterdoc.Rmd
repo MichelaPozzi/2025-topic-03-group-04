@@ -2586,7 +2586,7 @@ if (inherits(logistic_model, "glm") && family(logistic_model)$family == "binomia
 ```
 output:
 - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
-- negative coefficients (red bars) indicate features that decrease the probability of RNA-binding
+- negative coefficients (blue bars) indicate features that decrease the probability of RNA-binding
 -> EMD has the strongest influence on the probability of RNA-binding
 
 ## ROC Curve Visualizing test-model performance
