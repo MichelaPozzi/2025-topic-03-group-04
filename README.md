@@ -201,12 +201,12 @@ RNA-binding for other proteins from our dataset.
 ### Model Construction
 
 1.  **Fit logistic regression:**\
-   The logistic model was trained on reference proteins assigned as positive or negative controls. 
-   The input features — EMD, shift distance, amplitude changes, center of mass, and the Wilcoxon statistic — reflect the outcomes of computational tests performed on these proteins, capturing their RNA-binding behavior.
+    The logistic model was trained on reference proteins assigned as positive or negative controls. 
+    The input features — EMD, shift distance, amplitude changes, center of mass, and the Wilcoxon statistic — reflect the outcomes of computational tests performed on these proteins, capturing their RNA-binding behavior.
    
    ![](images/clipboard-2044063727.png)
    
-   During training, the model estimates a regression coefficient for each test-derived feature in order to maximize the discrimination between the positive and negative control groups.
+    During training, the model estimates a regression coefficient for each test-derived feature in order to maximize the discrimination between the positive and negative control groups.
 
 2.  **Regression Coefficients:**\
     The results indicate that all predictors significantly affect RNA-binding classification.
@@ -215,7 +215,7 @@ RNA-binding for other proteins from our dataset.
     ![Beschreibung des Bildes](images/featureimportancelogistic.jpeg)
 
     - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
-    - negative coefficients (red bars) indicate features that decrease the probability of RNA-binding\
+    - negative coefficients (blue bars) indicate features that decrease the probability of RNA-binding\
     -\>EMD has the strongest influence on the probability of RNA-binding
     
 3.  **Model output:**\
@@ -228,11 +228,11 @@ RNA-binding for other proteins from our dataset.
 <img src="images/directionofproteinshift.jpeg" width="30%"/>
 <img src="images/compositionRBP.jpeg" width="30%"/>
 
-</p>\
+</p>
 
-  Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. Excluding the proteins used for model training, XX novel RBPs were identified.
+    Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. Excluding the proteins used for model training, XX novel RBPs were identified.
      
-4.  **Accuracy of Model:**
+4.  **Accuracy of Model:**\
     visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy
     lies way above the "coincidence line"\
     
