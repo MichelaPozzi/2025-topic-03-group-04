@@ -1583,20 +1583,21 @@ Goal: Apply statistical testscores to our test-model and thus determine the prob
 global_ctrl$Global_Maximum <- as.numeric(as.character(global_ctrl$Global_Maximum))
 global_rnase$Global_Maximum <- as.numeric(as.character(global_rnase$Global_Maximum))
 
-shift_distance <- global_rnase$Global_Maximum - global_ctrl$Global_Maximum
+# Shift distance as absolute value
+raw_shift_distance <- global_rnase$Global_Maximum - global_ctrl$Global_Maximum
+shift_distance <- abs(raw_shift_distance)
 
-# determine direction of the shift
-shift_direction <- ifelse(shift_distance > 0, "right shift",
-                    ifelse(shift_distance < 0, "left shift",
-                           "No Shift"))
+# determine direction
+shift_direction <- ifelse(raw_shift_distance > 0, "right shift",
+                   ifelse(raw_shift_distance < 0, "left shift",
+                          "No Shift"))
 
-# summarize results in a table
 shift_result <- data.frame(
   Protein = global_ctrl$Protein,
   Position_Control = global_ctrl$Global_Maximum,
   Position_RNase = global_rnase$Global_Maximum,
-  Shift_Distance = shift_distance,
-  Shift_Direction = shift_direction
+  Shift_Distance = shift_distance,    
+  Shift_Direction = shift_direction    
 )
 
 head(shift_result)
