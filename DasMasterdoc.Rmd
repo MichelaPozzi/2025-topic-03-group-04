@@ -813,7 +813,7 @@ after: no separation visible
 # 1. Prepare PCA
 pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(L_ctrl_expr_corrected), scale. = TRUE)
-
+# Transposing the matrix is necessary because the observations and variables are swapped
 
 #2. plot
 
@@ -838,6 +838,11 @@ legend("topright", legend = levels(LC_batch), col = colors, pch = 19)
 
 
 ```
+
+```{r}
+dim(ctrl_expr_matrix_log)
+```
+
 
 #interpretation
 There is no severe change visible, also there is no distinct differences between replicates, which rules out a severe batch effect 
@@ -1079,6 +1084,7 @@ after: no separation visible
 #1. Prepare PCA
 pca_before <- prcomp(t(rnase_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(L_rnase_expr_corrected), scale. = TRUE)
+# Transposing the matrix is necessary because the observations and variables are swapped
 
 #2. plot
 #plot next to eachother
@@ -1350,7 +1356,7 @@ after: no separation visible
 # 1) PCA vorbereiten
 pca_before <- prcomp(t(ctrl_expr_matrix), scale. = TRUE)
 pca_after  <- prcomp(t(S_corrected_expr_ctrl), scale. = TRUE)
-
+# Transposing the matrix is necessary because the observations and variables are swapped
 
 #2. Plot: 
 
@@ -1417,6 +1423,8 @@ pheatmap(S_corrected_expr_ctrl,
 #Interpretation
 before: there is no extreme clustering but still some visible 
 after: it does not seem to have improved, instead more clusters are visible
+
+##funktioniert nicht
 ```{r}
 library(pheatmap)
 
@@ -1605,6 +1613,7 @@ after: no separation visible
 # 1) PCA vorbereiten
 pca_before <- prcomp(t(rnase_expr_matrix), scale. = TRUE)
 pca_after  <- prcomp(t(S_corrected_expr_rnase), scale. = TRUE)
+# Transposing the matrix is necessary because the observations and variables are swapped
 
 #2. plot
 #next to each other
