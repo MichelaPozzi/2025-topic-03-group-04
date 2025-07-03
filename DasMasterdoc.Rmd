@@ -1596,6 +1596,10 @@ shift_result <- data.frame(
 
 head(shift_result)
 ```
+- Determining the shift direction based on the position of the global maximum is not ideal, as some RBPs may later lack a clear shift direction.
+-> Therefore, this definition of shift direction will not be used.
+-> Instead, the shift direction is defined based on the center of mass test
+
 #### skewness of shift distance
 Goal: determine skewness of shift distance and check whether robust scaling can be applied
 -> if skewness > 1 or < -1, then robust scaling can be applied
@@ -1946,8 +1950,15 @@ center_of_mass_df <- data.frame(
 # View first few results
 head(center_of_mass_df)
 ```
-
+## classification: left or right shift
+if delta_COM > 0: right shift
+if delta_COM < 0: left shift
+-> for proteins that are later on classifies as non-shifting this categtory is ignored
 ```{r}
+# define direction of shift
+center_of_mass_df$shift_direction <- ifelse(center_of_mass_df$Delta_COM > 0, "right shift",
+                    ifelse(center_of_mass_df$Delta_COM < 0, "left shift",
+                           "No Shift"))
 # show results
 head(center_of_mass_df)
 ```
@@ -2156,7 +2167,7 @@ head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
   Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_100,
-  Shift_direction_ctrl_to_rnase = shift_result$Shift_Direction,
+  Shift_direction_ctrl_to_rnase = center_of_mass_df$shift_direction,
   amplitude_changes = amplitude_changes$changes_scaled_100,
   EMD = normalized_ctrl_df$EMD_scaled_100,
   Center_of_Mass = center_of_mass_df$COM_scaled_100,
@@ -4028,7 +4039,7 @@ proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
 
 is_in_rbp_or_nonrbp <- test_scores_combined_df %in% proteins_rbp | test_scores_combined_df %in% proteins_non_rbp
 
-all(is_in_rbp_or_nonrbp)#
+all(is_in_rbp_or_nonrbp)
 
 ```
 
