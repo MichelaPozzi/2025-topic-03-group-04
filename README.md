@@ -223,6 +223,6 @@ flowchart LR
     isoelectric point (pI) and molecular weight\
     ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
     A significant association was found between higher isoelectric point (pI) and increased
-    probability of RNA dependence. 
+    probability of RNA dependence.\
     On its own, mass is not a significant predictor of RNA-binding behavior.
     Mass becomes a significant predictor only when pI is accounted for, as demonstrated by the multiple regression analysis. 
