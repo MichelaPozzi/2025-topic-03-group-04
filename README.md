@@ -182,7 +182,7 @@ flowchart LR
 
 ### **🤖Logistic Model**
 
-### Goal
+### Objective
 
 A logistic regression model is trained using reference proteins to predict the probability of
 RNA-binding for other proteins from our dataset.
@@ -215,8 +215,8 @@ RNA-binding for other proteins from our dataset.
     ![Beschreibung des Bildes](images/featureimportancelogistic.jpeg)
 
     - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
-    - negative coefficients (red bars) indicate features that decrease the probability of RNA-binding
-    EMD has the strongest influence on the probability of RNA-binding
+    - negative coefficients (red bars) indicate features that decrease the probability of RNA-binding\
+    -\>EMD has the strongest influence on the probability of RNA-binding
     
 3.  **Model output:**\
     The trained model was applied to the remaining 70% of proteins, yielding RNA-binding probability scores for each case.
@@ -226,16 +226,17 @@ RNA-binding for other proteins from our dataset.
 
 <img src="images/shifts.jpeg" width="30%"/>
 <img src="images/directionofproteinshift.jpeg" width="30%"/>
-<img src="images/compositionsRBP.jpeg" width="30%"/>
+<img src="images/compositionRBP.jpeg" width="30%"/>
 
-</p>
+</p>\
 
- 
-Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. Excluding the proteins used for model training, XX novel RBPs were identified. 
+  Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift. Excluding the proteins used for model training, XX novel RBPs were identified.
+     
 4.  **Accuracy of Model:**
-    
     visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy
     lies way above the "coincidence line"\
+    
+    
     ![](images/clipboard-3562156733.png)
 
 # **📈Linear Regression** 
