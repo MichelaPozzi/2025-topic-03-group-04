@@ -218,7 +218,7 @@ RNA-binding for other proteins from our dataset.
     Boxplots display the distribution of weighted scores by class (positive vs. negative). (Soll das
     rein?????)
 
-    ![](images/clipboard-2044063727.png){width="528"}
+    ![](images/clipboard-2044063727.png)
 
 ### Test-model Results
 
@@ -238,7 +238,7 @@ RNA-binding for other proteins from our dataset.
 
 -   visualise the predictive accuracy of our logistic regression model -\> the predictive accuracy
     lies way above the "coincidence line"\
-    ![](images/clipboard-3562156733.png){width="400"}
+    ![](images/clipboard-3562156733.png)
 
 # **📈Linear Regression** {#linear-regression}
 
