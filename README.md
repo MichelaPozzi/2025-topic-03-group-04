@@ -212,8 +212,7 @@ flowchart LR
 2.  **multiple regression**:\
     The multiple regression analysis shows that both the isoelectric point (pI) and molecular weight
     (Mass_kDa) are significantly associated with the target variable (p \< 0.001). The pI has the
-    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des
-    Bildes](images/3d_scatterplot.jpeg)\
+    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des Bildes](images/3dscatterplotupdated.jpeg)\
     This 3D scatterplot displays the actual data points alongside the regression plane determined by
     the multiple regression analysis.\
     The closer the points lie to the plane, the better the model fits the observed data. Large
