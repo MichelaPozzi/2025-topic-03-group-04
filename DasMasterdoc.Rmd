@@ -868,18 +868,23 @@ before: samples are grouped by batch, there is a clear separation of batches sho
 after: samples are goruped according to biological feature, no separation 
 
 ```{r}
+#prep: Set short labels as new column names
+colnames(L_ctrl_expr_corrected) <- short_labels
+colnames(ctrl_expr_matrix_log) <- short_labels
+
 #1. create annotation for Heatmap
 annotation_col <- data.frame(LC_Batch = LC_batch)
 rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
 
-#2 plot heatmao
+#2. plot heatmao
 library(pheatmap)
 
 # heatmap before correction
 pheatmap(ctrl_expr_matrix_log,
          annotation_col = annotation_col,
          annotation_colors = list(LC_Batch = LC_batch_colors),
-         main = "Heatmap before batch correction")
+         main = "Heatmap before batch correction",
+         fontsize_col=5)
 
 
 
@@ -887,7 +892,8 @@ pheatmap(ctrl_expr_matrix_log,
 pheatmap(L_ctrl_expr_corrected,
          annotation_col = annotation_col,
          annotation_colors = list(LC_Batch = LC_batch_colors),
-         main = "Heatmap after batch correction")
+         main = "Heatmap after batch correction",
+         fontsize_col=5)
 
 ```
 #interpretation 
@@ -1080,6 +1086,10 @@ Before: Samples are grouped by batch, and there is a clear separation of batches
 after: samples are grouped according to biological feature, no separation
 
 ```{r}
+# Set short labels as new column names
+colnames(L_rnase_expr_corrected) <- short_labels
+colnames(rnase_expr_matrix_log) <- short_labels
+
 
 #1. Create annotation for Heatmap
 annotation_col <- data.frame(LR_Batch = LR_batch)
@@ -1092,7 +1102,8 @@ library(pheatmap)
 pheatmap(rnase_expr_matrix_log,
          annotation_col = annotation_col,
          annotation_colors = list(LR_Batch = LR_batch_colors),
-         main = "Heatmap before batch correction")
+         main = "Heatmap before batch correction",
+          fontsize_col=5)
 
 
 
@@ -1100,7 +1111,8 @@ pheatmap(rnase_expr_matrix_log,
 pheatmap(L_rnase_expr_corrected,
          annotation_col = annotation_col,
          annotation_colors = list(LR_Batch = LR_batch_colors),
-         main = "Heatmap after batch correction")
+         main = "Heatmap after batch correction",
+          fontsize_col=5)
 
 ```
 
@@ -1149,11 +1161,11 @@ library(sva)
 library(stringr)
 library(limma)
 
-# 1 Create the expression matrix without column of protein names 
+#1. Create the expression matrix without column of protein names 
 ctrl_expr_matrix <- as.matrix(final_smoothed_ctrl[, -1])  
 
 
-# 2. create sampleInfo 
+#2. create sampleInfo 
 ctrl_samples <- colnames(ctrl_expr_matrix)
 
 # Extract "fraction" and "replicate" information out of colnames
@@ -1318,7 +1330,12 @@ Before: Samples are grouped by batch, and there is a clear separation of batches
 after: samples are grouped according to biological feature, no separation 
 
 ```{r}
-# 1. create annotation for Heatmap
+
+#prep: Set short labels as new column names
+colnames(S_corrected_expr_ctrl) <- short_labels
+colnames(ctrl_expr_matrix) <- short_labels
+
+#1. create annotation for Heatmap
 annotation_col <- data.frame(SC_Batch = SC_batch)
 rownames(annotation_col) <- colnames(ctrl_expr_matrix)
 
@@ -1329,7 +1346,8 @@ library(pheatmap)
 pheatmap(ctrl_expr_matrix,
          annotation_col = annotation_col,
          annotation_colors = list(SC_Batch = SC_batch_colors),
-         main = "Heatmap before batch correction")
+         main = "Heatmap before batch correction",
+         fontsize_col=5)
 
 
 
@@ -1337,7 +1355,8 @@ pheatmap(ctrl_expr_matrix,
 pheatmap(S_corrected_expr_ctrl,
          annotation_col = annotation_col,
          annotation_colors = list(SC_Batch = SC_batch_colors),
-         main = "Heatmap after batch correction")
+         main = "Heatmap after batch correction",
+         fontsize_col=5)
 
 
 ```
@@ -1549,7 +1568,7 @@ After: samples are grouped according to biological feature, no separation
 
 ```{r}
 
-# Set short labels as new column names
+#prep: Set short labels as new column names
 colnames(S_corrected_expr_rnase) <- short_labels
 colnames(rnase_expr_matrix) <- short_labels
 
@@ -4345,133 +4364,114 @@ first_two_components <- ctrl_rsp_pca_data[,1:2]
 plot(first_two_components)
 ```
 
-### Markierung von rsp in großer pca
 
-##rnase Markierung
 
-```{r}
- rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
-Arnase_sva_df <- cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
+#läuft grade nicht warum auch immer
+### label rsp in larger pca 
+Goal: highlight right shifts proteins in a visualization of PC1 and PC2 to determine biological relation
 
-```
+##rnase labeling
 
 ```{r}
-T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
-T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
-```
-
-```{r}
-dim(T_rnase_df)
-```
-
-```{r}
-# 1. Sicherstellen, dass die Protein-Namen in den Zeilennamen stehen
-# (Falls sie in einer Spalte sind – z.B. "Protein" –, dann so:)
-# T_rnase_df <- column_to_rownames(T_rnase_df, var = "Protein")  # falls tidyverse
-# oder base R:
-# rownames(T_rnase_df) <- T_rnase_df$Protein
-# T_rnase_df$Protein <- NULL
-
-# 2. Nur numerische Werte an PCA übergeben
-pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
-
-# 3. Ergebnis als DataFrame
-pca_df <- as.data.frame(pca$x)
-
-# 4. Jetzt Protein-Namen als neue Spalte hinzufügen (aus Zeilennamen!)
-pca_df$Protein <- rownames(T_rnase_df)
-
-
-# 5. Proteine, die hervorgehoben werden sollen
-highlight_proteins <- rownames(right_shift_rnase)
-
-# 6. Markierungsspalte
-pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
-
-# 7. Plot
 library(ggplot2)
 
-ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+#1. prepare PCA, extract numerical values
+rnase_df <- as.data.frame(S_corrected_expr_rnase)
+pca_result <- prcomp(rnase_df, center = TRUE, scale. = TRUE)
 
-  scale_color_manual(values = c("Ja" = "magenta", "Nein" = "light grey")) +
-  theme_minimal() +
-  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
+#2. convert PCA results into dataframe
+pca_df <- as.data.frame(pca_result$x)
+
+#3. copy protein names from rownames
+pca_df$Protein <- rownames(pca_df)
+
+#4. define righ shift proteins
+highlight_proteins <- rownames(right_shift_rnase)
+
+#5. add column with highlights
+pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Yes", "No")
+unique(pca_df$Highlight)
+
+#6. show how many right shift proteins were detected
+table(pca_df$Highlight)
+
+#7. plot
+ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(alpha = 0.8, size = 2) +
+  scale_color_manual(
+  values = c("Yes" = "#E7298A", "No" = "lightgrey"),
+  name = "Highlighted Proteins",
+  labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
+) +
+  labs(title = "PCA Plot with Highlighted Proteins",
+       x = "Principal Component 1",
+       y = "Principal Component 2") +
+  theme_minimal()+
+  theme(
+    legend.position = "right",       
+    legend.title = element_text(face = "bold"),
+    legend.text = element_text(size = 10)
+  )
 
 ```
+
+```{r}
+sum(x_rnase_pca_df$Protein %in% highlight_proteins)
+```
+
 
 ```{r}
 head(pca_df)
 ```
 
 
-
 ##ctrl
 
-
-
 ```{r}
-
-
-# 2. PCA auf dem großen Datensatz
-T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
-T_rnase_df<-cbind(gene=rownames(rnase_sva_df),rnase_sva_df)
-
-# 1. Sicherstellen, dass Zeilennamen gesetzt sind
-stopifnot(!is.null(rownames(T_rnase_df)))
-stopifnot(!is.null(rownames(right_shift_rnase)))
-
-# 3. PCA-Ergebnisse in DataFrame + Protein-Namen als Spalte
-pca_df <- as.data.frame(pca$x)
-pca_df$Protein <- rownames(T_rnase_df)
-
-# 4. Proteine, die hervorgehoben werden sollen
-highlight_proteins <- rownames(right_shift_rnase)
-
-# 5. Markierungsspalte hinzufügen
-pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
-
-# 6. Plot mit ggplot2
 library(ggplot2)
 
-ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
-  geom_point(size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("Ja" = "red", "Nein" = "gray")) +
+#1. prepare PCA, extract numerical values
+x_ctrl_df <- as.data.frame(S_corrected_expr_ctrl)
+x_ctrl_pca_result <- prcomp(x_ctrl_df, center = TRUE, scale. = TRUE)
+
+#2. convert PCA results into dataframe
+x_ctrl_pca_df <- as.data.frame(x_ctrl_pca_result$x)
+
+#3. copy protein names from rownames
+x_ctrl_pca_df$Protein <- rownames(x_ctrl_df)   # oder: rownames(x_rnase_df)
+
+#4. define righ shift proteins
+highlight_proteins_ctrl <- rownames(right_shift_ctrl)
+
+#5. add column with highlights
+x_ctrl_pca_df$Highlight <- ifelse(x_ctrl_pca_df$Protein %in% highlight_proteins_ctrl, "Yes", "No")
+unique(x_ctrl_pca_df$Highlight)
+
+#6. show how many right shift proteins were detected
+table(pca_df$Highlight)
+
+#7. plot 
+ggplot(x_ctrl_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(alpha = 0.8, size = 2) +
+  scale_color_manual(
+    values = c("Yes" = "#E7298A", "No" = "lightgrey"),
+    name   = "Protein Status",
+    labels = c("Yes" = "Right shift proteins",
+               "No"  = "Other proteins")
+  ) +
+  labs(
+    title = "PCA Plot with Right Shift Proteins Highlighted",
+    x = "Principal Component 1",
+    y = "Principal Component 2"
+  ) +
   theme_minimal() +
-  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
+  theme(
+    legend.position = "right",
+    legend.title    = element_text(face = "bold"),
+    legend.text     = element_text(size = 10)
+  )
 
 ```
-
-
-```{r}
-# 1. Zeilennamen korrekt setzen – wichtig!
-if (is.null(rownames(rnase_sva_df))) {
-  rownames(rnase_sva_df) <- paste0("Protein_", 1:nrow(rnase_sva_df))
-}
-
-# 2. PCA
-T_rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
-
-# 3. PCA-Ergebnisse + Protein-IDs
-pca_df <- as.data.frame(T_rnase_pca $x)
-pca_df$Protein <- rownames(rnase_sva_df)  # Jetzt korrekt
-
-# 4. Proteine, die hervorgehoben werden sollen
-highlight_proteins <- rownames(right_shift_rnase)
-
-# 5. Markierungsspalte
-pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Ja", "Nein")
-
-# 6. Plot
-library(ggplot2)
-
-ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
-  geom_point(size = 2, alpha = 0.7) +
-  scale_color_manual(values = c("Ja" = "red", "Nein" = "grey")) +
-  theme_minimal() +
-  labs(title = "PCA Biplot mit hervorgehobenen Proteinen")
-
-```
-
 
 
 # 5. Detection of features predictive of RNA-binding
@@ -4785,66 +4785,56 @@ output:
 -> the signficant relation only exists after accounting for pI in the context of the multiple regression model
 
 
+###CHI squared test 
 
-##isolieren rbp
+Goal: Determine if cluster are associated with RNA binding proteins 
+
+
+#isolate rbp 
 
 ```{r}
+#1.filter for RBPs
 rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
 
+#2.extract RBPS and store in a separate vector
 rbp_proteins <- rbp_only$Protein
 head(rbp_proteins)
 
-Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 ```
 
 
+#K-means ctrl 
 ```{r}
-C_kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
-```
-
-
-```{r}
-C_kmeans_result$cluster    
-C_kmeans_result$centers     
-C_kmeans_result$tot.withinss
-```
-
-
-
-```{r}
+#1. convert PCA ctrl data into dataframe 
 Ctrl_data <- as.data.frame(Ctrl_pca$x)
 Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
-#protein namen isolieren 
+#2. isolate protein names
 Ctrl_data$protein_name <- rownames(Ctrl_data)
 #check if rbp present 
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
-#farbe 
-Ctrl_data$color_group <- ifelse(Ctrl_data$is_rbp, "RBP", as.character(Ctrl_data$cluster))
 
+#3.plot
 library(ggplot2)
 
-ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
+ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "K-Means Cluster im PCA-Raum",
        x = "Hauptkomponente 1 (PC1)",
        y = "Hauptkomponente 2 (PC2)",
-       color = "Gruppe",
+       color = "Cluster",
        shape = "Protein-Typ") +
   theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
-  scale_color_manual(values = c("1" = "blue", "2" = "light grey", "RBP" = "purple"))
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_color_manual(values = c("1" = "blue", "2" = "lightgrey"))
 
 
-ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
+ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
   
   scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
   labs(shape = "Protein-Typ")
-```
 
-```{r}
-Ctrl_data$protein_name <- rownames(Ctrl_data)
 ```
 
 
@@ -4854,70 +4844,74 @@ colnames(Ctrl_data)
 ```
 
 
+##preparations rnase 
 
+
+#K-means rnase 
 ```{r}
-
+#1. convert PCA ctrl data into dataframe 
 rnase_data <- as.data.frame(rnase_pca$x)
-
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
-#protein namen isolieren 
+#2. isolate protein names
 rnase_data$protein_name <- rownames(rnase_data)
 #check if rbp present 
-rnase_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
 
-#farbe 
-rnase_data$color_group <- ifelse(rnase_data$is_rbp, "RBP", as.character(rnase_data$cluster))
 
-#label
-Ctrl_data$rbp_label <- ifelse(Ctrl_data$is_rbp, "RBP", "non-RBP")
-
+#3.plot
 library(ggplot2)
 
-ggplot(rnase_data, aes(x = PC1, y = PC2, color = color_group, shape = is_rbp)) +
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "K-Means Cluster im PCA-Raum",
        x = "Hauptkomponente 1 (PC1)",
        y = "Hauptkomponente 2 (PC2)",
-       color = "Gruppe",
-       shape = "rbp") +
+       color = "Cluster",
+       shape = "Protein-Typ") +
   theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) +
-  scale_color_manual(values = c("1" = "light blue", "2" = "light grey", "RBP" = "purple"))
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_color_manual(values = c("1" = "blue", "2" = "lightgrey"))
 
-
-ggplot(rnase_data,aes(x = PC1, y = PC2, color = cluster, shape = rbp_label)) +
+ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
   
   scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "rbp_label")
-```
-
-```{r}
+  labs(shape = "Protein-Typ")
 
 ```
 
 
-##rnase
+
+##Chi Squared
+#rnase
+
 ```{r}
+#1.set TRUE to RBP and FALSE to non - RBP
 rnase_data$is_rbp <- ifelse(rnase_data$is_rbp == "TRUE", "RBP", "non-RBP")
-rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  # optional: feste Cluster-Reihenfolge
+#2.turn cluster into a factor 
+rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  
+#keep cluster as order
 ```
 
 ```{r}
+#1. create table which sorts RBPs and non-RBPs into clusters
 r_tbl <- table(rnase_data$is_rbp, rnase_data$cluster)
 show(r_tbl)
 ```
 
 ```{r}
-table(rnase_data$is_rbp, useNA = "ifany")
+#1.table counts the amount of RBPs
+table(rnase_data$is_rbp)
 str(rnase_data$is_rbp)
 ```
+
 ```{r}
 print(rnase_data)
 ```
 
 
 ```{r}
+#1. apply chi sqquared to earlier created table
 chisq.test(r_tbl)
 
 # keinen zusammenhang mit cluter
@@ -4926,14 +4920,25 @@ chisq.test(r_tbl)
 
 ##ctrl
 ```{r}
+#1.set TRUE to RBP and FALSE to non - RBP
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
-Ctrl_data$cluster <- factor(Ctrl_data$cluster, levels = c(1, 2))  # optional: feste Cluster-Reihenfolge
+#2.turn cluster into a factor 
+Ctrl_data$cluster <- factor(Ctrl_data$cluster, levels = c(1, 2))  
+#keep cluster as order
 ```
 
 ```{r}
+#1. create table which sorts RBPs and non-RBPs into clusters
 c_tbl <- table(Ctrl_data$is_rbp, Ctrl_data$cluster)
 show(c_tbl)
 ```
+
+```{r}
+#1.table counts the amount of RBPs
+table(Ctrl_data$is_rbp)
+str(Ctrl_data$is_rbp)
+```
+
 
 ```{r}
 print(Ctrl_data)
@@ -4941,7 +4946,8 @@ print(Ctrl_data)
 
 
 ```{r}
+#1. apply chi sqquared to earlier created table
 chisq.test(c_tbl)
 
-#kein zusammenhang mit cluster
+#no association assuamble due to high p-value 
 ```
