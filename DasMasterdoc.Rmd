@@ -702,7 +702,7 @@ LC_batch <- sub(".*_(Rep\\d)", "\\1", LC_sample_names)
 LC_batch <- factor(LC_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
 # 3. Assign colors 
-LC_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+LC_batch_colors <- c("Rep1" = "#c9a0dc", "Rep2" = "#A9C1A6", "Rep3" = "#F5E1A4")
 colors <- LC_batch_colors[as.character(LC_batch)]
 
 #4.shorten labels 
@@ -710,23 +710,23 @@ short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctrl_e
 
 ```
 
-##boxplot
+##boxplot ctrl 
 Goal:
 Visualize data in a boxplot in order to observe first differences 
 ```{r}
 
-# 1. create boxplot
+#1. create boxplot
 boxplot(ctrl_expr_matrix,
         main = "Expression by sample (batch coloured)",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                     
-        col = colors,
+        col = LC_batch_colors,
         outline = FALSE,
         cex.axis = 0.6,
         names = short_labels)            
 
-# 2. add key
+#2. add key
 legend_labels <- levels(LC_batch)
 legend_colors <- LC_batch_colors[legend_labels]
 
@@ -763,19 +763,19 @@ first trial of removing the batch effect using limma
 library(limma)
 
 
-# 1. apply a log 2 transformation 
+#1. apply a log 2 transformation 
 # necessary for limma, stabilizes variance, improves interpretability , reduces outlier effects 
 
 #add +1 in order to prevent log2(0)
 
 ctrl_expr_matrix_log <- log2(ctrl_expr_matrix + 1)
 
-# 2. Correction with limma
+#2. Correction with limma
 L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
 
 
 
-# 3. draw boxplot beofre correction 
+#3. draw boxplot beofre correction 
 #use log2 transformed matrix for comparison 
  
 boxplot(ctrl_expr_matrix_log,
@@ -783,7 +783,7 @@ boxplot(ctrl_expr_matrix_log,
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                     
-        col = colors,
+        col = LC_batch_colors,
         outline = FALSE,
         cex.axis = 0.6,
         names = short_labels) 
@@ -795,13 +795,13 @@ legend("topright",
        fill = legend_colors,
        title = "Batch")
 
-# 4.Boxplot after correction
+#4.Boxplot after correction
 boxplot(L_ctrl_expr_corrected,
         main = "Expression after correction (batch coloured)",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                    
-        col = colors,
+        col = LC_batch_colors,
         outline = FALSE,
         cex.axis = 0.6,
         names = short_labels)             
@@ -820,12 +820,12 @@ legend("topright",
 There is no severe change visible, and the data is now log transformed making it hard to use it for further steps 
 
 
-## Batch effect pca 
+## Batch effect pca limma ctrl
 #expectation
 before: clusters of the same batch with distinct separation of clusters 
 after: no separation visible
 ```{r}
-# 1. Prepare PCA
+#1. Prepare PCA
 pca_before <- prcomp(t(ctrl_expr_matrix_log), scale. = TRUE)
 pca_after  <- prcomp(t(L_ctrl_expr_corrected), scale. = TRUE)
 # Transposing the matrix is necessary because the observations and variables are swapped
@@ -839,17 +839,17 @@ par(mfrow = c(1, 2))
 
 # PCA before correction
 plot(pca_before$x[, 1:2],
-     col = colors,
+     col = LC_batch_colors,
      pch = 19,
-     main = "PCA before correction")
-legend("topright", legend = levels(LC_batch), col = colors, pch = 19)
+     main = "PCA before correction,ctrl")
+legend("topright", legend = levels(LC_batch), col = LC_batch_colors, pch = 19)
 
 # PCA after correction
 plot(pca_after$x[, 1:2],
-     col = colors,
+     col = LC_batch_colors,
      pch = 19,
-     main = "PCA after correction")
-legend("topright", legend = levels(LC_batch), col = colors, pch = 19)
+     main = "PCA after correction,ctrl")
+legend("topright", legend = levels(LC_batch), col = LC_batch_colors, pch = 19)
 
 
 ```
@@ -867,22 +867,23 @@ There is no severe change visible, also there is no distinct differences between
 before: samples are grouped by batch, there is a clear separation of batches shown in the annotation 
 after: samples are goruped according to biological feature, no separation 
 
+
 ```{r}
 #prep: Set short labels as new column names
 colnames(L_ctrl_expr_corrected) <- short_labels
 colnames(ctrl_expr_matrix_log) <- short_labels
 
 #1. create annotation for Heatmap
-annotation_col <- data.frame(LC_Batch = LC_batch)
+annotation_col <- data.frame(SC_Batch = SC_batch)
 rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
 
-#2. plot heatmao
+#2. 
 library(pheatmap)
 
 # heatmap before correction
 pheatmap(ctrl_expr_matrix_log,
          annotation_col = annotation_col,
-         annotation_colors = list(LC_Batch = LC_batch_colors),
+         annotation_colors = list(SC_Batch = SC_batch_colors),
          main = "Heatmap before batch correction",
          fontsize_col=5)
 
@@ -891,11 +892,13 @@ pheatmap(ctrl_expr_matrix_log,
 # heatmap after correction
 pheatmap(L_ctrl_expr_corrected,
          annotation_col = annotation_col,
-         annotation_colors = list(LC_Batch = LC_batch_colors),
+         annotation_colors = list(SC_Batch = SC_batch_colors),
          main = "Heatmap after batch correction",
          fontsize_col=5)
-
 ```
+
+
+
 #interpretation 
 before the correction there is no separation visible, after the correction there is a slight switch visible which does not seem to improve the dataset 
 
@@ -918,7 +921,7 @@ head(L_ctrl_expr_corrected_df)
 
 ##RNASE
 
-##boxplot 
+##boxplot rnase
 Goal:
 Visualize data in a boxplot in order to observe first differences 
 ##load data and creat matrix
@@ -927,19 +930,19 @@ Visualize data in a boxplot in order to observe first differences
 rnase_expr_matrix <- as.matrix(final_smoothed_rnase[, -1])  
 ```
 
-##create batch vector 
+##create batch vector rnase limma
 ```{r}
 
-# 1. Extract sample names to create batch labels 
+#1. Extract sample names to create batch labels 
 LR_sample_names <- colnames(rnase_expr_matrix)
 
-# 2. Create batch labels out of sample names 
+#2. Create batch labels out of sample names 
 #create batches from replicates in order to have comparable batches
 LR_batch <- sub(".*_(Rep\\d)", "\\1", LR_sample_names)
 LR_batch <- factor(LR_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
-# 3. Assign colors 
-LR_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+#3. Assign colors 
+LR_batch_colors <- c("Rep1" = "#c9a0dc", "Rep2" = "#A9C1A6", "Rep3" = "#F5E1A4")
 colors <- LR_batch_colors[as.character(LR_batch)]
 
 #4.shorten labels 
@@ -953,19 +956,18 @@ Goal:
 Visualize data in a boxplot in order to observe first differences 
 ```{r}
 
-
-# 1. draw boxplot
+#1. draw boxplot
 boxplot(rnase_expr_matrix,
-        main = "Expression nach Sample (Batch gefärbt)",
+        main = "Expression by sample (batch coloured), rnase",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                     
-        col = colors,
+        col = LR_batch_colors,
         outline = FALSE,
         cex.axis = 0.6,
         names = short_labels)              
 
-# 2. add key
+#2. add key
 legend_labels <- c("Rep1", "Rep2", "Rep3")
 legend_colors <- LR_batch_colors[legend_labels]
 legend("topright",
@@ -1000,11 +1002,11 @@ L_rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, LR_batch = LR
 # Boxplot before correction
 
 boxplot(rnase_expr_matrix_log,
-        main = "Expression before correction (batch coloured)",
+        main = "Expression before correction (batch coloured), rnase",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                      
-        col = colors,
+        col = LR_batch_colors,
         outline = FALSE,
         cex.axis = 0.6,
         names=short_labels)             
@@ -1020,11 +1022,11 @@ legend("topright",
 
 # Boxplot after correction
 boxplot(L_rnase_expr_corrected,
-        main = "Expression after correction (batch coloured)",
+        main = "Expression after correction (batch coloured), rnase",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                      
-        col = colors,
+        col = LR_batch_colors,
         outline = FALSE,
         cex.axis = 0.6,
         names=short_labels)             
@@ -1044,7 +1046,7 @@ There is no severe change visible, and the data is now log transformed, making i
 
 #more visualizing
 
-## Batch effect pca 
+## Batch effect pca limma rnase
 #expectation
 before: clusters of the same batch with distinct separation of clusters 
 after: no separation visible
@@ -1080,41 +1082,42 @@ There is no severe change visible, also there are no distinct differences betwee
 
 
 
-##heatmap
+##heatmap rnase limma
 #expectation: 
 Before: Samples are grouped by batch, and there is a clear separation of batches shown in the annotation 
 after: samples are grouped according to biological feature, no separation
 
 ```{r}
-# Set short labels as new column names
+#prep: Set short labels as new column names
 colnames(L_rnase_expr_corrected) <- short_labels
 colnames(rnase_expr_matrix_log) <- short_labels
 
+#1. create annotation for Heatmap
+annotation_col <- data.frame(SC_Batch = SC_batch)
+rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
 
-#1. Create annotation for Heatmap
-annotation_col <- data.frame(LR_Batch = LR_batch)
-rownames(annotation_col) <- colnames(rnase_expr_matrix_log)
-
-#5 plot heatmao
+#2. 
 library(pheatmap)
 
 # heatmap before correction
 pheatmap(rnase_expr_matrix_log,
          annotation_col = annotation_col,
-         annotation_colors = list(LR_Batch = LR_batch_colors),
+         annotation_colors = list(SC_Batch = SC_batch_colors),
          main = "Heatmap before batch correction",
-          fontsize_col=5)
+         fontsize_col=5)
 
 
 
 # heatmap after correction
 pheatmap(L_rnase_expr_corrected,
          annotation_col = annotation_col,
-         annotation_colors = list(LR_Batch = LR_batch_colors),
+         annotation_colors = list(SC_Batch = SC_batch_colors),
          main = "Heatmap after batch correction",
-          fontsize_col=5)
+         fontsize_col=5)
 
 ```
+
+
 
 #interpretation 
 no change visible 
@@ -1222,7 +1225,7 @@ SC_batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 SC_batch <- factor(SC_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
 # 3. assign colors 
-SC_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+SC_batch_colors <- c("Rep1" = "#c9a0dc", "Rep2" = "#A9C1A6", "Rep3" = "#F5E1A4")
 colors <- SC_batch_colors[as.character(SC_batch)]
 
 #4.shorten labels 
@@ -1236,9 +1239,10 @@ before: big differences between replicates and not in replicates themselves. Als
 after: reduced differences
 
 ```{r}
-# 1. Boxplot before correction
+
+#1. Boxplot before correction
 boxplot(ctrl_expr_matrix,
-        main = "Expression before SVA correction (replicate colored)",
+        main = "Expression before SVA correction (replicate colored, ctrl)",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,
@@ -1254,9 +1258,9 @@ legend("topright",
        cex=0.4)
 
 
-# 2. Boxplot after correction
+#2. Boxplot after correction
 boxplot(S_corrected_expr_ctrl,
-        main = "Expression after SVA correction (replicate colored)",
+        main = "Expression after SVA correction (replicate colored, ctrl)",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,
@@ -1271,6 +1275,7 @@ legend("topright",
        fill = SC_batch_colors,
        title = "Replicate",
        cex=0.4)
+
 
 ```
 
@@ -1294,13 +1299,14 @@ pca_after  <- prcomp(t(S_corrected_expr_ctrl), scale. = TRUE)
 #2. Plot: 
 
 #next to each other
-par(mfrow = c(1, 2))  # Zwei Plots nebeneinander
+par(mfrow = c(1, 2))
 
 #PCA before correction
 plot(pca_before$x[, 1:2],
      col = colors,
      pch = 19,
-     main = "PCA before SVA correction",
+     main = "PCA before SVA correction, ctrl SVA",
+     cex.main=0.8,
      xlab = "PC1", ylab = "PC2")
 
 legend("topright", legend = levels(SC_batch), col = colors, pch = 19, cex=0.4)
@@ -1310,7 +1316,8 @@ legend("topright", legend = levels(SC_batch), col = colors, pch = 19, cex=0.4)
 plot(pca_after$x[, 1:2],
      col = colors,
      pch = 19,
-     main = "PCA after SVA correction ",
+     main = "PCA after SVA correction, ctrl SVA ",
+     cex.main=0.8,
      xlab = "PC1", ylab = "PC2")
 
 legend("topright", legend = levels(SC_batch), col = colors, pch = 19, cex=0.4)
@@ -1460,7 +1467,7 @@ SR_batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
 SR_batch <- factor(SR_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
 # 2. assign colors
-SR_batch_colors <- c("Rep1" = "purple", "Rep2" = "#c9a0dc", "Rep3" = "blue")
+SR_batch_colors <- c("Rep1" = "#c9a0dc", "Rep2" = "#A9C1A6", "Rep3" = "#F5E1A4")
 colors <- SR_batch_colors[as.character(SR_batch)]
 
 #4.shorten labels 
@@ -1478,7 +1485,7 @@ after: reduced differences
 ```{r}
 # 1. Boxplot before correction
 boxplot(rnase_expr_matrix,
-        main = "Expression before SVA correction (replicate colored)",
+        main = "Expression before SVA correction (replicate colored), rnase SVA",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,
@@ -1496,7 +1503,7 @@ legend("topright",
 
 # 2. Boxplot after correction
 boxplot(S_corrected_expr_rnase,
-        main = "Expression after SVA correction (replicate colored)",
+        main = "Expression after SVA correction (replicate colored), rnase SVA",
         ylab = "Expression",
         xlab = "Samples",
         las = 2,
@@ -1540,7 +1547,8 @@ par(mfrow = c(1, 2))
 plot(pca_before$x[, 1:2],
      col = colors,
      pch = 19,
-     main = "PCA before SVA correction",
+     main = "PCA before SVA correction, rnase SVA",
+     cex.main=0.8,
      xlab = "PC1", ylab = "PC2")
 
 legend("topright", legend = levels(SR_batch), col = batch_colors, pch = 19,cex=0.4)
@@ -1549,7 +1557,8 @@ legend("topright", legend = levels(SR_batch), col = batch_colors, pch = 19,cex=0
 plot(pca_after$x[, 1:2],
      col = colors,
      pch = 19,
-     main = "PCA after SVA correction ",
+     main = "PCA after SVA correction, rnase SVA ",
+     cex.main=0.8,
      xlab = "PC1", ylab = "PC2")
 legend("topright", legend = levels(SC_batch), col = colors, pch = 19,cex=0.4)
 
@@ -1591,7 +1600,7 @@ library(pheatmap)
 pheatmap(rnase_expr_matrix,
          annotation_col = annotation_col,
          annotation_colors = list(SR_Batch = SR_batch_colors),
-         main = "Heatmap before batch correction",
+         main = "Heatmap before batch correction, rnase SVA",
          fontsize_col=5)
 
 
@@ -1600,7 +1609,7 @@ pheatmap(rnase_expr_matrix,
 pheatmap(S_corrected_expr_rnase,
          annotation_col = annotation_col,
          annotation_colors = list(SR_Batch = SR_batch_colors),
-         main = "Heatmap after batch correction",
+         main = "Heatmap after batch correction, rnase SVA",
          fontsize_col=5)
 
 ```
@@ -3344,11 +3353,11 @@ Output: visualization of a negative control and positive control protein, as wel
 
 # 4. dimension reduction
 
-## PCA
+### PCA
 Goal: Reduce dimension and further visualize data in clusters with only the most important structures. Batch cleaned data is used in order to ensure no technical variation. 
-###Control
+##Control
 
-#check how data set is made up
+#check how data set is made up, ctrl
 ```{r}
 ctrl_sva_df <- as.data.frame(S_corrected_expr_ctrl)
 rownames(ctrl_sva_df) <- ctrl_sva_df$X
@@ -3369,7 +3378,7 @@ apply(C_test, 2, sd)
 ```
 -> big differences, not perfectly scaled 
 
-###pca selbst 
+##pca selbst ctrl 
 -> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
 -> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores 
 ```{r}
@@ -3413,7 +3422,7 @@ ctrl_pca_ve_percent
 
 
 
-###prozentplot 
+#prozentplot ctrl
 
 ```{r}
 #1. plot
@@ -3424,7 +3433,7 @@ plot(ctrl_pca_ve_percent, type = "b", pch = 19,
 ```
 
 
-#barplot 
+#barplot ctrl
 
 ```{r}
 #plot 
@@ -3448,7 +3457,8 @@ axis(1, at = bar_positions, labels = paste0("PC", 1:length(ctrl_pca_ve_percent))
 ```{r}
 #1. plot
 biplot(ctrl_pca, scale = 0, cex = 0.6,
-       col = c("red", "purple"),                
+       col = c("black", "#c9a0dc"),
+       main="PCA biplot ctrl",
        xlab = "PC1 (44% variance explained)",  
        ylab = "PC2 (21% variance explained)")
 ```
@@ -3458,7 +3468,7 @@ biplot(ctrl_pca, scale = 0, cex = 0.6,
 
 library(ggbiplot)
 #1. axis
-my_var_explained <- c(44.3, 20.8)  # PC1 und PC2 z.B.
+my_var_explained <- c(44.3, 20.8)  
 #2. plot
 ggbiplot(ctrl_pca,
          obs.scale = 1,
@@ -3468,10 +3478,15 @@ ggbiplot(ctrl_pca,
          var.axes = TRUE) +
   xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
   ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
-  theme_minimal()
+  theme_minimal()+
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14)) +
+  guides(colour = "none") 
+   
 
- 
+
 ```
+
 
 
 ###determine cluster
@@ -3531,7 +3546,7 @@ ctrl_best_sil <- silhouette(km_best$cluster, dist(ctrl_sil_df))
 # 7. Visualize silhouette plot
 fviz_silhouette(
   ctrl_best_sil,
-  palette = c("#c9a0dc", "lavender"),
+  palette = c("#c9a0dc", "#A9C1A6"),
   ggtheme = theme_classic(),
   main = paste("Silhouette plot for k =", best_k)
 )
@@ -3581,7 +3596,7 @@ ggplot(ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
        x = "Principal component 1 (44.3%)",
        y = "Principal component 2 (20.8%)") +
   theme_minimal() +
-  scale_color_manual(values = c("purple","darkgreen"))
+  scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
 
 #plot PC1 and PC2 as control 
@@ -3693,7 +3708,7 @@ axis(1, at = bar_positions, labels = paste0("PC", 1:length(rnase_pca_ve_percent)
 ```{r}
 #1. plot
 biplot(rnase_pca, scale = 0, cex = 0.6,
-       col = c("red", "purple"),                
+       col = c("black", "#c9a0dc"),                
        xlab = "PC1 (43.9% variance explained)",  
        ylab = "PC2 (20.53% variance explained)")
 
@@ -3773,12 +3788,12 @@ best_k <- k_values[which.max(rnase_avg_sil)]
 
 # 6. Run K-Means and compute the  silhouette for the best k
 rnase_km_best <- kmeans(rnase_sil_df, centers = best_k, nstart = 25)
-rnase_sil <- silhouette(rnase_km_best$cluster, dist(rnase_sil_df))
+rnase_best_sil <- silhouette(rnase_km_best$cluster, dist(rnase_sil_df))
 
 # 7. Visualize silhouette plot
 fviz_silhouette(
   rnase_best_sil,
-  palette = c("#c9a0dc", "lavender"),
+  palette = c("#c9a0dc", "#A9C1A6"),
   ggtheme = theme_classic(),
   main = paste("Silhouette plot for k =", best_k)
 )
@@ -3830,7 +3845,7 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
        x = "Principal component 1 (43.9%)",
        y = "Principal component 2 (20.53%)") +
   theme_minimal() +
-  scale_color_manual(values = c("purple","darkgreen"))
+  scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
 
 #plot PC1 and PC2 as control
@@ -3962,10 +3977,72 @@ axis(1, at = bar_positions, labels = paste0("PC", 1:length(rnase_rsp_pca_ve_perc
 ##biplot
 ```{r}
 #1. plot
-biplot(rnase_rsp_pca, scale = 0, cex = 0.6,
-       col = c("red", "purple"),                
+biplot(rnase_rsp_pca, scale = 0, cex = 0.5,
+       col = c("black", "#c9a0dc"),
        xlab = "PC1 (44.3% variance explained)",  
-       ylab = "PC2 (20.79% variance explained)")
+       ylab = "PC2 (20.79% variance explained)",
+       xlim = c(-50,50),
+       ylim = c(-50,50),
+       main = "Biplot PCA rnase rsp")
+
+```
+
+###test
+```{r}
+# Only individuals (samples)
+fviz_pca_ind(rnase_rsp_pca,
+             repel = TRUE,
+             col.ind = "black",
+             title = "PCA: Samples Only")
+
+# Only variables
+fviz_pca_var(rnase_rsp_pca,
+             col.var = "#c9a0dc",
+             repel = TRUE,
+             title = "PCA: Variables Only")
+
+```
+
+```{r}
+fviz_pca_biplot(rnase_rsp_pca,
+                repel = TRUE,           # Helps spread out labels
+                label = "var",          # Show only variables, or use "none"
+                col.var = "#c9a0dc",    # Variable color
+                col.ind = "black",      # Individual point color
+                addEllipses = TRUE,     # Optional: group ellipses
+                title = "Clean PCA Biplot")
+```
+
+```{r}
+# Run PCA
+pca <- prcomp(rnase_rsp_pca, scale. = TRUE)
+
+# Get scores (samples)
+scores <- as.data.frame(pca$x)
+
+# Get loadings (variable arrows), scaled for plotting
+loadings <- as.data.frame(pca$rotation)
+loadings$varname <- rownames(loadings)
+
+# Optional: scale the loadings to match the spread of the scores
+loadings_scaled <- loadings
+loadings_scaled$PC1 <- loadings$PC1 * max(abs(scores$PC1)) * 0.7
+loadings_scaled$PC2 <- loadings$PC2 * max(abs(scores$PC2)) * 0.7
+
+# Plot using ggplot2
+library(ggplot2)
+
+ggplot(scores, aes(x = PC1, y = PC2)) +
+  geom_point(alpha = 0.5) +  # Sample points
+  geom_segment(data = loadings_scaled,
+               aes(x = 0, y = 0, xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(0.2, "cm")), 
+               color = "#c9a0dc") +
+  geom_text(data = loadings_scaled,
+            aes(x = PC1, y = PC2, label = varname),
+            color = "#c9a0dc", vjust = 1, hjust = 1, size = 3) +
+  theme_minimal() +
+  labs(title = "PCA Biplot (rescaled)", x = "PC1", y = "PC2")
 
 ```
 
@@ -4051,7 +4128,7 @@ rnase_rsp_best_sil <- silhouette(rnase_rsp_km_best$cluster, dist(rnase_rsp_sil_d
 # Silhouettenplot anzeigen wie im Beispielbild
 fviz_silhouette(
   rnase_rsp_best_sil,
-  palette = c("#c9a0dc", "lavender"),
+  palette = c("#c9a0dc", "#A9C1A6"),
   ggtheme = theme_classic(),
   main = paste("Silhouette plot for k =", best_k)
 )
@@ -4102,7 +4179,7 @@ ggplot(rnase_rsp_pca_data, aes(x = PC1, y = PC2, color = cluster)) +
        x = "Principal component 1 (44.3%)",
        y = "Principal component 2 (20.79%)") +
   theme_minimal() +
-  scale_color_manual(values =  c("purple","darkgreen"))
+  scale_color_manual(values =  c("#c9a0dc","#A9C1A6"))
 ```
 
 #plot PC1 and PC2 as control 
@@ -4113,7 +4190,7 @@ plot(first_two_components)
 
 
 
-### PCA rnase RSP
+### PCA crtl RSP
 
 # Check how dataset is made up
 ```{r}
@@ -4216,9 +4293,12 @@ axis(1, at = bar_positions, labels = paste0("PC", 1:length(ctrl_rsp_pca_ve_perce
 ```{r}
 #1. plot
 biplot(ctrl_rsp_pca, scale = 0, cex = 0.4,
-       col = c("red","blue"),                
+       col = c("black","#c9a0dc"),                
        xlab = "PC1 (55.84% variance explained)",  
-       ylab = "PC2 (15.3% variance explained)")
+       ylab = "PC2 (15.3% variance explained)",
+       main = "Biplot PCA ctrl rsp",
+       xlim = c(-50,50),
+       ylim = c(-50,50))
 
 ```
 
@@ -4300,7 +4380,7 @@ ctrl_rsp_best_sil <- silhouette(ctrl_rsp_km_best$cluster, dist(ctrl_rsp_sil_df))
 # 7. Visualize silhouette plot
 fviz_silhouette(
   ctrl_rsp_best_sil,
-  palette = c("#c9a0dc", "lavender"),
+  palette = c("#c9a0dc", "#A9C1A6"),
   ggtheme = theme_classic(),
   main = paste("Silhouette plot for k =", ctrl_rsp_best_k)
 )
@@ -4352,7 +4432,7 @@ ggplot(ctrl_rsp_pca_data, aes(x = PC1, y = PC2, color = cluster)) +
        x = "Principal component 1 (55.84%)",
        y = "Principal component 2 (15.3%)") +
   theme_minimal() +
-  scale_color_manual(values = c("purple","darkgreen"))
+  scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
 
 #plot PC1 and PC2 as control 
@@ -4380,7 +4460,7 @@ pca_result <- prcomp(rnase_df, center = TRUE, scale. = TRUE)
 pca_df <- as.data.frame(pca_result$x)
 
 #3. copy protein names from rownames
-pca_df$Protein <- rownames(pca_df)
+pca_df$Protein <- rownames(S_corrected_expr_rnase_df)
 
 #4. define righ shift proteins
 highlight_proteins <- rownames(right_shift_rnase)
@@ -4396,7 +4476,7 @@ table(pca_df$Highlight)
 ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   geom_point(alpha = 0.8, size = 2) +
   scale_color_manual(
-  values = c("Yes" = "#E7298A", "No" = "lightgrey"),
+  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
   name = "Highlighted Proteins",
   labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
 ) +
@@ -4413,7 +4493,14 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
 ```
 
 ```{r}
-sum(x_rnase_pca_df$Protein %in% highlight_proteins)
+sum(pca_df$Protein %in% highlight_proteins)
+
+```
+
+```{r}
+head(pca_df$Protein)
+head(highlight_proteins)
+
 ```
 
 
@@ -4423,53 +4510,47 @@ head(pca_df)
 
 
 ##ctrl
-
 ```{r}
 library(ggplot2)
 
 #1. prepare PCA, extract numerical values
-x_ctrl_df <- as.data.frame(S_corrected_expr_ctrl)
-x_ctrl_pca_result <- prcomp(x_ctrl_df, center = TRUE, scale. = TRUE)
+ctrl_df <- as.data.frame(S_corrected_expr_ctrl)
+ctrl_pca_result <- prcomp(ctrl_df, center = TRUE, scale. = TRUE)
 
 #2. convert PCA results into dataframe
-x_ctrl_pca_df <- as.data.frame(x_ctrl_pca_result$x)
+ctrl_pca_df <- as.data.frame(ctrl_pca_result$x)
 
 #3. copy protein names from rownames
-x_ctrl_pca_df$Protein <- rownames(x_ctrl_df)   # oder: rownames(x_rnase_df)
+ctrl_pca_df$Protein <- rownames(S_corrected_expr_rnase_df)
 
 #4. define righ shift proteins
-highlight_proteins_ctrl <- rownames(right_shift_ctrl)
+highlight_proteins <- rownames(right_shift_ctrl)
 
 #5. add column with highlights
-x_ctrl_pca_df$Highlight <- ifelse(x_ctrl_pca_df$Protein %in% highlight_proteins_ctrl, "Yes", "No")
-unique(x_ctrl_pca_df$Highlight)
+ctrl_pca_df$Highlight <- ifelse(ctrl_pca_df$Protein %in% highlight_proteins, "Yes", "No")
+unique(ctrl_pca_df$Highlight)
 
 #6. show how many right shift proteins were detected
-table(pca_df$Highlight)
+table(ctrl_pca_df$Highlight)
 
-#7. plot 
-ggplot(x_ctrl_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+#7. plot
+ggplot(ctrl_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   geom_point(alpha = 0.8, size = 2) +
   scale_color_manual(
-    values = c("Yes" = "#E7298A", "No" = "lightgrey"),
-    name   = "Protein Status",
-    labels = c("Yes" = "Right shift proteins",
-               "No"  = "Other proteins")
-  ) +
-  labs(
-    title = "PCA Plot with Right Shift Proteins Highlighted",
-    x = "Principal Component 1",
-    y = "Principal Component 2"
-  ) +
-  theme_minimal() +
+  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
+  name = "Highlighted Proteins",
+  labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
+) +
+  labs(title = "PCA Plot with Highlighted Proteins",
+       x = "Principal Component 1",
+       y = "Principal Component 2") +
+  theme_minimal()+
   theme(
-    legend.position = "right",
-    legend.title    = element_text(face = "bold"),
-    legend.text     = element_text(size = 10)
+    legend.position = "right",       
+    legend.title = element_text(face = "bold"),
+    legend.text = element_text(size = 10)
   )
-
 ```
-
 
 # 5. Detection of features predictive of RNA-binding
 # linear regression
@@ -4824,7 +4905,7 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
        shape = "Protein-Typ") +
   theme_minimal() +
   scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
-  scale_color_manual(values = c("1" = "blue", "2" = "lightgrey"))
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
 
 
 ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
@@ -4868,7 +4949,7 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
        shape = "Protein-Typ") +
   theme_minimal() +
   scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
-  scale_color_manual(values = c("1" = "blue", "2" = "lightgrey"))
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
 
 ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
   
