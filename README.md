@@ -209,7 +209,16 @@ In 1D, EMD is calculated as the sum of absolute differences between the empirica
 distribution functions (ECDFs) of the two conditions. Higher EMD indicates greater differences in
 distribution shape.
 
--   Center Of Mass Test:
+-   Center Of Mass Test (COM): The Center of Mass Test calculates the intensity-weighted average of
+    fraction numbers,which represent the **"center" of a protein's distribution** (=COM).
+
+    The COM is calculated and compared between the two treatments (=Delta-COM).\
+
+    **Output:**\
+    Difference between both treatments and the average position of the protein
+    distribution (= center of protein distribution) per protein along the gradient.\
+    A higher absolute Delta-COM value indicates that the protein's intensity profile has moved noticeably along the gradient.\
+    The **FEHLT NOCH**
 
 -   Wilcoxon Statistic:
 
