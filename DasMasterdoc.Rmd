@@ -2179,8 +2179,6 @@ legend("center",
 )
 
 ```
-
-
 #### skewness of center of mass
 Goal: determine whether the delta center of mass values are skewed or not
 If skewed: robust scaling is possible
@@ -2305,7 +2303,6 @@ print(fraktion_pos_ctrl_df)
 
 print(global_max_rnase_df)
 print(fraktion_pos_rnase_df)
-
 ```
 
 ```{r}
