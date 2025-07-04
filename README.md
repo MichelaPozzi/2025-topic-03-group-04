@@ -256,7 +256,7 @@ RNA-binding for other proteins from our dataset.
 
     -   positive coefficients (purple bars) indicate features that increase the probability of
         RNA-binding
-    -   negative coefficients (blue bars) indicate features that decrease the probability of
+    -   negative coefficients (green bars) indicate features that decrease the probability of
         RNA-binding\
         -\>EMD has the strongest influence on the probability of RNA-binding
 
