@@ -603,17 +603,26 @@ fraktionen <- 1:25
 
 # prepare the plot
 plot(fraktionen, intensities_ctrl, type = "n",
-     xlab = "Fraktion (1–25)", ylab = "Proteinmenge",
-     main = paste("Vergleich: Kontrolle vs. RNase für", protein_id),
+     xlab = "Fractions (1–25)", ylab = "Amount Of Protein",
+     main = paste("Comparison: Control and RNase for", protein_id),
      ylim = c(0, max(c(intensities_ctrl, intensities_rnase)) * 1.1),
      xaxt = "n")
 axis(1, at = 1:25)
 grid(col = "lightgray", lty = "dotted")
 
-ctrl_fill_color <- rgb(0.7, 0.6, 1, 0.3)
-ctrl_line_color <- rgb(0.7, 0.6, 1)
-rnase_fill_color <- rgb(0.2745, 0.5098, 0.7059, 0.3)
-rnase_line_color <- rgb(0.2745, 0.5098, 0.7059)
+hex_to_rgba <- function(hex_code, alpha = 1) {
+  hex_code_clean <- substring(hex_code, 2)
+  r <- strtoi(substr(hex_code_clean, 1, 2), 16L) / 255
+  g <- strtoi(substr(hex_code_clean, 3, 4), 16L) / 255
+  b <- strtoi(substr(hex_code_clean, 5, 6), 16L) / 255
+  rgb(r, g, b, alpha)
+}
+
+ctrl_fill_color <- hex_to_rgba("#A9C1A6", 0.3)
+ctrl_line_color <- hex_to_rgba("#A9C1A6", 1)
+rnase_fill_color <- hex_to_rgba("#c9a0dc", 0.3)
+rnase_line_color <- hex_to_rgba("#c9a0dc", 1)
+
 
 # control graph
 polygon(c(fraktionen, rev(fraktionen)),
@@ -628,7 +637,7 @@ polygon(c(fraktionen, rev(fraktionen)),
 lines(fraktionen, intensities_rnase, col = rnase_line_color, lwd = 2)
 
 legend("topright",
-       legend = c("Kontrolle", "RNase"),
+       legend = c("Control", "RNase"),
        col = c(ctrl_line_color, rnase_line_color),
        lwd = 2,
        bg = "white")
@@ -1888,7 +1897,7 @@ amplitude_changes <- data.frame(
 
 head(amplitude_changes)
 ```
-Goal: to establish a general shift we only need to asses wheter a change in amplitude occured regardless of the direction
+Goal: to establish a general shift we only need to assess whether a change in amplitude occurred regardless of the direction
 ```{r}
 ###Addition of all amplitude changes
 amplitude_changes$changes <- amplitude_changes$loss + amplitude_changes$gain
@@ -1924,41 +1933,6 @@ amplitude_changes$changes_scaled <- robust_scale(amplitude_changes$changes)
 #scale to 100%
 amplitude_changes$changes_scaled_100<- (amplitude_changes$changes_scaled/100)*100
 head(amplitude_changes$changes_scaled_100)
-```
-
-
-```{r}
-# Join dataframes including global maxima and calculate their differences
-df_diff_peaks <- shift_result[, 1:3]
-
-df_diff_peaks$diff <- df_diff_peaks$Position_RNase - df_diff_peaks$Position_Control
-
-# calculate limits for axes
-max_val <- max(
-  df_diff_peaks$Position_RNase,
-  df_diff_peaks$Position_Control,
-  na.rm= TRUE
-)*1.1
-
-colors <- ifelse(df_diff_peaks$diff > 0, "pink",
-                 ifelse(df_diff_peaks$diff < 0, "lavender", "cyan"))
-
-# create scatterplot 
-plot(
-  df_diff_peaks$Position_RNase,
-  df_diff_peaks$Position_Control,
-  xlim = c(0, max_val),
-  ylim = c(0, max_val),
-  xlab = "Globales Maximum RNase",
-  ylab = "Globales Maximum Kontroll",
-  main = "Vergleich der globalen Maxima der Proteine",
-  pch = 19,
-  col = colors
-)
-
-# Referenceline y = x
-abline(a = 0, b = 1, col = "grey",lty=2)
-
 ```
 
 ```{r}#
@@ -2115,6 +2089,72 @@ center_of_mass_df$shift_direction <- ifelse(center_of_mass_df$Delta_COM > 0, "ri
                            "No Shift"))
 # show results
 head(center_of_mass_df)
+```
+### visualization of shift direction
+```{r}
+# Join dataframes including global maxima and calculate their differences
+df_diff_peaks <- center_of_mass_df[, 2:6]
+
+df_diff_peaks$diff <- center_of_mass_df$Delta_COM
+
+# calculate limits for axes
+max_val <- max(
+  df_diff_peaks$COM_Control,
+  df_diff_peaks$COM_RNase_Control,
+  na.rm = TRUE
+) * 1.1
+
+# define colors based on Delta_COM direction
+colors <- ifelse(df_diff_peaks$diff > 0, "#c9a0dc",      # right shift
+                 ifelse(df_diff_peaks$diff < 0, "#A9C1A6", # left shift
+                        "#F5E1A4"))                        # no shift
+
+
+
+# Set layout for plot and separate legend area
+layout(matrix(1:2, nrow = 1), widths = c(4, 1))
+
+# Plot margins
+par(mar = c(5, 4, 4, 1))  # Bottom, left, top, right
+
+# Plot the scatterplot
+plot(
+  df_diff_peaks$COM_RNase,
+  df_diff_peaks$COM_Control,
+  xlim = c(0, max_val),
+  ylim = c(0, max_val),
+  xlab = "Center of Mass RNase",
+  ylab = "Center of Mass Control",
+  main = "Shift Direction",
+  pch = 19,
+  col = colors
+)
+
+# Reference line y = x
+abline(a = 0, b = 1, col = "grey", lty = 2)
+
+# Switch to legend area (right panel)
+par(mar = c(0, 0, 4, 0))  # No axis, top margin for title
+
+# Draw an empty plot for the legend
+plot.new()
+
+# Draw well-formatted legend with clearer colors
+legend("center",
+       legend = c(
+         expression("Right shift ("*Delta*"COM > 0)"),
+         expression("Left shift ("*Delta*"COM < 0)"),
+         expression("No shift ("*Delta*"COM = 0)")
+       ),
+       col = c("#c9a0dc", "#A9C1A6", "#F5E1A4"),
+       pch = 19,
+       title = "Shift Direction",
+       bty = "n",
+       pt.cex = 1,     
+       text.col = "black",
+       cex = 0.7       
+)
+
 ```
 
 
@@ -2571,7 +2611,7 @@ if (inherits(logistic_model, "glm") && family(logistic_model)$family == "binomia
   ggplot(df_coeffs, aes(x = reorder(Feature, Importance), y = Coefficient, fill = Coefficient > 0)) +
     geom_col() +
     coord_flip() +  # horizontal bars
-    scale_fill_manual(values = c("TRUE" = "#c9a0dc", "FALSE" = "#63A9D8"), guide = FALSE) +
+    scale_fill_manual(values = c("TRUE" = "#c9a0dc", "FALSE" = "#A9C1A6"), guide = "none") +
     labs(
       subtitle = "Feature Importance in Logistic Regression Model",
       x = "Feature",
@@ -2586,7 +2626,7 @@ if (inherits(logistic_model, "glm") && family(logistic_model)$family == "binomia
 ```
 output:
 - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
-- negative coefficients (blue bars) indicate features that decrease the probability of RNA-binding
+- negative coefficients (green bars) indicate features that decrease the probability of RNA-binding
 -> EMD has the strongest influence on the probability of RNA-binding
 
 ## ROC Curve Visualizing test-model performance
@@ -2907,8 +2947,8 @@ ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condi
   # Linie zeichnen (erscheint in der Legende)
   geom_line(linewidth = 1) +
   # Farben manuell setzen
-  scale_color_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
-  scale_fill_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
+  scale_color_manual(values = c("Control" = "#c9a0dc", "RNase" = "#A9C1A6")) +
+  scale_fill_manual(values = c("Control" = "#c9a0dc", "RNase" = "#A9C1A6")) +
   labs(
     title = paste("Profile for Protein:", protein_name),
     subtitle = paste0("Predicted Probability: ", round(prob, 3),
@@ -3000,8 +3040,8 @@ server <- function(input, output, session) {
       ggplot(long_df, aes(x = Fraction, y = Intensity, color = Condition, fill = Condition)) +
         geom_area(alpha = 0.3, position = "identity", show.legend = FALSE) +
         geom_line(linewidth = 1) +
-        scale_color_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
-        scale_fill_manual(values = c("Control" = "#c9a0dc", "RNase" = "#63A9D8")) +
+        scale_color_manual(values = c("Control" = "#c9a0dc", "RNase" = "#A9C1A6")) +
+        scale_fill_manual(values = c("Control" = "#c9a0dc", "RNase" = "#A9C1A6")) +
         scale_x_continuous(breaks = seq(5, 25, by = 5), limits = c(1, 25)) +
         labs(
           title = paste("Profile for Protein:", protein_name),
@@ -4429,7 +4469,7 @@ output:
 # create boxplot
 boxplot(pI ~ RBP_group,
         data = df_complete,
-        col = c("lightblue", "lavender"),
+        col = c("#A9C1A6", "#c9a0dc"),
         main = "compare pI\nbetween RBP and Non-RBP",
         xlab = "group",
         ylab = "isoelectric point (pI)")
