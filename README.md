@@ -178,70 +178,70 @@ flowchart LR
       They can influence further observations, analysis, and interpretation\
       → Comparisons between replicates to establish proper identification
              
-1. Identifying and deleting with **limma package**
+1. Identifying and deleting with **limma package**\
       → removes known batch effects with **removeBatchEffect**
    
-      → Steps:\ 
-        1. **log2 - transformation:**\ 
-              → stabilizes variance, improves interpretability, reduces outlier effects\
+      → Steps:<br/> 
+        1. **log2 - transformation:**<br/> 
+              `→ stabilizes variance, improves interpretability, reduces outlier effects`\
         2. **apply function**
         
    
-      → Visualizations:    
-         1.1: Boxplot visualization:
-               → expectation:
-                     → noticeable batch: samples of one batch have a similar median, but differences in batches
-               → result:
-         1.2: PCA visualization:
-               →  expectation:
-                     → noticeable batch: principal components separate by batch 
-               →  result:
-         1.3: Heatmap visualization:
-               →  expectation:  
-                      noticeable batch: samples are clustered by batc,h not by biological factors
-               →  result:
+      → Visualizations:<br/>
+         1.1: Boxplot visualization:<br/>
+               → expectation:<br/>
+                     `→ noticeable batch: samples of one batch have a similar median, but differences in batches`<br/>
+               → result:<br/>
+         1.2: PCA visualization:<br/>
+               →  expectation:<br/>
+                     `→ noticeable batch: principal components separate by batch`<br/> 
+               →  result:<br/>
+         1.3: Heatmap visualization:<br/>
+               →  expectation:<br/>
+                      `→noticeable batch: samples are clustered by batch not by biological factors`<br/>
+               →  result:<br/>
                       before: 
         
-2. Identifying and deleting with **SVA**\
-    → Surrogate Variable Analysis
+3. Identifying and deleting with **SVA**<br/>
+    → Surrogate Variable Analysis<br/>
     → better for unknown batch effect and other disturbances
     
-    → Steps:
-        1. **Model preparations**
+     - Steps:<br/>
+        1. **Model preparations**<br/>
               → create a desgin matrix with a model matrix filled with known factors (replicates and fractions)
-                and a null model matrix filled with no descriptive factors but an intercept
-        2. **Apply SVA**
-              → Apply function on data and models
-        3. **Determine the number of surrogate variables**
-              → SVA estimates how many Svs are needed to model hidden batch effects
-              → by searching for combinations not explainable by known variables
-              → extend the matrix by SVs
-        4. **Data correction**
-              → using linear regression
-              → SVs are used to calculate unwanted effects and remove those
-        5. **Residues extraction**
+                and a null model matrix filled with no descriptive factors but an intercept<br/>
+        2. **Apply SVA**<br/>
+              → Apply function on data and models<br/>
+        3. **Determine the number of surrogate variables**<br/>
+              → SVA estimates how many Svs are needed to model hidden batch effects<br/>
+              → by searching for combinations not explainable by known variables<br/>
+              → extend the matrix by SVs<br/>
+        4. **Data correction**<br/>
+              → using linear regression<br/>
+              → SVs are used to calculate unwanted effects and remove those<br/>
+        5. **Residues extraction**<br/>
               → expression data - modeled effects (fraction + replicates + SVs )
               
-     → Visualizations:    
-         2.1: Boxplot visualization:
-               →  expectation:
-                      noticeable batch: differences in span and spread, big differences between samples caused by batches
-               →  result:
-                      before:
-         2.2: PCA visualization:
-               →  expectation:
-                      noticeable batch: distortion caused by scale differences, principal components show batch separation
-               →  result:
-         12.3: Heatmap visualization:
-               →  expectation:
-                      noticeable batch: outliers, high variability
-               →  result:
+     - Visualizations:<br/>    
+         2.1: Boxplot visualization:<br/>
+               →  expectation:<br/>
+                     `→ noticeable batch: differences in span and spread, big differences between samples caused by batches`<br/>
+               →  result:<br/>
+                      before:<br/>
+         2.2: PCA visualization:<br/>
+               →  expectation:<br/>
+                      `→ noticeable batch: distortion caused by scale differences, principal components show batch separation`<br/>
+               →  result:<br/>
+         2.3: Heatmap visualization:<br/>
+               →  expectation:<br/>
+                     ` → noticeable batch: outliers, high variability`<br/>
+               →  result:<br/>
                
-3. **Interpretation and results:**
-    → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on which machines )
-    → Log2 transformation makes data not as suitable for further analysis
-    → Batch effect not overly significant 
-    → Removal still could overcorrect biological variances 
+4. **Interpretation and results:**<br/>
+    → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on which machines)<br/>
+    → Log2 transformation makes the data less suitable for further analysis<br/>
+    → Batch effect not overly significant<br/>
+    → Removal still could overcorrect biological variances<br/>
     → Batch cleaned data only used for PCA
     
     
@@ -435,16 +435,7 @@ flowchart LR
 -   Cluster results to find underlying relations
   
   ## **📃Steps**
-  ```mermaid
-  flowchart LR
-        A[apply "prcomp"] -->B[explore PCA data]
-        B --> C[calculate eigenvalues and variance]
-        C --> D[plot PCA and label RBPs]
-        D --> E[determine ideal amount of cluster]
-        E --> F[apply K-means and plot]
-        F --> G[label right shifting protein]
-        G --> H[compute Chi Squared]
-  ```      
+     
 
   ### **Principal component analysis** {#pca}
   
