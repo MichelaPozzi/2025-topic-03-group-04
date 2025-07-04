@@ -3329,28 +3329,33 @@ Output: visualization of a negative control and positive control protein, as wel
 # 4. dimension reduction
 
 ## PCA
-Goal: ggg
+Goal: Reduce dimension and further visualize data in clusters with only the most important structures. Batch cleaned data is used in order to ensure no technical variation. 
 ###Control
 
+#check how data set is made up
 ```{r}
 ctrl_sva_df <- as.data.frame(S_corrected_expr_ctrl)
 rownames(ctrl_sva_df) <- ctrl_sva_df$X
 C_test <- ctrl_sva_df
 str(C_test)
 
+# we have 3680 observations and 75 features 
 ```
 
+#Test data
+-> check if varibales are on the same scale 
 ```{r}
 apply(C_test, 2, mean) 
 ```
-
+-> mean is close to 0, centered enough
 ```{r}
 apply(C_test, 2, sd)
 ```
-
+-> big differences, not perfectly scaled 
 
 ###pca selbst 
-
+-> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
+-> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores 
 ```{r}
 ctrl_pca <- prcomp(ctrl_sva_df, center = TRUE, scale = TRUE)
 
@@ -3358,191 +3363,250 @@ names(ctrl_pca)
 ```
 
 ```{r}
+head(ctrl_pca$x, 10)
+```
+
+-> eigenvalues stored in "rotation" 
+```{r}
 ctrl_pca$rotation
 ```
 
+-> standard deviation of each principal component is saved in "sdev", as a measure of variance
+-> check how much do points vary on average from the mean
 ```{r}
 ctrl_pca$sdev
 
 ```
 
+-> get variance by squaring the standard deviation
+-> check how much does the data spread out in square units 
 ```{r}
 ctrl_pca_var <- rnase_pca$sdev^2 # eigenvalues 
 ctrl_pca_var
 
 ```
 
+Goal: 
+-> control which PC explains how much variance 
 ```{r}
 ctrl_pca_ve <- ctrl_pca_var / sum(ctrl_pca_var) 
-ctrl_pca_ve
-
+ctrl_pca_ve_percent <- ctrl_pca_ve * 100
+ctrl_pca_ve_percent
 ```
+-> PC1: 44.3%, PC2:20.79%, PC3:7.807%
 
-```{r}
-## in prozent
-Pct_ctrl_pca_ve <- round(ctrl_pca_var / sum(ctrl_pca_var)*100,2) # wert in prozent auf zwei dezimal 
-Pct_ctrl_pca_ve
-```
-
-
-```{r}
-sort(ctrl_pca_ve,decreasing=TRUE)
-
-```
-
-```{r}
-head(ctrl_pca$x, 10)
-```
 
 
 ###prozentplot 
 
 ```{r}
-barplot(Pct_ctrl_pca_ve)
+#1. plot
+plot(ctrl_pca_ve_percent, type = "b", pch = 19,
+     xlab = "Principal Component",
+     ylab = "Explained Variance (%)",
+     main = "Scree Plot: Explained Variance per PC")
 ```
+
+
+#barplot 
 
 ```{r}
-barplot(Ctrl_pca_ve)
+#plot 
+bar_positions <- barplot(ctrl_pca_ve_percent,
+                         main = "Explained Variance per PC (in %)",
+                         xlab = "Principal Component",
+                         ylab = "Explained Variance (%)",
+                         col = "#c9a0dc",
+                        las = 2,
+                         xaxt = "n")  # keine x-Achsen-Beschriftung
+
+axis(1, at = bar_positions, labels = paste0("PC", 1:length(ctrl_pca_ve_percent)), las = 2)
+
+
+
 ```
 
-###weirder plot 
+
+##create biplot 
+###plot 
 ```{r}
-biplot(ctrl_pca, scale = 0, cex = 0.1)
+#1. plot
+biplot(ctrl_pca, scale = 0, cex = 0.6,
+       col = c("red", "purple"),                
+       xlab = "PC1 (44% variance explained)",  
+       ylab = "PC2 (21% variance explained)")
 ```
 
-###cluster bestimmung 
+#test graph 
+```{r}
 
+library(ggbiplot)
+#1. axis
+my_var_explained <- c(44.3, 20.8)  # PC1 und PC2 z.B.
+#2. plot
+ggbiplot(ctrl_pca,
+         obs.scale = 1,
+         var.scale = 1,
+         ellipse = FALSE,
+         circle = TRUE,
+         var.axes = TRUE) +
+  xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
+  ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
+  theme_minimal()
+
+ 
+```
+
+
+###determine cluster
+#elbowplot 
+Goal: determine what amount of cluster is suitable for kmeans clustering 
 ```{r} 
-#elbow 
+#1. calculate wss: within-cluster sum of squares
 wss <- sapply(1:25, function(k){
-  kmeans(Ctrl_pca$x, centers = k, nstart = 25)$tot.withinss
+  kmeans(ctrl_pca$x, centers = k, nstart = 25)$tot.withinss
 })
 
+#2. plot
 plot(1:25, wss, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Totale Within-Cluster-Varianz",
-     main = "Elbow-Methode zur Bestimmung von k") 
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster-variance",
+     main = "Elbow method to determin optimal cluster amount") 
 ```
+#Interpretation: 
+-> no clear bend, potentially at 2 
+#silhouette score 
+Goal: determine what amount of cluster is suitable for kmeans clustering 
 
 ```{r}
-#Silhouette 
+# Silhouette analysis 
 
 library(cluster)
 library(factoextra)
 
-# Deine PCA-Daten
-df <- Ctrl_pca$x
+# 1. Extract PCA-transformed data
+ctrl_sil_df <- ctrl_pca$x
 
-# Silhouettenmittelwerte für verschiedene k berechnen
-silhouette_score <- function(k){
-  km <- kmeans(df, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(df))
-  mean(ss[, 3])
-}
+# 2. Placeholder for average silhouette widths
+ctrl_avg_sil <- numeric(length = 9)  # for k = 2 to 10
 
+# 3. Calculate silhouette scores for different k values
 k_values <- 2:10
-avg_sil <- sapply(k_values, silhouette_score)
-
-# Plot zur Auswahl des besten k
-plot(k_values, avg_sil, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
-
-# Bestes k ermitteln
-best_k <- k_values[which.max(avg_sil)]
-
-# KMeans & Silhouette für bestes k
-km_best <- kmeans(df, centers = best_k, nstart = 25)
-sil <- silhouette(km_best$cluster, dist(df))
-
-# Silhouettenplot anzeigen wie im Beispielbild
-fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
-                main = paste("Silhouettenplot für k =", best_k))
-
-
-```
-
-```{r}
-library(cluster)
-
-# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
-pca_data <- Ctrl_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
-
-sil_width <- numeric(9)
-
-for(k in 2:10) {
-  km <- kmeans(pca_data, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(pca_data))  # dist() NUR auf pca_data
-  sil_width[k - 1] <- mean(ss[, 3])
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+  ctrl_km <- kmeans(ctrl_sil_df, centers = k, nstart = 25)
+  ctrlc_ss <- silhouette(ctrl_km$cluster, dist(ctrl_sil_df))
+  ctrl_avg_sil[i] <- mean(ctrlc_ss[, 3])
 }
 
-plot(2:10, sil_width, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-      main = "Silhouettenanalyse zur Bestimmung von k")
+# 4. Plot similar to elbow method
+plot(k_values, ctrl_avg_sil, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Average silhouette width",
+     main = "Silhouette analysis to determine the optimum number of clusters")
+
+# 5. Identify best k based on max silhouette width
+best_k <- k_values[which.max(ctrl_avg_sil)]
+
+# 6. Run KMeans and compute silhouette for best k
+km_best <- kmeans(ctrl_sil_df, centers = best_k, nstart = 25)
+ctrl_best_sil <- silhouette(km_best$cluster, dist(ctrl_sil_df))
+
+# 7. Visualize silhouette plot
+fviz_silhouette(
+  ctrl_best_sil,
+  palette = c("#c9a0dc", "lavender"),
+  ggtheme = theme_classic(),
+  main = paste("Silhouette plot for k =", best_k)
+)
+
 ```
+#Interpretation
+k=2 seems most suitable
 
 ###kmeans 
+Goal:divide dataset into k cluster to understand grouping and potentionally find biological relations 
+
+
 ```{r}
-C_kmeans_result <- kmeans(Ctrl_pca$x, centers = 2, nstart = 25)
+#1. apply kmeans to reduced data set 
+# using k=2
+#kmeans runs 25 and uses best result
+C_kmeans_result <- kmeans(ctrl_pca$x, centers = 2, nstart = 25)
 ```
 
 
 ```{r}
+#1. in which cluster every obserbation is assigned to 
 C_kmeans_result$cluster    
+
+#2. coordinates the cluster center
 C_kmeans_result$centers     
+
+#3. shows how compact the clusters are using WSS
+# lower WSS means a more compact cluster
 C_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
-Ctrl_data <- as.data.frame(Ctrl_pca$x)
-Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
+#1. prepare data
+#save pca matrix into data frame 
+# add cluster column
+ctrl_data <- as.data.frame(ctrl_pca$x)
+ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
+#2. plot
 library(ggplot2)
 
-ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
+ggplot(ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
   geom_point(alpha = 0.7, size = 2) +
-  labs(title = "K-Means Cluster im PCA-Raum",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)") +
+  labs(title = "K-means clusters in PCA area",
+       x = "Principal component 1 (44.3%)",
+       y = "Principal component 2 (20.8%)") +
   theme_minimal() +
-  scale_color_manual(values = rainbow(2))
+  scale_color_manual(values = c("purple","darkgreen"))
 ```
 
+#plot PC1 and PC2 as control 
 ```{r}
-first_two_components <- Ctrl_data[,1:2]
+first_two_components <- ctrl_data[,1:2]
 plot(first_two_components)
 ```
 
-###RNASE
-###test  
+###PCA RNASE
 
+##Check how dataset is made up  
 
 ```{r}
 rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
 rownames(rnase_sva_df) <- rnase_sva_df$X
 R_TEST <- rnase_sva_df
 str(R_TEST)
-
+# we have 3680 observations and 75 features 
 ```
 
 ```{r}
 head(rnase_sva_df)
 ```
 
+#Test data
+-> check if varibales are on the same scale 
 
 ```{r}
 apply(R_TEST, 2, mean) 
 ```
+-> mean is close to 0, centered enough
+
 
 ```{r}
 apply(R_TEST, 2, sd)
 ```
-
+-> big differences, not perfectly scaled 
 
 ###pca selbst 
+-> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
+-> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores
 
 ```{r}
 rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
@@ -3550,153 +3614,210 @@ rnase_pca <- prcomp(rnase_sva_df, center = TRUE, scale = TRUE)
 names(rnase_pca)
 ```
 
+-> eigenvalues stored in "rotation" 
 ```{r}
 rnase_pca$rotation
 ```
 
+
+-> The standard deviation of each principal component is saved in "sdev", as a measure of variance
+-> check how much points vary on average from the mean
 ```{r}
 rnase_pca$sdev
 
 ```
 
+-> get variance by squaring the standard deviation
+-> check how much the data spreads out in square units 
 ```{r}
 rnase_pca_var <- rnase_pca$sdev^2 # eigenvalues 
 rnase_pca_var
 
 ```
 
+
+Goal: 
+-> control which PC explains how much variance 
 ```{r}
-Pct_rnase_pca_ve <- round(rnase_pca_var / sum(rnase_pca_var)*100,2) # wert in prozent auf zwei dezimal 
-Pct_rnase_pca_ve
+rnase_pca_ve <- rnase_pca_var / sum(rnase_pca_var) 
+rnase_pca_ve_percent <- rnase_pca_ve * 100
+rnase_pca_ve_percent
+
+```
+-> PC1: 43.9%, PC2:20.53%, PC3:7.717%
+
+
+#prozentplot 
+
+```{r}
+#1. plot
+plot(rnase_pca_ve_percent, type = "b", pch = 19,
+     xlab = "Principal Component",
+     ylab = "Explained Variance (%)",
+     main = "Scree Plot: Explained Variance per PC")
+
+```
+
+#barplot
+```{r}
+#plot 
+bar_positions <- barplot(rnase_pca_ve_percent,
+                         main = "Explained Variance per PC (in %)",
+                         xlab = "Principal Component",
+                         ylab = "Explained Variance (%)",
+                         col = "#c9a0dc",
+                        las = 2,
+                         xaxt = "n")  
+
+axis(1, at = bar_positions, labels = paste0("PC", 1:length(rnase_pca_ve_percent)), las = 2)
+
+```
+
+#biplot
+```{r}
+#1. plot
+biplot(rnase_pca, scale = 0, cex = 0.6,
+       col = c("red", "purple"),                
+       xlab = "PC1 (43.9% variance explained)",  
+       ylab = "PC2 (20.53% variance explained)")
+
+```
+
+#test graph 
+```{r}
+library(ggbiplot)
+#1. axis
+my_var_explained <- c(43.9, 20.53)  # PC1 und PC2 z.B.
+#2. plot
+ggbiplot(rnase_pca,
+         obs.scale = 1,
+         var.scale = 1,
+         ellipse = FALSE,
+         circle = TRUE,
+         var.axes = TRUE) +
+  xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
+  ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
+  theme_minimal()
+
 ```
 
 
-```{r}
-rnase_pca_ve <- rnase_pca_var / sum(rnase_pca_var)  
-rnase_pca_ve
 
-```
-
-```{r}
-sort(rnase_pca_ve,decreasing=TRUE)
-
-```
-
-```{r}
-head(rnase_pca$x, 10)
-```
-
-
-###prozentplot 
-```{r}
-barplot(rnase_pca_ve)
-```
-
-###weirder plot 
-```{r}
-biplot(rnase_pca, scale = 0, cex = 0.6)
-```
-
-###cluster bestimmung 
+###determine cluster
+#elbowplot 
+Goal: determine what amount of clusters is suitable for K-means clustering 
 
 ```{r} 
-#elbow 
+#1. calculate wss: within-cluster sum of squares 
 wss <- sapply(1:25, function(k){
   kmeans(rnase_pca$x, centers = k, nstart = 25)$tot.withinss
 })
-
+#2. plot
 plot(1:25, wss, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Totale Within-Cluster-Varianz",
-     main = "Elbow-Methode zur Bestimmung von k") 
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster-variance",
+     main = "Elbow method to determin optimal cluster amount") 
 ```
+#Interpretation: 
+-> no clear bend, potentially at 2 
+
+
+#silhouette score 
+Goal: determine what number of clusters is suitable for K-means clustering 
 
 ```{r}
-#Silhouette 
+# Silhouette analysis 
 
 library(cluster)
 library(factoextra)
 
-# Deine PCA-Daten
-df <- rnase_pca$x
+#1. Extract PCA-transformed data
+rnase_sil_df <- rnase_pca$x
 
-# Silhouettenmittelwerte für verschiedene k berechnen
-silhouette_score <- function(k){
-  km <- kmeans(df, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(df))
-  mean(ss[, 3])
-}
+#2. Placeholder for average silhouette widths
+rnase_avg_sil <- numeric(length = 9)  
 
+# 3. Calculate silhouette scores for different k values
 k_values <- 2:10
-avg_sil <- sapply(k_values, silhouette_score)
-
-# Plot zur Auswahl des besten k
-plot(k_values, avg_sil, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
-
-# Bestes k ermitteln
-best_k <- k_values[which.max(avg_sil)]
-
-# KMeans & Silhouette für bestes k
-km_best <- kmeans(df, centers = best_k, nstart = 25)
-sil <- silhouette(km_best$cluster, dist(df))
-
-# Silhouettenplot anzeigen wie im Beispielbild
-fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
-                main = paste("Silhouettenplot für k =", best_k))
-
-
-```
-
-```{r}
-library(cluster)
-
-# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
-pca_data <- rnase_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
-
-sil_width <- numeric(9)
-
-for(k in 2:10) {
-  km <- kmeans(pca_data, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(pca_data))  # dist() NUR auf pca_data
-  sil_width[k - 1] <- mean(ss[, 3])
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+  rnase_km <- kmeans(rnase_sil_df, centers = k, nstart = 25)
+  rnase_ss <- silhouette(rnase_km$cluster, dist(rnase_sil_df))
+  rnase_avg_sil[i] <- mean(rnase_ss[, 3])
 }
 
-plot(2:10, sil_width, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-      main = "Silhouettenanalyse zur Bestimmung von k")
+# 4. Plot similar to elbow method
+plot(k_values, rnase_avg_sil, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab =  "Average silhouette width",
+     main = "Silhouette analysis to determine the optimum number of clusters")
+
+# 5. Identify the best k based on max silhouette width
+best_k <- k_values[which.max(rnase_avg_sil)]
+
+# 6. Run K-Means and compute the  silhouette for the best k
+rnase_km_best <- kmeans(rnase_sil_df, centers = best_k, nstart = 25)
+rnase_sil <- silhouette(rnase_km_best$cluster, dist(rnase_sil_df))
+
+# 7. Visualize silhouette plot
+fviz_silhouette(
+  rnase_best_sil,
+  palette = c("#c9a0dc", "lavender"),
+  ggtheme = theme_classic(),
+  main = paste("Silhouette plot for k =", best_k)
+)
+
+
+
 ```
+#Interpretation
+k=2 seems most suitable
+
 
 ###kmeans 
+Goal:divide dataset into k cluster to understand grouping and potentionally find biological relations 
+
+#apply K-means rnase
 ```{r}
+#1. apply kmeans to reduced data set 
+# using k=2
+#kmeans runs 25 and uses best result
 R_kmeans_result <- kmeans(rnase_pca$x, centers = 2, nstart = 25)
 ```
 
 ```{r}
+#1. in which cluster every obserbation is assigned to 
 R_kmeans_result$cluster    
-R_kmeans_result$centers     
+
+#2. Coordinates the cluster center
+R_kmeans_result$centers   
+
+#3. shows how compact the clusters are using WSS
+# lower WSS means a more compact cluster
 R_kmeans_result$tot.withinss
 ```
 
-
+#K-means Plot rnase
 ```{r}
+#1. prepare data
+#save pca matrix into data frame 
+# add cluster column
 rnase_data <- as.data.frame(rnase_pca$x)
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
+#2. plot
 library(ggplot2)
 
 ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
   geom_point(alpha = 0.7, size = 2) +
-  labs(title = "K-Means Cluster im PCA-Raum",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)") +
+  labs(title = "K-means clusters in PCA area",
+       x = "Principal component 1 (43.9%)",
+       y = "Principal component 2 (20.53%)") +
   theme_minimal() +
-  scale_color_manual(values = rainbow(2))
+  scale_color_manual(values = c("purple","darkgreen"))
 ```
 
+#plot PC1 and PC2 as control
 ```{r}
 first_two_components <- rnase_data[,1:2]
 plot(first_two_components)
@@ -3724,9 +3845,9 @@ head(right_shift_rnase)
 
 ```
 
-##rnase RSP
+### PCA rnase RSP
 
-
+# Check how dataset is made up
 
 ```{r}
 rnase_rsp_df <- as.data.frame(right_shift_rnase)
@@ -3734,18 +3855,25 @@ rownames(rnase_rsp_df) <- rnase_rsp_df$X
 rnase_rsp <- rnase_rsp_df
 str(rnase_rsp)
 
+# we have 158 observations and 75 features 
 ```
 
+#Test data
+-> check if varibales are on the same scale 
 ```{r}
 apply(rnase_rsp, 2, mean) 
 ```
+-> mean is close to 0, centered enough
+
 
 ```{r}
 apply(rnase_rsp, 2, sd)
 ```
+-> big differences, not perfectly scaled 
 
-
-###pca selbst 
+##pca durchführen 
+-> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
+-> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores 
 
 ```{r}
 rnase_rsp_pca <- prcomp(rnase_rsp_df, center = TRUE, scale = TRUE)
@@ -3754,153 +3882,214 @@ names(rnase_rsp_pca)
 ```
 
 ```{r}
+head(rnase_rsp_pca$x,10)
+```
+
+-> eigenvalues stored in "rotation" 
+```{r}
 rnase_rsp_pca$rotation
 ```
 
+-> The standard deviation of each principal component is saved in "sdev", as a measure of variance
+-> check how much points vary on average from the mean
 ```{r}
 rnase_rsp_pca$sdev
 
 ```
 
+-> get variance by squaring the standard deviation
+-> check how much the data spreads out in square units 
 ```{r}
 rnase_rsp_pca_var <- rnase_rsp_pca$sdev^2 # eigenvalues 
 rnase_rsp_pca_var
 
 ```
 
+Goal: 
+-> control which PC explains how much variance
 ```{r}
-Pct_rnase_rsp_pca_ve <- round(rnase_rsp_pca_var / sum(rnase_rsp_pca_var)*100,2) # wert in prozent auf zwei dezimal 
-Pct_rnase_rsp_pca_ve
-```
-
-
-```{r}
-rnase_rsp_pca_ve <- rnase_rsp_pca_var / sum(rnase_rsp_pca_var)  
-rnase_rsp_pca_ve
+rnase_rsp_pca_ve <- rnase_rsp_pca_var / sum(rnase_rsp_pca_var) 
+rnase_rsp_pca_ve_percent <- ctrl_pca_ve * 100
+rnase_rsp_pca_ve_percent
 
 ```
 
+-> PC1: 44.3%, PC2: 20.79%, PC3: 7.8%
+
+
+##prozentplot 
+
 ```{r}
-sort(rnase_rsp_pca_ve,decreasing=TRUE)
+#1. plot
+plot(rnase_rsp_pca_ve_percent, type = "b", pch = 19,
+     xlab = "Principal Component",
+     ylab = "Explained Variance (%)",
+     main = "Scree Plot: Explained Variance per PC")
 
 ```
 
+##barplot
 ```{r}
-head(rnase_rsp_pca$x, 10)
+#plot 
+bar_positions <- barplot(rnase_rsp_pca_ve_percent,
+                         main = "Explained Variance per PC (in %)",
+                         xlab = "Principal Component",
+                         ylab = "Explained Variance (%)",
+                         col = "#c9a0dc",
+                        las = 2,
+                         xaxt = "n")  
+
+axis(1, at = bar_positions, labels = paste0("PC", 1:length(rnase_rsp_pca_ve_percent)), las = 2)
+
+```
+
+##biplot
+```{r}
+#1. plot
+biplot(rnase_rsp_pca, scale = 0, cex = 0.6,
+       col = c("red", "purple"),                
+       xlab = "PC1 (44.3% variance explained)",  
+       ylab = "PC2 (20.79% variance explained)")
+
+```
+
+#test graph
+
+```{r}
+library(ggbiplot)
+#1. axis
+my_var_explained <- c(44.3, 20.79)  # PC1 und PC2 z.B.
+#2. plot
+ggbiplot(rnase_rsp_pca,
+         obs.scale = 1,
+         var.scale = 1,
+         ellipse = FALSE,
+         circle = TRUE,
+         var.axes = TRUE) +
+  xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
+  ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
+  theme_minimal()
+
 ```
 
 
-
-###prozentplot 
-```{r}
-barplot(rnase_rsp_pca_ve)
-```
-
-###weirder plot 
-```{r}
-biplot(rnase_rsp_pca, scale = 0, cex = 0.4)
-```
-
-###cluster bestimmung 
+###determine cluster
+##elbowplot 
+Goal: determine what amount of clusters is suitable for K-means clustering 
 
 ```{r} 
-#elbow 
+#1. calculate wss: within-cluster sum of squares
 wss <- sapply(1:25, function(k){
   kmeans(rnase_rsp_pca$x, centers = k, nstart = 25)$tot.withinss
 })
 
+#2. plot
 plot(1:25, wss, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Totale Within-Cluster-Varianz",
-     main = "Elbow-Methode zur Bestimmung von k") 
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster-variance",
+     main = "Elbow method to determin optimal cluster amount") 
 ```
+#Interpretation: 
+-> no clear bend, potentially at 2 
+
+
+##silhouette score 
+Goal: determine what number of clusters is suitable for K-means clustering 
+
+
 
 ```{r}
-#Silhouette 
+# Silhouette analysis 
 
 library(cluster)
 library(factoextra)
 
-# Deine PCA-Daten
-df <- rnase_rsp_pca$x
+# 1. Extract PCA-transformed data
+rnase_rsp_sil_df <- rnase_rsp_pca$x
 
-# Silhouettenmittelwerte für verschiedene k berechnen
-silhouette_score <- function(k){
-  km <- kmeans(df, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(df))
-  mean(ss[, 3])
+# 2. Placeholder for average silhouette widths
+rnase_rsp_avg_sil <- numeric(length = 9)  # for k = 2 to 10
+
+# 3. Calculate silhouette scores for different k values
+k_values <- 2:10
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+  rnase_rsp_km <- kmeans(rnase_rsp_sil_df, centers = k, nstart = 25)
+  rnase_rsp_ss <- silhouette( rnase_rsp_km$cluster, dist(rnase_rsp_sil_df))
+  rnase_rsp_avg_sil[i] <- mean(rnase_rsp_ss[, 3])
 }
 
-k_values <- 2:10
-avg_sil <- sapply(k_values, silhouette_score)
+#4. Plot similar to the elbow method
+plot(k_values, rnase_rsp_avg_sil, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Average silhouette width",
+     main = "Silhouette analysis to determine the optimum number of clusters")
 
-# Plot zur Auswahl des besten k
-plot(k_values, avg_sil, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
+#5. Identify the best k based on max silhouette width
+rnase_rsp_best_k <- k_values[which.max(rnase_rsp_avg_sil)]
 
-# Bestes k ermitteln
-best_k <- k_values[which.max(avg_sil)]
-
-# KMeans & Silhouette für bestes k
-km_best <- kmeans(df, centers = best_k, nstart = 25)
-sil <- silhouette(km_best$cluster, dist(df))
+#6. Run K-Means and compute the  silhouette for the best k
+rnase_rsp_km_best <- kmeans(rnase_rsp_sil_df, centers = best_k, nstart = 25)
+rnase_rsp_best_sil <- silhouette(rnase_rsp_km_best$cluster, dist(rnase_rsp_sil_df))
 
 # Silhouettenplot anzeigen wie im Beispielbild
-fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
-                main = paste("Silhouettenplot für k =", best_k))
+fviz_silhouette(
+  rnase_rsp_best_sil,
+  palette = c("#c9a0dc", "lavender"),
+  ggtheme = theme_classic(),
+  main = paste("Silhouette plot for k =", best_k)
+)
 
 
 ```
-
-```{r}
-library(cluster)
-
-# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
-rnase_rsp_pca_data <- rnase_rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
-
-sil_width <- numeric(9)
-
-for(k in 2:10) {
-  km <- kmeans(rnase_rsp_pca_data, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(rnase_rsp_pca_data))  # dist() NUR auf pca_data
-  sil_width[k - 1] <- mean(ss[, 3])
-}
-
-plot(2:10, sil_width, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-      main = "Silhouettenanalyse zur Bestimmung von k")
-```
+#Interpretation
+k=2 seems most suitable
 
 ###kmeans 
+Goal:divide dataset into k clusters to understand grouping and potentially find biological relations 
+
 ```{r}
-kmeans_result <- kmeans(rnase_rsp_pca$x, centers = 2, nstart = 25)
+#1. apply kmeans to reduced data set 
+# using k=2
+#kmeans runs 25 and uses best result
+
+rnase_rsp_kmeans_result <- kmeans(rnase_rsp_pca$x, centers = 2, nstart = 25)
 ```
 
 ```{r}
-kmeans_result$cluster    
-kmeans_result$centers     
-kmeans_result$tot.withinss
+#1. in which cluster every observation is assigned to 
+rnase_rsp_kmeans_result$cluster  
+
+#2. Coordinates the cluster center
+rnase_rsp_kmeans_result$centers  
+
+#3. shows how compact the clusters are using WSS
+# lower WSS means a more compact cluster
+rnase_rsp_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
+#1. prepare data
+#save pca matrix into data frame 
+# add cluster column
+
 rnase_rsp_pca_data <- as.data.frame(rnase_rsp_pca$x)
-rnase_rsp_pca_data$cluster <- as.factor(kmeans_result$cluster)
+rnase_rsp_pca_data$cluster <- as.factor(rnase_rsp_kmeans_result$cluster)
 
+#2. plot
 library(ggplot2)
 
 ggplot(rnase_rsp_pca_data, aes(x = PC1, y = PC2, color = cluster)) +
   geom_point(alpha = 0.7, size = 2) +
-  labs(title = "K-Means Cluster im PCA-Raum",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)") +
+  labs(title = "K-means clusters in PCA area",
+       x = "Principal component 1 (44.3%)",
+       y = "Principal component 2 (20.79%)") +
   theme_minimal() +
-  scale_color_manual(values = rainbow(2))
+  scale_color_manual(values =  c("purple","darkgreen"))
 ```
 
+#plot PC1 and PC2 as control 
 ```{r}
 first_two_components <- rnase_rsp_pca_data[,1:2]
 plot(first_two_components)
@@ -3908,192 +4097,257 @@ plot(first_two_components)
 
 
 
-## ctrl RSP
+### PCA rnase RSP
 
+# Check how dataset is made up
 ```{r}
 ctrl_rsp_df <- as.data.frame(right_shift_ctrl)
 rownames(ctrl_rsp_df) <- ctrl_rsp_df$X
 ctrl_rsp_T <- ctrl_rsp_df
 str(ctrl_rsp_T)
 
+# 158 observations and 75 features 
 ```
+
+#Test data
+-> check if variables are on the same scale 
 
 ```{r}
 apply(ctrl_rsp_T, 2, mean) 
 ```
+-> mean is close to 0, centered enough
+
 
 ```{r}
 apply(ctrl_rsp_T, 2, sd)
 ```
+-> big differences, not perfectly scaled
 
-
-###pca selbst 
-
+###pca selbst ctrl rsp
+-> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
+-> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores 
 ```{r}
 ctrl_rsp_pca <- prcomp(ctrl_rsp_df, center = TRUE, scale = TRUE)
 names(ctrl_rsp_pca)
 ```
 
 ```{r}
+head(ctr_rsp_pca$x,10)
+```
+
+-> eigenvalues stored in "rotation" 
+```{r}
 ctrl_rsp_pca$rotation
 ```
 
+
+-> The standard deviation of each principal component is saved in "sdev", as a measure of variance
+-> check how much points vary on average from the mean
 ```{r}
 ctrl_rsp_pca$sdev
 
 ```
 
+-> get variance by squaring the standard deviation
+-> Check how much the data spreads out in square units 
 ```{r}
 ctrl_rsp_pca_var <- ctrl_rsp_pca$sdev^2 # eigenvalues 
 ctrl_rsp_pca_var
 
 ```
 
+
+Goal: 
+-> find out which PC explains how much variance 
+
 ```{r}
-Pct_ctrl_rsp_pca_ve <- round(ctrl_rsp_pca_var / sum(ctrl_rsp_pca_var)*100,2) # wert in prozent auf zwei dezimal 
-Pct_ctrl_rsp_pca_ve
+ctrl_rsp_pca_var <- ctrl_rsp_pca_var / sum(ctrl_rsp_pca_var) 
+ctrl_rsp_pca_ve_percent <- ctrl_rsp_pca_var * 100
+ctrl_rsp_pca_ve_percent
+
+```
+-> PC1: 55.84%, PC2:15.3%, PC3:7.59%
+
+
+
+##prozentplot 
+
+```{r}
+#1. plot
+plot(ctrl_rsp_pca_ve_percent, type = "b", pch = 19,
+     xlab = "Principal Component",
+     ylab = "Explained Variance (%)",
+     main = "Scree Plot: Explained Variance per PC")
+
+```
+
+##barplot
+```{r}
+#plot 
+bar_positions <- barplot(ctrl_rsp_pca_ve_percent,
+                         main = "Explained Variance per PC (in %)",
+                         xlab = "Principal Component",
+                         ylab = "Explained Variance (%)",
+                         col = "#c9a0dc",
+                        las = 2,
+                         xaxt = "n")  
+
+axis(1, at = bar_positions, labels = paste0("PC", 1:length(ctrl_rsp_pca_ve_percent)), las = 2)
+
+```
+
+##biplot
+```{r}
+#1. plot
+biplot(ctrl_rsp_pca, scale = 0, cex = 0.4,
+       col = c("red","blue"),                
+       xlab = "PC1 (55.84% variance explained)",  
+       ylab = "PC2 (15.3% variance explained)")
+
+```
+
+##test graph
+```{r}
+library(ggbiplot)
+#1. axis
+my_var_explained <- c(55.84, 15.3)  # PC1 und PC2 z.B.
+#2. plot
+ggbiplot(ctrl_rsp_pca,
+         obs.scale = 1,
+         var.scale = 1,
+         ellipse = FALSE,
+         circle = TRUE,
+         var.axes = TRUE) +
+  xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
+  ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
+  theme_minimal()
+
 ```
 
 
-```{r}
-ctrl_rsp_pca_ve <- ctrl_rsp_pca_var / sum(ctrl_rsp_pca_var)  
-ctrl_rsp_pca_ve
-
-```
-
-```{r}
-sort(ctrl_rsp_pca_ve,decreasing=TRUE)
-
-```
-
-```{r}
-head(ctrl_rsp_pca$x, 10)
-```
-
-
-
-###prozentplot 
-```{r}
-barplot(ctrl_rsp_pca_ve)
-```
-
-###weirder plot 
-```{r}
-biplot(ctrl_rsp_pca, scale = 0, cex = 0.5)
-```
-
-```{r}
-head(ctrl_rsp_pca)
-```
-
-###cluster bestimmung 
+###determine cluster
+#elbowplot 
+Goal: determine what amount of clusters is suitable for K-means clustering 
 
 ```{r} 
-#elbow 
+#1. calculate wss: within-cluster sum of squares
+ 
 wss <- sapply(1:25, function(k){
   kmeans(ctrl_rsp_pca$x, centers = k, nstart = 25)$tot.withinss
 })
 
+#2. plot
 plot(1:25, wss, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Totale Within-Cluster-Varianz",
-     main = "Elbow-Methode zur Bestimmung von k") 
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster-variance",
+     main = "Elbow method to determin optimal cluster amount") 
 ```
+#Interpretation: 
+-> no clear bend, potentially at 2 
+
+#silhouette score 
+Goal: determine what number of clusters is suitable for K-means clustering
 
 ```{r}
-#Silhouette 
-
+# Silhouette analysis 
 library(cluster)
 library(factoextra)
 
-# Deine PCA-Daten
-df <- ctrl_rsp_pca$x
+#1. Extract PCA-transformed data
+ctrl_rsp_sil_df <- ctrl_rsp_pca$x
 
-# Silhouettenmittelwerte für verschiedene k berechnen
-silhouette_score <- function(k){
-  km <- kmeans(df, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(df))
-  mean(ss[, 3])
-}
+#2. Placeholder for average silhouette widths
+rnase_rsp_avg_sil <- numeric(length = 9)  # for k = 2 to 10
 
+#3. Calculate silhouette scores for different k values
 k_values <- 2:10
-avg_sil <- sapply(k_values, silhouette_score)
-
-# Plot zur Auswahl des besten k
-plot(k_values, avg_sil, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-     main = "Silhouettenanalyse zur Bestimmung der optimalen Clusteranzahl")
-
-# Bestes k ermitteln
-best_k <- k_values[which.max(avg_sil)]
-
-# KMeans & Silhouette für bestes k
-km_best <- kmeans(df, centers = best_k, nstart = 25)
-sil <- silhouette(km_best$cluster, dist(df))
-
-# Silhouettenplot anzeigen wie im Beispielbild
-fviz_silhouette(sil, palette = "jco", ggtheme = theme_minimal(),
-                main = paste("Silhouettenplot für k =", best_k))
-
-
-```
-
-```{r}
-library(cluster)
-
-# Nur die numerische Matrix aus dem PCA-Objekt extrahieren
-ctrl_rsp_pca_data <- ctrl_rsp_pca$x  # oder ggf. pca_data <- na.omit(Ctrl_pca$x)
-
-sil_width <- numeric(9)
-
-for(k in 2:10) {
-  km <- kmeans(ctrl_rsp_pca_data, centers = k, nstart = 25)
-  ss <- silhouette(km$cluster, dist(ctrl_rsp_pca_data))  # dist() NUR auf pca_data
-  sil_width[k - 1] <- mean(ss[, 3])
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+  ctrl_rsp_km <- kmeans(ctrl_rsp_sil_df, centers = k, nstart = 25)
+  ctrlc_rsp_ss <- silhouette(ctrl_rsp_km$cluster, dist(ctrl_rsp_sil_df))
+  rnase_rsp_avg_sil[i] <- mean(ctrlc_rsp_ss[, 3])
 }
 
-plot(2:10, sil_width, type = "b", pch = 19,
-     xlab = "Anzahl der Cluster (k)",
-     ylab = "Durchschnittliche Silhouettenbreite",
-      main = "Silhouettenanalyse zur Bestimmung von k")
+#4. Plot similar to the elbow method
+plot(k_values, rnase_rsp_avg_sil, type = "b", pch = 19,
+     xlab = "Number of clusters (k))",
+     ylab = "Average silhouette width",
+     main = "Silhouette analysis to determine the optimum number of clusters")
+
+#5. Identify the best k based on max silhouette width
+ctrl_rsp_best_k <- k_values[which.max(rnase_rsp_avg_sil)]
+
+#6. Run K-Means and compute the  silhouette for the best k
+ctrl_rsp_km_best <- kmeans(ctrl_rsp_sil_df, centers = best_k, nstart = 25)
+ctrl_rsp_best_sil <- silhouette(ctrl_rsp_km_best$cluster, dist(ctrl_rsp_sil_df))
+
+# 7. Visualize silhouette plot
+fviz_silhouette(
+  ctrl_rsp_best_sil,
+  palette = c("#c9a0dc", "lavender"),
+  ggtheme = theme_classic(),
+  main = paste("Silhouette plot for k =", ctrl_rsp_best_k)
+)
+
+
+
 ```
+#Interpretation
+k=2 seems most suitable
+
 
 ###kmeans 
+Goal:divide dataset into k clusters to understand grouping and potentially find biological relations 
+
 ```{r}
-kmeans_result <- kmeans(ctrl_rsp_pca$x, centers = 2, nstart = 25)
+#1. apply K-means to reduced data set 
+# using k=2
+#kmeans runs 25 and uses best result
+
+ctrl_rsp_kmeans_result <- kmeans(ctrl_rsp_pca$x, centers = 2, nstart = 25)
 ```
 
 ```{r}
-kmeans_result$cluster    
-kmeans_result$centers     
-kmeans_result$tot.withinss
+#1. in which cluster is every observation assigned to 
+ctrl_rsp_kmeans_result$cluster 
+
+#2. Coordinates the cluster center
+ctrl_rsp_kmeans_result$centers 
+
+#3. shows how compact the clusters are using WSS
+# lower WSS means a more compact cluster
+ctrl_rsp_kmeans_result$tot.withinss
 ```
 
 
 ```{r}
+#1. prepare data
+#save pca matrix into data frame 
+# add cluster column
 ctrl_rsp_pca_data <- as.data.frame(ctrl_rsp_pca$x)
-ctrl_rsp_pca_data$cluster <- as.factor(kmeans_result$cluster)
+ctrl_rsp_pca_data$cluster <- as.factor(ctrl_rsp_kmeans_result$cluster)
 
+#2. plot
 library(ggplot2)
 
 ggplot(ctrl_rsp_pca_data, aes(x = PC1, y = PC2, color = cluster)) +
   geom_point(alpha = 0.7, size = 2) +
-  labs(title = "K-Means Cluster im PCA-Raum",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)") +
+  labs(title = "K-means clusters in PCA area",
+       x = "Principal component 1 (55.84%)",
+       y = "Principal component 2 (15.3%)") +
   theme_minimal() +
-  scale_color_manual(values = rainbow(2))
+  scale_color_manual(values = c("purple","darkgreen"))
 ```
 
+#plot PC1 and PC2 as control 
 ```{r}
 first_two_components <- ctrl_rsp_pca_data[,1:2]
 plot(first_two_components)
 ```
 
-## Markierung von rsp in großer pca
+### Markierung von rsp in großer pca
 
-##rnase 
+##rnase Markierung
 
 ```{r}
  rnase_sva_df <- as.data.frame(S_corrected_expr_rnase)
