@@ -3327,7 +3327,9 @@ legend("topright",
 Output: visualization of a negative control and positive control protein, as well as one newly identified as shifting
 
 # 4. dimension reduction
+
 ## PCA
+Goal: ggg
 ###Control
 
 ```{r}
