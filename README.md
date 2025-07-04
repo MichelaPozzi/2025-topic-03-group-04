@@ -91,6 +91,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 -   [Dimension Reduction](#dimension-reduction)
     -   [PCA](#pca)
     -   [k-means](#k--means)
+    -   [Chi Squared] (#chi-squared)
 -   [Linear Regression](#linear-regression)
 
 # **🧼Data Normalisation** {#data-normalisation}
@@ -145,7 +146,7 @@ flowchart LR
 
 2.  **Step 2: Smoothing via Moving Average**\
     A moving average is applied to smooth the values.\
-    → The average is calculated using the center fraction and its immediate neighbors (left and
+çThe average is calculated using the center fraction and its immediate neighbors (left and
     right).\
     → Smoothed values are computed per protein and replicate.
 
@@ -172,9 +173,80 @@ flowchart LR
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
 ### **💥Batch Removal** {#batch-removal}
-
--   Compare all replicates to identify and adjust for technical variability across batches.
-
+**Batch effect**: Disturbances rooted in technical variances, such as different runs, and not in biological variations. 
+              They can influence further observations, analysis and interpretation
+             ->  Comparisons between replicates to establish proper identification
+             
+1. Identifying and deleting with **limma package**
+    ->  removes known batch effects with **removeBatchEffect**
+   
+    -> Steps: 
+        1. **log2 - transformation**: 
+              ->stabilizes variance, improves interpretability, reduces outlier effects
+        2. **apply function**
+        
+   
+    -> Visualizations:     
+         1.1: Boxplot visualization
+               ->  expectation: 
+                      noticeable batch: samples of one batch have similar median, but differences in batches
+               ->  result: 
+         1.2: PCA visualization
+               ->  expectation: 
+                      noticeable batch: principal components separate by batch 
+               ->  result:
+         1.3: Heatmap visualization
+               ->  expectation:  
+                      noticeable batch: samples are clusterd by batch not by biological factors 
+               ->  result:
+                      before: 
+        
+2. Identifying and deleting with **SVA**
+    ->Surrogate Variable Analysis
+    -> better for unknown batch effect and other disturbances
+    
+    -> Steps: 
+        1. **Model preparations**
+              ->create a desgin matrix with a model matrix filled with known factors (replicates and fractions)
+              and a null model matrix filled with no descriptive factors but an intercept 
+        2. **Apply SVA**
+              -> apply function on data and models 
+        3. **Determine amount of surrogate variables**
+              -> SVA estimates how many Svs are needed to model hidden batch effects 
+              -> by searching for combinations not explainable by known variables 
+              -> extent matrix by SVs
+        4. **Data correction**
+              -> using linear regression 
+              -> SVs are used to calculate unwanted effects and remove those 
+        5. **Residues extraction**
+              -> expression data - modeled effects (fraction + replicates + SVs )
+              
+     -> Visualizations:     
+         2.1: Boxplot visualization
+               ->  expectation: 
+                      noticeable batch: differences in span and spread, big differences between samples caused by batches
+               ->  result: 
+                      before: 
+         2.2: PCA visualization
+               ->  expectation: 
+                      noticeable batch: distortion caused by scale differences, principle components show batch separation
+               ->  result:
+         12.3: Heatmap visualization
+               ->  expectation:  
+                      noticeable batch: outliers, high variability 
+               ->  result: 
+               
+3. Interpretation and results 
+    -> SVA better fit due to unknown batch effects ( not known when measurements are taken, or on which machines )
+    -> log2 transformation makes data not as suitable for further analysis
+    -> Batch effect not overly significant 
+    -> Removal still could overcorrected biological variances 
+    -> Batch cleaned data only used for PCA
+    
+    
+    
+    
+    
 # **✅Shift Analysis** {#shift-analysis}
 
 ## **🎯Objective**
@@ -353,3 +425,29 @@ flowchart LR
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
+    
+    
+  # **Dimension reduction**  {#dimension-reduction}
+  
+  ## **🎯Objective:**
+-   reduce dimension for better exploratory analysis 
+-   cluster results to find underlying relations 
+  
+  ## **📃Steps**
+  ```mermaid
+  flowchart LR
+        A[apply "prcomp"] -->B[explore PCA data]
+        B --> C[calculate eigenvalues and variance]
+        C --> D[plot PCA and label RBPs]
+        D --> E[determine ideal amount of cluster]
+        E --> F[apply K-means and plot]
+        F --> G[label right shifting protein]
+        G --> H[compute Chi Squared]
+  ```      
+
+  ### **Principal component analysis** {#pca}
+  
+  
+  ### **K-Means Clustering** {#k-means}
+  
+  ### **Chi Squared test** {#chi-square}
