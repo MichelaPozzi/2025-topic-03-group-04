@@ -93,21 +93,31 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     -   [k-means](#k--means)
 -   [Linear Regression](#linear-regression)
 
-# **🧼Data Normalisation** 
+# **🧼Data Normalisation** {#data-normalisation}
+
+-   Ensure comparability and interpretability of protein intensity profiles across replicates and
+    conditions (Control vs. RNase) by normalising and transforming the values with following steps\
 
 ## **🎯Objective:**
 
--   Vergleichbarkeit herstellen:
-    -   Methoden???
--   Verzerrungen entfernen:
-    -   Batch-Effekt entfernen
--   Zahlenbereiche angleichen:
-    -   Skalierung und Normierung
-    -   Transformation
+**1. Establishing Comparability:**
+
+-   Pairwise normalisation
+-   Smoothing
+
+**2. Removing Systematic Bias:**
+
+-   Batch effect correction
+
+**3. Aligning Value Ranges:**
+
+-   Scaling
+-   Transformation
+-   Normalization
 
 ## **📃Steps:**
 
-### **📊Normalisation** 
+### **📊Normalisation** {#normalisation}
 
 ``` mermaid
 flowchart LR
@@ -117,11 +127,12 @@ flowchart LR
     C --> E[batch removal]
 ```
 
-1.  **Step 1: Normalization per Replicate and Fraction**\
+1.  **Step 1: Normalisation per Replicate and Fraction**\
     Three replicates per fraction are normalized.\
     Differences between replicates are adjusted based on the most similar replicate pair
-    (normalization factor).\
-    → Scaling is both fraction-specific and replicate-specific.
+    (normalisation factor).\
+    → pairwise normalisation\
+    → Scaling is both fraction- and replicate-specific.
 
     **Output:**\
     Two data frames (for Control and RNase), each with 75 columns (3 × 25) containing the scaled
@@ -145,20 +156,26 @@ flowchart LR
 3.  **Step 3: Normalization Across Replicates and Fractions per Protein**\
     Each replicate measurement is normalized individually → each replicate sums to 100%.\
     Then, for each fraction, the mean across replicates is calculated and normalized again to sum to
-    100.
+    100.\
 
     **Output:**\
     Two data frames (for Control and RNase), each with 25 columns containing the final normalized
     data.\
+    → **Normalized replicates and fractions** to make their intensity distributions comparable.\
+    → Each **replicate** is scaled so that the total signal **sums to 100% (per protein)**.\
+    → Resulting **fraction profile** is rescaled to **100% (ensure consistency).**\
+
     **Normalized Control Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_control.png)
 
     **Normalized RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
-### **💥Batch Removal** 
+### **💥Batch Removal** {#batch-removal}
 
-# **✅Shift Analysis** 
+-   Compare all replicates to identify and adjust for technical variability across batches.
+
+# **✅Shift Analysis** {#shift-analysis}
 
 ## **🎯Objective**
 
@@ -178,18 +195,23 @@ flowchart LR
     F --> G
 ```
 
-### **📝Tests**
--   Shift Distance: 
+### **📝Tests** {#tests}
+
+-   Shift Distance:
 
 -   Amplitude Changes:
 
--   Earth Mover Test (EMD): The Earth Mover’s Distance (EMD) measures how much "work" is needed to transform one distribution into another. In this context, it reflects how much protein (mass) must be shifted and how far to make the ctrl distribution resemble the rnase distribution.
+-   Earth Mover Test (EMD): The Earth Mover’s Distance (EMD) measures how much "work" is needed to
+    transform one distribution into another. In this context, it reflects how much protein (mass)
+    must be shifted and how far to make the ctrl distribution resemble the rnase distribution.
 
-In 1D, EMD is calculated as the sum of absolute differences between the empirical cumulative distribution functions (ECDFs) of the two conditions. Higher EMD indicates greater differences in distribution shape.
+In 1D, EMD is calculated as the sum of absolute differences between the empirical cumulative
+distribution functions (ECDFs) of the two conditions. Higher EMD indicates greater differences in
+distribution shape.
 
 -   Center Of Mass Test:
 
--   Wilcoxon Statistic: 
+-   Wilcoxon Statistic:
 
 ### **🤖Logistic Model**
 
@@ -199,40 +221,49 @@ A logistic regression model is trained using reference proteins to predict the p
 RNA-binding for other proteins from our dataset.
 
 ### Comparison of Positive and Negative Controls
--   Proteins are assigned as positive or negative controls based on how frequently they have been previously reported as RNA-binding proteins (RBPs)
 
--   A 30/70 split is used to establish the logistic regression model - meaning 30 % of the proteins in the dataset are used to train the logistc model
+-   Proteins are assigned as positive or negative controls based on how frequently they have been
+    previously reported as RNA-binding proteins (RBPs)
+
+-   A 30/70 split is used to establish the logistic regression model - meaning 30 % of the proteins
+    in the dataset are used to train the logistc model
 
 -   It is crucial that positive and negative control groups differ significantly to enable
     meaningful model discrimination.
 
--   A Mann–Whitney U test (Wilcoxon rank-sum test) is applied on the testscores of the referene proteins to verify
-    differences between control groups.
+-   A Mann–Whitney U test (Wilcoxon rank-sum test) is applied on the testscores of the referene
+    proteins to verify differences between control groups.
 
 ### Model Construction
 
 1.  **Fit logistic regression:**\
-    The logistic model was trained on reference proteins assigned as positive or negative controls. 
-    The input features — EMD, shift distance, amplitude changes, center of mass, and the Wilcoxon statistic — reflect the outcomes of computational tests performed on these proteins, capturing their RNA-binding behavior.
-   
-   ![](images/clipboard-2044063727.png)
-   
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;During training, the model estimates a regression coefficient for each test-derived feature  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;in order to maximize the discrimination between the positive and negative control groups.
+    The logistic model was trained on reference proteins assigned as positive or negative controls.
+    The input features — EMD, shift distance, amplitude changes, center of mass, and the Wilcoxon
+    statistic — reflect the outcomes of computational tests performed on these proteins, capturing
+    their RNA-binding behavior.
+
+![](images/clipboard-2044063727.png)
+
+        During training, the model estimates a regression coefficient for each test-derived feature\
+        in order to maximize the discrimination between the positive and negative control groups.
 
 2.  **Regression Coefficients:**\
-    The results indicate that all predictors - meaning test-derived features - significantly affect RNA-binding classification.
-    The regression coefficients reflect the strength and direction with which each predictor influences the log-odds of a protein being RNA-binding.
-    
+    The results indicate that all predictors - meaning test-derived features - significantly affect
+    RNA-binding classification. The regression coefficients reflect the strength and direction with
+    which each predictor influences the log-odds of a protein being RNA-binding.
+
     ![Beschreibung des Bildes](images/featureimportancelogistic.jpeg)
 
-    - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
-    - negative coefficients (blue bars) indicate features that decrease the probability of RNA-binding\
-    -\>EMD has the strongest influence on the probability of RNA-binding
-    
+    -   positive coefficients (purple bars) indicate features that increase the probability of
+        RNA-binding
+    -   negative coefficients (blue bars) indicate features that decrease the probability of
+        RNA-binding\
+        -\>EMD has the strongest influence on the probability of RNA-binding
+
 3.  **Model output:**\
-    The trained model was applied to the remaining 70% of proteins, yielding RNA-binding probability scores for each case.
-    To classify proteins as RBPs or non-RBPs based on their predicted scores, a threshold corresponding to a false discovery rate (FDR) of 10% was applied.
+    The trained model was applied to the remaining 70% of proteins, yielding RNA-binding probability
+    scores for each case. To classify proteins as RBPs or non-RBPs based on their predicted scores,
+    a threshold corresponding to a false discovery rate (FDR) of 10% was applied.
 
 <p float="left">
 
@@ -242,17 +273,17 @@ RNA-binding for other proteins from our dataset.
 
 </p>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift.  
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Excluding the proteins used for model training, XX novel RBPs were identified.
-     
+       Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift.\
+       Excluding the proteins used for model training, XX novel RBPs were identified.
+
 4.  **Accuracy of Model:**\
-    visualise the predictive accuracy of our logistic regression model 
-    
-    
+    visualise the predictive accuracy of our logistic regression model
+
     ![](images/clipboard-3562156733.png)
 
-&nbsp;&nbsp;&nbsp;&nbsp;-\> the predictive accuracy lies way above the "coincidence line"
-# **📈Linear Regression** 
+    -\> the predictive accuracy lies way above the "coincidence line"\
+
+# **📈Linear Regression** {#linear-regression}
 
 ## **🎯Objective:**
 
