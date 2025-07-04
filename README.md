@@ -179,6 +179,17 @@ flowchart LR
 ```
 
 ### **📝Tests**
+-   Shift Distance: 
+
+-   Amplitude Changes:
+
+-   Earth Mover Test (EMD): The Earth Mover’s Distance (EMD) measures how much "work" is needed to transform one distribution into another. In this context, it reflects how much protein (mass) must be shifted and how far to make the ctrl distribution resemble the rnase distribution.
+
+In 1D, EMD is calculated as the sum of absolute differences between the empirical cumulative distribution functions (ECDFs) of the two conditions. Higher EMD indicates greater differences in distribution shape.
+
+-   Center Of Mass Test:
+
+-   Wilcoxon Statistic: 
 
 ### **🤖Logistic Model**
 
