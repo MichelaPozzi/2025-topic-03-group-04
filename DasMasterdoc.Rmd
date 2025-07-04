@@ -777,7 +777,9 @@ L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
 
 #3. draw boxplot beofre correction 
 #use log2 transformed matrix for comparison 
- 
+# expectation
+    #before: samples of one batch have similar median, but differences in batches
+ #boxplot before
 boxplot(ctrl_expr_matrix_log,
         main = "Expression before correction (batch coloured)",
         ylab = "Expression",
@@ -822,7 +824,7 @@ There is no severe change visible, and the data is now log transformed making it
 
 ## Batch effect pca limma ctrl
 #expectation
-before: clusters of the same batch with distinct separation of clusters 
+before: clusters of the same batch, strong separation along principle components 
 after: no separation visible
 ```{r}
 #1. Prepare PCA
@@ -865,7 +867,7 @@ There is no severe change visible, also there is no distinct differences between
 ##heatmap
 #expectation: 
 before: samples are grouped by batch, there is a clear separation of batches shown in the annotation 
-after: samples are goruped according to biological feature, no separation 
+after: samples are gruped according to biological feature, no separation 
 
 
 ```{r}
@@ -998,7 +1000,9 @@ rnase_expr_matrix_log <- log2(rnase_expr_matrix + 1)
 L_rnase_expr_corrected <- removeBatchEffect(rnase_expr_matrix_log, LR_batch = LR_batch)
 
 #3. Plot
-#use log2-transformed matrix for comparison 
+#use log2-transformed matrix for comparison
+# expectation
+    #before: samples of one batch have similar median, but differences in batches
 # Boxplot before correction
 
 boxplot(rnase_expr_matrix_log,
@@ -1006,7 +1010,7 @@ boxplot(rnase_expr_matrix_log,
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                      
-        col = LR_batch_colors,
+        col = colors,
         outline = FALSE,
         cex.axis = 0.6,
         names=short_labels)             
@@ -1026,7 +1030,7 @@ boxplot(L_rnase_expr_corrected,
         ylab = "Expression",
         xlab = "Samples",
         las = 2,                      
-        col = LR_batch_colors,
+        col = colors,
         outline = FALSE,
         cex.axis = 0.6,
         names=short_labels)             
@@ -1048,7 +1052,7 @@ There is no severe change visible, and the data is now log transformed, making i
 
 ## Batch effect pca limma rnase
 #expectation
-before: clusters of the same batch with distinct separation of clusters 
+before: clusters of the same batch, strong separation along principle components 
 after: no separation visible
 ```{r}
 #1. Prepare PCA
@@ -1190,10 +1194,10 @@ mod0 <- model.matrix(~ 1, data = C_sampleInfo)  # Nullmodell ohne Prädiktoren
 
 # 4.Execute SVA 
 sva_res_ctrl <- sva(ctrl_expr_matrix, mod, mod0)
-#SVA checks for hidden variables that can be explained by replicates or fractions
+#SVA checks for hidden variables that can not be explained by replicates or fractions
 #returns a list with surrogate variables (SV) that function as batch variables 
 
-# 5. extent design matrix with SVs
+# 5. extent design matrix by SVs
 mod_sv <- cbind(mod, sva_res_ctrl$sv)
 
 # (6) OPTIONAL:If batch is known, ComBat can be used 
@@ -1206,10 +1210,10 @@ mod_sv <- cbind(mod, sva_res_ctrl$sv)
 fit <- lmFit(ctrl_expr_matrix, mod_sv)
 fit <- eBayes(fit)
 
-# extract residues: expressions data - modelled effects (fraction + replicate + SVs) 
+# extract residues: expressions data - modeled effects (fraction + replicate + SVs) 
 S_corrected_expr_ctrl <- residuals(fit, ctrl_expr_matrix)
 
-# 'S_corrected_expr_ctrl' contains the corrected dataset 
+# 'S_corrected_expr_ctrl' contains the corrected dataset f
 
 ```
 
@@ -1235,7 +1239,7 @@ SC_short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(ctr
 
 ##after and before boxplot
 #expectation
-before: big differences between replicates and not in replicates themselves. Also different levels of medians 
+before: different levels of medians, span and spread; differences between samples caused by batches
 after: reduced differences
 
 ```{r}
@@ -1286,7 +1290,7 @@ after: big shifts and no visible improvement
 
 ## visualisierung mittels PCA
 #expectations 
-before: clusters of the same batch with distinct separation of clusters 
+before: distortion caused by scale differences, principle components show batch separation 
 after: no separation visible
 
 ```{r}
@@ -1333,7 +1337,7 @@ after: bigger difference visible but there appear to be more clusters between ba
 
 ##Heatmap
 #expectations
-Before: Samples are grouped by batch, and there is a clear separation of batches shown in the annotation 
+Before: Samples grouped by batch, and there is a clear separation of batches shown in the annotation; outliers, high variability
 after: samples are grouped according to biological feature, no separation 
 
 ```{r}
@@ -1479,7 +1483,7 @@ short_labels <- gsub("Fraction([0-9]+)_Rep([0-9])", "F\\1_R\\2", colnames(rnase_
 
 ## after and before boxplot
 #expectation 
-before: big differences between replicates and not in replicates themselves. Als, different levels of medians 
+before: different levels of medians, span and spread; differences between samples caused by batches
 after: reduced differences
 
 ```{r}
@@ -1529,7 +1533,7 @@ After: big shifts and no visible improvement
 
 ## visualisierung mittels PCA
 #expectations 
-Before: clusters of the same batch with distinct separation of clusters 
+Before: clusters of the same batch with distinct separation of clusters; distortion caused by scale differences; principle components show batch separation 
 after: no separation visible
 
 ```{r}
@@ -1572,7 +1576,7 @@ after: bigger difference visible but there appear to be more clusters between ba
 
 ##Heatmap
 #expectations
-Before: Samples are grouped by batch, and there is a clear separation of batches shown in the annotation 
+Before: Samples  grouped by batch, and there is a clear separation of batches shown in the annotation; outliers, high variability  
 After: samples are grouped according to biological feature, no separation 
 
 ```{r}
