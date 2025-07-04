@@ -76,7 +76,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     analyzed.
 -   These shifts form the basis for the classification of proteins based on RNA-dependence.
 -   The developed tool enables automated analysis of large-scale datasets to detect RNA-modulated
-    proteins using experimentally measurable features. ![](images/clipboard-1052987459.png)
+    proteins using experimentally measurable features. ![Beschreibung des Bildes](images/plot.jpeg)
 
 # **🔮Project Overview**
 
@@ -261,11 +261,11 @@ RNA-binding for other proteins from our dataset.
     RNA-binding classification. The regression coefficients reflect the strength and direction with
     which each predictor influences the log-odds of a protein being RNA-binding.
 
-    ![Beschreibung des Bildes](images/featureimportancelogistic.jpeg)
+    ![Beschreibung des Bildes](images/featureimportance.jpeg)
 
     -   positive coefficients (purple bars) indicate features that increase the probability of
         RNA-binding
-    -   negative coefficients (blue bars) indicate features that decrease the probability of
+    -   negative coefficients (green bars) indicate features that decrease the probability of
         RNA-binding\
         -\>EMD has the strongest influence on the probability of RNA-binding
 
@@ -332,7 +332,7 @@ flowchart LR
 3.  **test the individual significance of predictor effects**:\
     t-tests were conducted to determine whether RBPs and non-RBPs differ significantly in their
     isoelectric point (pI) and molecular weight\
-    ![Beschreibung des Bildes](images/comparison_pI.jpeg)\
+    ![Beschreibung des Bildes](images/comparisonRBP.jpeg)\
     A significant association was found between higher isoelectric point (pI) and increased
     probability of RNA dependence.\
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
