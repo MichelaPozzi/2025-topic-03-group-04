@@ -1422,11 +1422,12 @@ fit <- eBayes(fit)
 
 # extract residues: expressions data - modelled effects (fraction + replicate + SVs) 
 
-S_corrected_expr_rnase <- residuals(fit, rnase_expression_matrix)
+S_corrected_expr_rnase <- residuals(fit, rnase_expr_matrix)
 
 # S_corrected_expr_rnase contains the corrected dataset
 
 ```
+
 
 
 ```{r}
@@ -1547,9 +1548,22 @@ Before: Samples are grouped by batch, and there is a clear separation of batches
 After: samples are grouped according to biological feature, no separation 
 
 ```{r}
+
+# Set short labels as new column names
+colnames(S_corrected_expr_rnase) <- short_labels
+colnames(rnase_expr_matrix) <- short_labels
+
 # 1. create annotation for Heatmap
 annotation_col <- data.frame(SR_Batch = SR_batch)
 rownames(annotation_col) <- colnames(rnase_expr_matrix)
+
+# Werte clipping basierend auf Perzentilen
+expr_clipped <- S_corrected_expr_rnase
+low <- quantile(expr_clipped, 0.01)
+high <- quantile(expr_clipped, 0.99)
+
+expr_clipped[expr_clipped < low] <- low
+expr_clipped[expr_clipped > high] <- high
 
 #2. 
 library(pheatmap)
@@ -1558,7 +1572,8 @@ library(pheatmap)
 pheatmap(rnase_expr_matrix,
          annotation_col = annotation_col,
          annotation_colors = list(SR_Batch = SR_batch_colors),
-         main = "Heatmap before batch correction")
+         main = "Heatmap before batch correction",
+         fontsize_col=5)
 
 
 
@@ -1566,9 +1581,17 @@ pheatmap(rnase_expr_matrix,
 pheatmap(S_corrected_expr_rnase,
          annotation_col = annotation_col,
          annotation_colors = list(SR_Batch = SR_batch_colors),
-         main = "Heatmap after batch correction")
+         main = "Heatmap after batch correction",
+         fontsize_col=5)
 
 ```
+
+
+```{r}
+head(S_corrected_expr_rnase)
+```
+
+
 #Interpretation
 Before: There is no extreme clustering, but still some visible 
 After: it does not seem to have improved; instead, more clusters are visible
