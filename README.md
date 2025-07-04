@@ -201,26 +201,41 @@ flowchart LR
 
 -   Amplitude Changes:
 
--   Earth Mover Test (EMD): The Earth Mover’s Distance (EMD) measures how much "work" is needed to
-    transform one distribution into another. In this context, it reflects how much protein (mass)
-    must be shifted and how far to make the ctrl distribution resemble the rnase distribution.
-
-In 1D, EMD is calculated as the sum of absolute differences between the empirical cumulative
-distribution functions (ECDFs) of the two conditions. Higher EMD indicates greater differences in
-distribution shape.
-
--   Center Of Mass Test (COM): The Center of Mass Test calculates the intensity-weighted average of
-    fraction numbers,which represent the **"center" of a protein's distribution** (=COM).
-
-    The COM is calculated and compared between the two treatments (=Delta-COM).\
+-   **Earth Mover Test (EMD):** The Earth Mover’s Distance (EMD) measures **how much "work" is
+    needed to transform one distribution into another**. In this context, it reflects how much
+    protein (mass) must be shifted and how far to make the ctrl distribution resemble the rnase
+    distribution.
 
     **Output:**\
-    Difference between both treatments and the average position of the protein
-    distribution (= center of protein distribution) per protein along the gradient.\
-    A higher absolute Delta-COM value indicates that the protein's intensity profile has moved noticeably along the gradient.\
-    The **FEHLT NOCH**
+    In 1D, EMD is calculated as the sum of absolute differences between the empirical cumulative
+    distribution functions (ECDFs) of the two conditions. **Higher EMD indicates greater differences
+    in distribution shape.**
 
--   Wilcoxon Statistic:
+-   **Center Of Mass Test (COM):** The Center of Mass Test calculates the intensity-weighted average
+    of fraction numbers,which represent the **"center" of a protein's distribution** (=COM).
+
+    The COM is calculated and compared between the two treatments (=Delta-COM).
+
+    **Output:**\
+    Difference between both treatments and the average position of the protein distribution (=
+    center of protein distribution) per protein along the gradient.\
+    **A higher absolute Delta-COM value indicates that the protein's intensity profile has moved
+    noticeably along the gradient.**\
+    The prefix of Delta-COM (and the by the logistic model later on defined threshold) defines the
+    shift direction (positive Delta_COM -\> right shift).
+
+-   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired Wilcoxon test) is
+    a non-parametric statistical test used to compare two dependent samples. In this context, the
+    test **compares the global maximum of the same protein under two different treatments**. Thereby
+    a **paired comparison** is performed because the same replicates are observed under two
+    different treatments.\
+    The test examines whether the distributions differ systematically, without assuming a normal
+    distribution.
+
+    **Output:**\
+    **The p-value indicates how likely the observed shift of the global maxima occurred by chance.**
+    A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.\
+    Therefore, the difference between conditions is unlikely to be due to random variation.
 
 ### **🤖Logistic Model**
 
