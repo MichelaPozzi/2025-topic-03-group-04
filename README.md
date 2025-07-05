@@ -44,6 +44,7 @@ interactions across the proteome.
     riboregulation of mitotic protein-protein interactions. Nat. Commun. 16, 2325
     (2025).pdf](https://github.com/user-attachments/files/19981728/Rajagopal.et.al.An.atlas.of.RNA-dependent.proteins.in.cell.division.reveals.the.riboregulation.of.mitotic.protein-protein.interactions.Nat.Commun.16.2325.2025.pdf)
 
+Link Poster: https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3
 # **Group 4 Data Analysis Projekt**
 
 # Silent Signals: Protein Features as Predictors of RNA Interaction
