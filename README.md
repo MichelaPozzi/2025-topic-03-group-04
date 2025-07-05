@@ -225,10 +225,13 @@ They can influence further observations, analysis, and interpretation\
 
         6.Visualizations
 
-3.  **Interpretation and results:**<br/> → SVA better fit due to unknown batch effects ( not known
-    when measurements are taken, or on which machines)<br/> → Log2 transformation makes the data
-    less suitable for further analysis<br/> → Batch effect not overly significant<br/> → Removal
-    still could overcorrect biological variances<br/> → Batch cleaned data only used for PCA
+3.  **Interpretation and results:**\
+    → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on
+    which machines)\
+    → Log2 transformation makes the data less suitable for further analysis → Batch effect not
+    overly significant\
+    → Removal still could overcorrect biological variances\
+    → Batch cleaned data only used for PCA
 
 # **✅Shift Analysis** {#shift-analysis}
 
