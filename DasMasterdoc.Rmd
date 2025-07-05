@@ -1908,9 +1908,9 @@ shift_result$Shift_Distance_scaled_100 <- (shift_result$Shift_Distance_scaled/25
 
 ### change in amplitude of global maximum test
 Goal:uncover a possible change in protein-complex assembly after rnase treatment
-calculate the amplitude of the global maximum and wheter a gain or loss took place 
+calculate the amplitude of the global maximum and whether a gain or loss took place 
 ```{r}
-# calculate amplitude of global maximum for control measurments
+# calculate amplitude of global maximum for control measurements
 get_global_amplitudes <- function(expression_df, global_ctrl) {
   amplitudes <- mapply(function(row_idx, max_pos_str) {
     max_positions <- as.numeric(unlist(strsplit(max_pos_str, ",")))

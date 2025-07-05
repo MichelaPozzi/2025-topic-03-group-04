@@ -107,7 +107,11 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 
 **1. Dataset Description**
 
-NORA
+The dataset contains all the concentrations detected with massspectrometry for 3680 proteins. It
+contains 150 columns, made up from the 2 treatments with each three replicates per fraction. The
+initial measurement did not contain any NAs.
+
+![](images/clipboard-3241059977.png)
 
 **2. Evaluate Reproducibility**
 
@@ -117,10 +121,10 @@ The method used was the spearman correlation due to the sensitivity of the compa
 
 By receiving correlation values higher than 0.9, the control values showed very high correlation and
 are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21
-and 23. We defined a threshold of reproducibility at 0.7, which the mesurements of fraction 2 did
+and 23. We defined a threshold of reproducibility at 0.7, which the measurements of fraction 2 did
 not surpass. Nevertheless since the majority of the values are still highly correlating, we accept
 the sporadic variance in the second measurement in application to our analysis, however, we cannot
-conlcude redproducibility for other measurements
+conclude reproducibility for other measurements
 ![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d)
 ![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
 
@@ -211,7 +215,7 @@ They can influence further observations, analysis, and interpretation\
     -   Steps:
 
         1.  **Model preparations**\
-            → create a desgin matrix with a model matrix filled with known factors (replicates and
+            → create a design matrix with a model matrix filled with known factors (replicates and
             fractions) and a null model matrix filled with no descriptive factors but an intercept\
         2.  **Apply SVA**\
             → Apply function on data and models\
@@ -255,9 +259,13 @@ flowchart LR
 
 ### **📝Tests** {#tests}
 
--   Shift Distance: NICHT
+-   **Shift Distance:** By subtracting the position of the global maximum from the control sample
+    from the position of the RNase maximum we can calculate the migration of the major protein
+    components. Due to the distribution in the saccharose gradient that distance gives us an
+    estimate of the change caused to the protein assembly after RNase treatment
 
--   Amplitude Changes: VERGESSEN
+-   **Amplitude Changes:** The amplitude of the global maximum is determined in order to uncover a
+    possible change in protein-complex assembly after RNase treatment
 
 -   **Earth Mover Test (EMD):** The Earth Mover’s Distance (EMD) measures **how much "work" is
     needed to transform one distribution into another**. In this context, it reflects how much
