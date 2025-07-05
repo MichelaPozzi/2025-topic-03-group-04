@@ -4471,26 +4471,26 @@ library(ggplot2)
 
 #1. prepare PCA, extract numerical values
 rnase_df <- as.data.frame(S_corrected_expr_rnase)
-pca_result <- prcomp(rnase_df, center = TRUE, scale. = TRUE)
+R_pca_result <- prcomp(rnase_df, center = TRUE, scale. = TRUE)
 
 #2. convert PCA results into dataframe
-pca_df <- as.data.frame(pca_result$x)
+R_pca_df <- as.data.frame(R_pca_result$x)
 
 #3. copy protein names from rownames
-pca_df$Protein <- normalized_ctrl_df$Protein
+R_pca_df$Protein <- normalized_ctrl_df$Protein
 
 #4. define righ shift proteins
 highlight_proteins <- rownames(right_shift_rnase)
 
 #5. add column with highlights
-pca_df$Highlight <- ifelse(pca_df$Protein %in% highlight_proteins, "Yes", "No")
-unique(pca_df$Highlight)
+R_pca_df$Highlight <- ifelse(R_pca_df$Protein %in% highlight_proteins, "Yes", "No")
+unique(R_pca_df$Highlight)
 
 #6. show how many right shift proteins were detected
-table(pca_df$Highlight)
+table(R_pca_df$Highlight)
 
 #7. plot
-ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+ggplot(R_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   geom_point(alpha = 0.8, size = 2) +
   scale_color_manual(
   values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
@@ -4548,7 +4548,7 @@ ctrl_pca_result <- prcomp(ctrl_df, center = TRUE, scale. = TRUE)
 ctrl_pca_df <- as.data.frame(ctrl_pca_result$x)
 
 #3. copy protein names from rownames
-ctrl_pca_df$Protein <- rownames(S_corrected_expr_rnase_df)
+ctrl_pca_df$Protein <- normalized_ctrl_df$Protein
 
 #4. define righ shift proteins
 highlight_proteins <- rownames(right_shift_ctrl)
@@ -5082,7 +5082,7 @@ chisq.test(c_tbl)
 
 #check how data set is made up, ctrl
 ```{r}
-ctrl_sva_df <- as.data.frame(S_corrected_expr_ctrl[-1,])
+ctrl_sva_df <- as.data.frame(percent_ctrl_df[,-1])
 rownames(ctrl_sva_df) <- ctrl_sva_df$X
 C_test <- ctrl_sva_df
 str(C_test)
@@ -5587,14 +5587,29 @@ plot(first_two_components)
 
 ###chi squqred
 
-##ctrl
 ```{r}
+#1.filter for RBPs
+rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
+
+#2.extract RBPS and store in a separate vector
+rbp_proteins <- rbp_only$Protein
+head(rbp_proteins)
+```
+
+```{r}
+##ctrl
+
 #1.set TRUE to RBP and FALSE to non - RBP
 ctrl_data$is_rbp <- ctrl_data$protein_name %in% rbp_proteins
 #2.turn cluster into a factor 
 ctrl_data$cluster <- factor(ctrl_data$cluster, levels = c(1, 2))  
 #keep cluster as order
 ```
+
+```{r}
+head(Ctrl_data)
+```
+
 
 ```{r}
 dim(rnase_data$is_rbp)
