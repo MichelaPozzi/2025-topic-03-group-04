@@ -81,8 +81,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 # **🔮Project Overview**
 
 ## Table Of Contents
--   [Data Exploration]
-    - [Reproducability]
+-   [Data Exploration](#data-exploration)
 -   [Data Normalization](#data-normalisation)
     -   [Normalisation](#normalisation)
     -   [Batch Removal](#batch-removal)
