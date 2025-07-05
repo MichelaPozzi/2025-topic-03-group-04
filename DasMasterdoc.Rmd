@@ -2414,12 +2414,12 @@ head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 #define dataframe for all test scores of all proteines
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
-  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_100,
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled,
   Shift_direction_ctrl_to_rnase = center_of_mass_df$shift_direction,
-  amplitude_changes = amplitude_changes$changes_scaled_100,
-  EMD = normalized_ctrl_df$EMD_scaled_100,
-  Center_of_Mass = center_of_mass_df$COM_scaled_100,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100
+  amplitude_changes = amplitude_changes$changes_scaled,
+  EMD = normalized_ctrl_df$EMD_scaled,
+  Center_of_Mass = center_of_mass_df$COM_scaled,
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled
 )
 #depict result
   head(test_scores_combined_df)
@@ -2606,6 +2606,10 @@ print(test_results_df)
 output: for all tests there is a significant difference in the performance of positive and negative control proteins
 -> reference proteins are suitable for training the logistic model
 
+
+### build logistic model
+- logistic model based on all tests is created
+- check for redundancy/multicollinearity using step()function
 ```{r}
 # 1. Add labels to the datasets
 df_positive_control$label <- 1  # Positive control group labeled as 1
@@ -2617,25 +2621,31 @@ df_all <- rbind(
   df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "label")]
 )
 
-# 3. Fit logistic regression model with multiple predictors
-logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Center_of_Mass + Wilcoxon_statistic_Max,
-                      data = df_all,
-                      family = binomial)
+# 3. Fit full logistic regression model with all predictors
+full_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Center_of_Mass + Wilcoxon_statistic_Max,
+                  data = df_all,
+                  family = binomial)
 
-# 4. Display model summary to see weights (coefficients)
-summary(logistic_model)
+# 4. Stepwise feature selection based on AIC
+step_model <- step(full_model, direction = "both", trace = TRUE)
 
-# 5. Create a combined weighted score using coefficients
-coeffs <- coef(logistic_model)[-1]  # exclude intercept
-df_all$weighted_score <- rowSums(sweep(df_all[, names(coeffs)], 2, coeffs, FUN = "*"))
+# 5. Summary of the reduced model
+summary(step_model)
 
-# 6. Boxplot of weighted scores by label
+# 6. Create a weighted score using the selected model's coefficients
+coeffs <- coef(step_model)[-1]  # exclude intercept
+selected_features <- names(coeffs)
+df_all$weighted_score <- rowSums(sweep(df_all[, selected_features], 2, coeffs, FUN = "*"))
+
+# 7. Visualize weighted score by class
 boxplot(weighted_score ~ label, data = df_all,
         names = c("Negative", "Positive"),
         xlab = "Class Label", ylab = "Weighted Score",
         main = "Distribution of Weighted Scores by Class")
+
 ```
 output: 
+- step()functionn did not remove any predictors -> no redundancy problems
 - The regression estimate represents the influence of a given predictor on the log-odds of RNA binding. A higher estimate increases the predicted probability.
 - The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model (+ the less likely is the relation coincidental)
 
