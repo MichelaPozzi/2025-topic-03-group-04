@@ -124,8 +124,6 @@ conlcude redproducibility for other measurements
 ![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d)
 ![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
 
-
-
 # **🧼Data Normalisation** {#data-normalisation}
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
