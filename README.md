@@ -118,8 +118,9 @@ The method used was the spearman correlation due to the sensitivity of the compa
 By receiving correlation values higher than 0.9, the control values showed very high correlation and
 are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21
 and 23. We defined a threshold of reproducibility at 0.7, which the mesurements of fraction 2 did
-not surpass. Nevertheless since the majority of the values are still highly correlating, we accept the
-sporadic variance in the second measurement in application to our analysis, however, we cannot conlcude redproducibility for other measurements
+not surpass. Nevertheless since the majority of the values are still highly correlating, we accept
+the sporadic variance in the second measurement in application to our analysis, however, we cannot
+conlcude redproducibility for other measurements
 
 # **🧼Data Normalisation** {#data-normalisation}
 
@@ -195,41 +196,34 @@ They can influence further observations, analysis, and interpretation\
 1.  Identifying and deleting with **limma package**\
     → removes known batch effects with **removeBatchEffect**
 
-    → Steps:<br/> 1. **log2 - transformation:**<br/>
-    `→ stabilizes variance, improves interpretability, reduces outlier effects`\
+    → Steps:
 
+    1.  **log2 - transformation:**\
+        → stabilizes variance, improves interpretability, reduces outlier effects\
     2.  **apply function**
 
-    → Visualizations:<br/> 1.1: Boxplot visualization:<br/> → expectation:<br/>
-    `→ noticeable batch: samples of one batch have a similar median, but differences in batches`<br/>
-    → result:<br/> 1.2: PCA visualization:<br/> → expectation:<br/>
-    `→ noticeable batch: principal components separate by batch`<br/> → result:<br/> 1.3: Heatmap
-    visualization:<br/> → expectation:<br/>
-    `→noticeable batch: samples are clustered by batch not by biological factors`<br/> →
-    result:<br/> before:
+2.  Identifying and deleting with **SVA**\
+    → Surrogate Variable Analysis\
+    → better for unknown batch effect and other disturbances
 
-2.  Identifying and deleting with **SVA**<br/> → Surrogate Variable Analysis<br/> → better for
-    unknown batch effect and other disturbances
+    -   Steps:
 
-    -   Steps:<br/>
-        1.  **Model preparations**<br/> → create a desgin matrix with a model matrix filled with
-            known factors (replicates and fractions) and a null model matrix filled with no
-            descriptive factors but an intercept<br/>
-        2.  **Apply SVA**<br/> → Apply function on data and models<br/>
-        3.  **Determine the number of surrogate variables**<br/> → SVA estimates how many Svs are
-            needed to model hidden batch effects<br/> → by searching for combinations not
-            explainable by known variables<br/> → extend the matrix by SVs<br/>
-        4.  **Data correction**<br/> → using linear regression<br/> → SVs are used to calculate
-            unwanted effects and remove those<br/>
-        5.  **Residues extraction**<br/> → expression data - modeled effects (fraction +
-            replicates + SVs )
-    -   Visualizations:<br/>\
-        2.1: Boxplot visualization:<br/> → expectation:<br/>
-        `→ noticeable batch: differences in span and spread, big differences between samples caused by batches`<br/>
-        → result:<br/> before:<br/> 2.2: PCA visualization:<br/> → expectation:<br/>
-        `→ noticeable batch: distortion caused by scale differences, principal components show batch separation`<br/>
-        → result:<br/> 2.3: Heatmap visualization:<br/> → expectation:<br/>
-        `→ noticeable batch: outliers, high variability`<br/> → result:<br/>
+        1.  **Model preparations**\
+            → create a desgin matrix with a model matrix filled with known factors (replicates and
+            fractions) and a null model matrix filled with no descriptive factors but an intercept\
+        2.  **Apply SVA**\
+            → Apply function on data and models\
+        3.  **Determine the number of surrogate variables**\
+            → SVA estimates how many Svs are needed to model hidden batch effects\
+            → by searching for combinations not explainable by known variables\
+            → extend the matrix by SVs\
+        4.  **Data correction**\
+            → using linear regression\
+            → SVs are used to calculate unwanted effects and remove those\
+        5.  **Residues extraction**\
+            → expression data - modeled effects (fraction + replicates + SVs )\
+
+        6.Visualizations
 
 3.  **Interpretation and results:**<br/> → SVA better fit due to unknown batch effects ( not known
     when measurements are taken, or on which machines)<br/> → Log2 transformation makes the data
