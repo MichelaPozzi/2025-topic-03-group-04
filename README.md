@@ -44,6 +44,7 @@ interactions across the proteome.
     riboregulation of mitotic protein-protein interactions. Nat. Commun. 16, 2325
     (2025).pdf](https://github.com/user-attachments/files/19981728/Rajagopal.et.al.An.atlas.of.RNA-dependent.proteins.in.cell.division.reveals.the.riboregulation.of.mitotic.protein-protein.interactions.Nat.Commun.16.2325.2025.pdf)
 
+Link Poster: https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3
 # **Group 4 Data Analysis Projekt**
 
 # Silent Signals: Protein Features as Predictors of RNA Interaction
@@ -97,18 +98,27 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 
 # **Data Exploration** {#data-exploration}
 
--   Examine the dimensions of our dataset and potenital inconsistencies in the produced data. Also,
-    ivestigate wheter the experimental nature of the measurements are redproducable, and therefore
+-   Examine the dimensions of our dataset and potential inconsistencies in the produced data. Also,
+    investigate whether the experimental nature of the measurements are reproducible, and therefore
     applicable to our analysis. Large scale measurements carry the risk of introducing potential
     technical variability. By calculating the correlation between all replicates across the
     fractions for each treatment we can confirm the reliability and stability of the measurements.
-    **1. Dataset Description**
--   ... **2. Evaluate Reproducability**
--   The method used was the spearman correlation due to the delicacy/ sensible nature of the
-    comparing values. The control values showed very high correlation and are therefore
-    reproducible, wheras our rnase measurements correlated less in fractions 2, 21 and 23. However,
-    since the majority of the values are still highly correlating, we accept the sporadic variance
-    in the second measurement and deem the data as reproducible.
+
+**1. Dataset Description**
+
+NORA
+
+**2. Evaluate Reproducibility**
+
+The method used was the spearman correlation due to the sensitivity of the comparing values.
+
+**Output**:
+
+By receiving correlation values higher than 0.9, the control values showed very high correlation and
+are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21
+and 23. We defined a threshold of reproducibility at 0.8, which the mesurements of fraction 2 did
+not surpass. However, since the majority of the values are still highly correlating, we accept the
+sporadic variance in the second measurement and deem the data as reproducible.
 
 # **🧼Data Normalisation** {#data-normalisation}
 
@@ -241,8 +251,6 @@ They can influence further observations, analysis, and interpretation\
 
 # **✅Shift Analysis** {#shift-analysis}
 
-## **🎯Objective**
-
 ## ️**📃Steps**
 
 ``` mermaid
@@ -261,9 +269,9 @@ flowchart LR
 
 ### **📝Tests** {#tests}
 
--   Shift Distance:
+-   Shift Distance: NICHT
 
--   Amplitude Changes:
+-   Amplitude Changes: VERGESSEN
 
 -   **Earth Mover Test (EMD):** The Earth Mover’s Distance (EMD) measures **how much "work" is
     needed to transform one distribution into another**. In this context, it reflects how much
@@ -288,26 +296,29 @@ flowchart LR
     The prefix of Delta-COM (and the by the logistic model later on defined threshold) defines the
     shift direction (positive Delta_COM -\> right shift).
 
--   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a non-parametric statistical method used to compare two related samples. In this context, it is used to assess whether the global maximum of the same protein differs between two treatments (Control an RNase), using matched replicates.
-The test evaluates whether the distribution of paired differences is symmetric around zero, indicating whether one treatment tends to produce consistently higher or lower values than the other — without assuming a normal distribution.
+-   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a
+    non-parametric statistical method used to compare two related samples. In this context, it is
+    used to assess whether the global maximum of the same protein differs between two treatments
+    (Control an RNase), using matched replicates. The test evaluates whether the distribution of
+    paired differences is symmetric around zero, indicating whether one treatment tends to produce
+    consistently higher or lower values than the other — without assuming a normal distribution.
 
     **Output:**\
     **The p-value indicates how likely the observed shift of the global maxima occurred by chance.**
     A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.\
-<<<<<<< HEAD
+
     The test statistic W measures how consistently one condition tends to produce higher or lower
     values than the other.
 
     -   A small W value suggests that most differences go in the same direction (e.g., treatment
         Control is almost always higher than RNase), which indicates a significant difference
 
-=======
-    The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
-    -  A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
->>>>>>> dbf12dda7a7a168fc72a2a7c0f938882a982cc00
-### **🤖Logistic Model**
+    -   The test statistic W measures how consistently one condition tends to produce higher or
+        lower values than the other. A small W value suggests that most differences go in the same
+        direction (e.g., treatment Control is almost always higher than RNase), which indicates a
+        significant difference
 
-### Objective
+### **🤖Logistic Model**
 
 A logistic regression model is trained using reference proteins to predict the probability of
 RNA-binding for other proteins from our dataset.
@@ -375,16 +386,13 @@ RNA-binding for other proteins from our dataset.
 
     -\> the predictive accuracy lies way above the "coincidence line"\
 
- # **Dimension reduction**  {#dimension-reduction}
-  
-  ## **🎯Objective:**
--   Reduce dimension for better exploratory analysis
--   Cluster results to find underlying relations
-  
-  ## **📃Steps**
-     
+\# **Dimension reduction** {#dimension-reduction}
 
-<<<<<<< HEAD
+\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+underlying relations
+
+\## **📃Steps**
+
 ``` mermaid
 flowchart LR
     A[prepare adta] --> B[apply prcomp]
@@ -420,24 +428,22 @@ PCs. \<br\>
 
 ### **Chi Squared test** {#chi-square}
 
-=======
-  ### **Principal component analysis** {#pca}
-To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
+\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
 
-**Eigenvalues**
-Eigenvalues reflect the total amount of variance explained by each principal component. They are stored in the **rotation** factor. By squaring the standard deviation, the variance is calculated. Variance can then be used to calculate the percentage explained by each principal component. <br\>
+**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
+component. They are stored in the **rotation** factor. By squaring the standard deviation, the
+variance is calculated. Variance can then be used to calculate the percentage explained by each
+principal component. \<br\>
 
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two PCs. <br\>
-  
-  ### **K-Means Clustering** {#k-means}
-  
-  ### **Chi Squared test** {#chi-square}
-  
-  
->>>>>>> dbf12dda7a7a168fc72a2a7c0f938882a982cc00
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
+PCs. \<br\>
+
+\### **K-Means Clustering** {#k-means}
+
+\### **Chi Squared test** {#chi-square}
+
 # **📈Linear Regression** {#linear-regression}
-
-## **🎯Objective:**
 
 -   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the
     probability of RNA dependence and assess their statistical significance
@@ -481,25 +487,3 @@ flowchart LR
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
-
-\# **Dimension reduction** {#dimension-reduction}
-
-\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
-underlying relations
-
-\## **📃Steps**
-
-\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
-As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
-
-**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
-component. They are stored in the **rotation** factor. By squaring the standard deviation, the
-variance is calculated. Variance can then be used to calculate the percentage explained by each
-principal component. \<br\>
-
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
-PCs. \<br\>
-
-\### **K-Means Clustering** {#k-means}
-
-\### **Chi Squared test** {#chi-square}
