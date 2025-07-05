@@ -372,8 +372,8 @@ RNA-binding for other proteins from our dataset.
 
 \# **Dimension reduction** {#dimension-reduction}
 
-\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
-underlying relations
+\## **🎯Objective:** - Reduce dimension for better exploratory analysis\
+- Cluster results to find underlying relations
 
 \## **📃Steps**
 
@@ -390,42 +390,35 @@ flowchart LR
     H --> J[Chi Squared testing] 
 ```
 
-## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+### **Principal component analysis** {#pca}
 
-underlying relations
-
-## **📃Steps**
-
-### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+To reduce dimensions, the **prcomp** command is used.
 
 As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
 
 **Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
 component. They are stored in the **rotation** factor. By squaring the standard deviation, the
 variance is calculated. Variance can then be used to calculate the percentage explained by each
-principal component. \<br\>
+principal component.
 
 All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
-PCs. \<br\>
+PCs.
 
 ### **K-Means Clustering** {#k-means}
 
+The ideal **Amount of clusters** is determined first with an **elbow plot**. The graph gives a
+suggestion of how many clusters should be used. For a more detailed determination the silhouette
+scores are calculated and plotted.
+
+**K-means** is applied and plotted accordung to the previous results.
+
+In the K-means plots **RNA binding proteins** are labled in order to determine a biological
+correlation between RBPs and the resulting clusters.
+
 ### **Chi Squared test** {#chi-square}
 
-\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
-As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
-
-**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
-component. They are stored in the **rotation** factor. By squaring the standard deviation, the
-variance is calculated. Variance can then be used to calculate the percentage explained by each
-principal component. \<br\>
-
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
-PCs. \<br\>
-
-\### **K-Means Clustering** {#k-means}
-
-\### **Chi Squared test** {#chi-square}
+In order to check for a significant association between clusters and RBPs.\
+The data is turned into a table and the test executed.
 
 # **📈Linear Regression** {#linear-regression}
 
