@@ -44,8 +44,9 @@ interactions across the proteome.
     riboregulation of mitotic protein-protein interactions. Nat. Commun. 16, 2325
     (2025).pdf](https://github.com/user-attachments/files/19981728/Rajagopal.et.al.An.atlas.of.RNA-dependent.proteins.in.cell.division.reveals.the.riboregulation.of.mitotic.protein-protein.interactions.Nat.Commun.16.2325.2025.pdf)
 
-Link Poster: https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3
-# **Group 4 Data Analysis Projekt**
+Link Poster:
+<https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3> \#
+**Group 4 Data Analysis Projekt**
 
 # Silent Signals: Protein Features as Predictors of RNA Interaction
 
@@ -123,24 +124,10 @@ sporadic variance in the second measurement and deem the data as reproducible.
 # **🧼Data Normalisation** {#data-normalisation}
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
-    conditions (Control vs. RNase) by normalising and transforming the values with following steps\
-
-## **🎯Objective:**
-
-**1. Establishing Comparability:**
-
--   Pairwise normalisation
--   Smoothing
-
-**2. Removing Systematic Bias:**
-
--   Batch effect correction
-
-**3. Aligning Value Ranges:**
-
--   Scaling
--   Transformation
--   Normalization
+    conditions (Control vs. RNase) by normalising and transforming the values with following steps:
+-   During data normalisation three main steps are executed. By pairwise normalising and smoothing
+    the data comparability is established. Scaling, transformation and normalisation aligns the
+    value ranges. Due to batch effect correction the systematic bias is removed.\
 
 ## **📃Steps:**
 
@@ -193,7 +180,7 @@ flowchart LR
     → Resulting **fraction profile** is rescaled to **100% (ensure consistency).**\
 
     **Normalized Control Dataframe (first 6 rows)**\
-    ![Mein Screenshot](images/screenshot_normalized_control.png)
+    ![Mein Screenshot](images/screenshot_normalized_Control.png)
 
     **Normalized RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
