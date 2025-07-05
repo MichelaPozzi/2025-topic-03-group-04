@@ -312,15 +312,10 @@ flowchart LR
     -   A small W value suggests that most differences go in the same direction (e.g., treatment
         Control is almost always higher than RNase), which indicates a significant difference
 
-    The test statistic W measures how consistently one condition tends to produce higher or lower
-    values than the other.
-
-    -   A small W value suggests that most differences go in the same direction (e.g., treatment
-        Control is almost always higher than RNase), which indicates a significant difference
-
-    -   The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
-        A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
-
+    -   The test statistic W measures how consistently one condition tends to produce higher or
+        lower values than the other. A small W value suggests that most differences go in the same
+        direction (e.g., treatment Control is almost always higher than RNase), which indicates a
+        significant difference
 
 ### **🤖Logistic Model**
 
@@ -491,4 +486,3 @@ flowchart LR
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
-
