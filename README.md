@@ -127,8 +127,8 @@ conlcude redproducibility for other measurements
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
     conditions (Control vs. RNase) by normalising and transforming the values with following steps:
 -   During data normalisation three main steps are executed. By pairwise normalising and smoothing
-    the data comparability is established. Scaling, transformation and normalisation aligns the
-    value ranges. Due to batch effect correction the systematic bias is removed.\
+    the data comparability is established. Transformation and normalisation aligns the value ranges.
+    Due to batch effect correction the systematic bias is removed.\
 
 ## **📃Steps:**
 
@@ -158,7 +158,7 @@ flowchart LR
     **Normed RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normed_rnase.png)
 
-2.  **Step 2: Smoothing via Moving Average**\
+2.  **Step 2: Smoothing via Moving Average (Transformation)**\
     A moving average is applied to smooth the values.\
     The average is calculated using the center fraction and its immediate neighbors (left and
     right).\
@@ -168,7 +168,7 @@ flowchart LR
     Two data frames (for Control and RNase), each with 75 columns (3 × 25) containing the smoothed
     values.
 
-3.  **Step 3: Normalization Across Replicates and Fractions per Protein**\
+3.  **Step 3: Normalisation Across Replicates and Fractions per Protein**\
     Each replicate measurement is normalized individually → each replicate sums to 100%.\
     Then, for each fraction, the mean across replicates is calculated and normalized again to sum to
     100.\
