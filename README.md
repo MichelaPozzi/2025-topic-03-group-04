@@ -364,7 +364,7 @@ RNA-binding for other proteins from our dataset.
 
     -\> the predictive accuracy lies way above the "coincidence line"\
 
-\# **Dimension reduction** {#dimension-reduction}
+# **Dimension reduction** {#dimension-reduction}
 
 ``` mermaid
 flowchart LR
@@ -381,12 +381,12 @@ flowchart LR
 ```
 
 
-\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
 underlying relations
 
-\## **📃Steps**
+## **📃Steps**
 
-\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
 As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
 
 **Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
@@ -397,9 +397,9 @@ principal component. \<br\>
 All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
 PCs. \<br\>
 
-\### **K-Means Clustering** {#k-means}
+### **K-Means Clustering** {#k-means}
 
-\### **Chi Squared test** {#chi-square}
+### **Chi Squared test** {#chi-square}
 
 # **📈Linear Regression** {#linear-regression}
 
