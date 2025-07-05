@@ -121,6 +121,10 @@ and 23. We defined a threshold of reproducibility at 0.7, which the mesurements 
 not surpass. Nevertheless since the majority of the values are still highly correlating, we accept
 the sporadic variance in the second measurement in application to our analysis, however, we cannot
 conlcude redproducibility for other measurements
+![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d)
+![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
+
+
 
 # **🧼Data Normalisation** {#data-normalisation}
 
