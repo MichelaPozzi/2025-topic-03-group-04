@@ -81,6 +81,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 # **🔮Project Overview**
 
 ## Table Of Contents
+
 -   [Data Exploration](#data-exploration)
 -   [Data Normalization](#data-normalisation)
     -   [Normalisation](#normalisation)
@@ -100,7 +101,22 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 - ...
 **2. Evaluate Reproducability**
 - The method used was the spearman correlation due to the delicacy/ sensible nature of the comparing values. The control values showed very high correlation and are therefore reproducible, whereas our rnase measurements correlated less in fractions 2, 21 and 23. However, since the majority of the values are still highly correlating, we accept the sporadic variance in the second measurement and deem the data as reproducible. 
-    
+
+# **Data Exploration** {#data-exploration}
+
+-   Examine the dimensions of our dataset and potenital inconsistencies in the produced data. Also,
+    ivestigate wheter the experimental nature of the measurements are redproducable, and therefore
+    applicable to our analysis. Large scale measurements carry the risk of introducing potential
+    technical variability. By calculating the correlation between all replicates across the
+    fractions for each treatment we can confirm the reliability and stability of the measurements.
+    **1. Dataset Description**
+-   ... **2. Evaluate Reproducability**
+-   The method used was the spearman correlation due to the delicacy/ sensible nature of the
+    comparing values. The control values showed very high correlation and are therefore
+    reproducible, wheras our rnase measurements correlated less in fractions 2, 21 and 23. However,
+    since the majority of the values are still highly correlating, we accept the sporadic variance
+    in the second measurement and deem the data as reproducible.
+
 # **🧼Data Normalisation** {#data-normalisation}
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
@@ -285,8 +301,16 @@ The test evaluates whether the distribution of paired differences is symmetric a
     **Output:**\
     **The p-value indicates how likely the observed shift of the global maxima occurred by chance.**
     A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.\
+
+    The test statistic W measures how consistently one condition tends to produce higher or lower
+    values than the other.
+
+    -   A small W value suggests that most differences go in the same direction (e.g., treatment
+        Control is almost always higher than RNase), which indicates a significant difference
+
     The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
     -  A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
+
 ### **🤖Logistic Model**
 
 ### Objective
@@ -365,6 +389,41 @@ RNA-binding for other proteins from our dataset.
   
   ## **📃Steps**
      
+
+``` mermaid
+flowchart LR
+    A[prepare adta] --> B[apply prcomp]
+    B --> C[explore PCA data]
+    B --> D[elbow and silhouette tests]
+    C --> E[explore Eigenvalues]
+    E --> F[plot PCA and variance]
+    F --> G[label right shift proteins]
+    D --> H[K-means clustering]
+    H --> I[label RNA binding proteins]
+    H --> J[Chi Squared testing] 
+```
+
+## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+
+underlying relations
+
+## **📃Steps**
+
+### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+
+As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
+
+**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
+component. They are stored in the **rotation** factor. By squaring the standard deviation, the
+variance is calculated. Variance can then be used to calculate the percentage explained by each
+principal component. \<br\>
+
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
+PCs. \<br\>
+
+### **K-Means Clustering** {#k-means}
+
+### **Chi Squared test** {#chi-square}
 
   ### **Principal component analysis** {#pca}
 To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
