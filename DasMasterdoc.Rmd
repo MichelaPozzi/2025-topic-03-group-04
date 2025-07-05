@@ -4032,7 +4032,7 @@ fviz_pca_biplot(rnase_rsp_pca,
 
 ```{r}
 # Run PCA
-pca <- prcomp(rnase_rsp_pca, scale. = TRUE)
+pca <- prcomp(rnase_rsp_pca[, 2:ncol(rnase_rsp_pca)], scale. = TRUE)
 
 # Get scores (samples)
 scores <- as.data.frame(pca$x)
@@ -4242,7 +4242,7 @@ names(ctrl_rsp_pca)
 ```
 
 ```{r}
-head(ctr_rsp_pca$x,10)
+head(ctrl_rsp_pca$x,10)
 ```
 
 -> eigenvalues stored in "rotation" 
@@ -4477,7 +4477,7 @@ pca_result <- prcomp(rnase_df, center = TRUE, scale. = TRUE)
 pca_df <- as.data.frame(pca_result$x)
 
 #3. copy protein names from rownames
-pca_df$Protein <- rownames(S_corrected_expr_rnase_df)
+pca_df$Protein <- normalized_ctrl_df$Protein
 
 #4. define righ shift proteins
 highlight_proteins <- rownames(right_shift_rnase)
