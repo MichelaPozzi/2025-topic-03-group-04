@@ -117,9 +117,9 @@ The method used was the spearman correlation due to the sensitivity of the compa
 
 By receiving correlation values higher than 0.9, the control values showed very high correlation and
 are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21
-and 23. We defined a threshold of reproducibility at 0.8, which the mesurements of fraction 2 did
-not surpass. However, since the majority of the values are still highly correlating, we accept the
-sporadic variance in the second measurement and deem the data as reproducible.
+and 23. We defined a threshold of reproducibility at 0.7, which the mesurements of fraction 2 did
+not surpass. Nevertheless since the majority of the values are still highly correlating, we accept the
+sporadic variance in the second measurement in application to our analysis, however, we cannot conlcude redproducibility for other measurements
 
 # **🧼Data Normalisation** {#data-normalisation}
 
