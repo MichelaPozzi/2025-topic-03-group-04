@@ -91,7 +91,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 -   [Dimension Reduction](#dimension-reduction)
     -   [PCA](#pca)
     -   [k-means](#k--means)
-    -   [Chi Squared] (#chi-squared)
+    -   [Chi Squared test] (#chi-squared-test)
 -   [Linear Regression](#linear-regression)
 
 # **🧼Data Normalisation** {#data-normalisation}
@@ -297,19 +297,14 @@ flowchart LR
     The prefix of Delta-COM (and the by the logistic model later on defined threshold) defines the
     shift direction (positive Delta_COM -\> right shift).
 
--   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired Wilcoxon test) is
-    a non-parametric statistical test used to compare two dependent samples. In this context, the
-    test **compares the global maximum of the same protein under two different treatments**. Thereby
-    a **paired comparison** is performed because the same replicates are observed under two
-    different treatments.\
-    The test examines whether the distributions differ systematically, without assuming a normal
-    distribution.
+-   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a non-parametric statistical method used to compare two related samples. In this context, it is used to assess whether the global maximum of the same protein differs between two treatments (Control an RNase), using matched replicates.
+The test evaluates whether the distribution of paired differences is symmetric around zero, indicating whether one treatment tends to produce consistently higher or lower values than the other — without assuming a normal distribution.
 
     **Output:**\
     **The p-value indicates how likely the observed shift of the global maxima occurred by chance.**
     A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.\
-    Therefore, the difference between conditions is unlikely to be due to random variation.
-
+    The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
+    -  A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
 ### **🤖Logistic Model**
 
 ### Objective
@@ -380,6 +375,28 @@ RNA-binding for other proteins from our dataset.
 
     -\> the predictive accuracy lies way above the "coincidence line"\
 
+ # **Dimension reduction**  {#dimension-reduction}
+  
+  ## **🎯Objective:**
+-   Reduce dimension for better exploratory analysis
+-   Cluster results to find underlying relations
+  
+  ## **📃Steps**
+     
+
+  ### **Principal component analysis** {#pca}
+To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
+
+**Eigenvalues**
+Eigenvalues reflect the total amount of variance explained by each principal component. They are stored in the **rotation** factor. By squaring the standard deviation, the variance is calculated. Variance can then be used to calculate the percentage explained by each principal component. <br\>
+
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two PCs. <br\>
+  
+  ### **K-Means Clustering** {#k-means}
+  
+  ### **Chi Squared test** {#chi-square}
+  
+  
 # **📈Linear Regression** {#linear-regression}
 
 ## **🎯Objective:**
@@ -428,23 +445,3 @@ flowchart LR
     analysis.
     
     
-  # **Dimension reduction**  {#dimension-reduction}
-  
-  ## **🎯Objective:**
--   Reduce dimension for better exploratory analysis
--   Cluster results to find underlying relations
-  
-  ## **📃Steps**
-     
-
-  ### **Principal component analysis** {#pca}
-To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
-
-**Eigenvalues**
-Eigenvalues reflect the total amount of variance explained by each principal component. They are stored in the **rotation** factor. By squaring the standard deviation, the variance is calculated. Variance can then be used to calculate the percentage explained by each principal component. <br\>
-
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two PCs. <br\>
-  
-  ### **K-Means Clustering** {#k-means}
-  
-  ### **Chi Squared test** {#chi-square}
