@@ -2461,12 +2461,12 @@ head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 #define dataframe for all test scores of all proteines
 test_scores_combined_df <- data.frame(
   Protein = normalized_ctrl_df$Protein,
-  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled,
+  Shift_Distance_ctrl_to_rnase = shift_result$Shift_Distance_scaled_100,
   Shift_direction_ctrl_to_rnase = center_of_mass_df$shift_direction,
-  amplitude_changes = amplitude_changes$changes_scaled,
-  EMD = normalized_ctrl_df$EMD_scaled,
-  Center_of_Mass = center_of_mass_df$COM_scaled,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled
+  amplitude_changes = amplitude_changes$changes_scaled_100,
+  EMD = normalized_ctrl_df$EMD_scaled_100,
+  Center_of_Mass = center_of_mass_df$COM_scaled_100,
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100
 )
 #depict result
   head(test_scores_combined_df)
