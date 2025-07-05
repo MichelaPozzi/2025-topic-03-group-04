@@ -91,7 +91,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 -   [Dimension Reduction](#dimension-reduction)
     -   [PCA](#pca)
     -   [k-means](#k--means)
-    -   [Chi Squared test] (#chi-squared-test)
+    -   [Chi Squared test](#chi-squared-test)
 -   [Linear Regression](#linear-regression)
 
 # **Data Exploration**
