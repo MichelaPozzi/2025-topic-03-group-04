@@ -126,7 +126,31 @@ for (i in 0:24) {
 
 # show result
 print(ctrl_correlations)
-plot(ctrl_correlations) 
+
+library(ggplot2)
+library(tidyr)
+
+ctrl_cor_long <- pivot_longer(ctrl_correlations, 
+                               cols = starts_with("ctrl"), 
+                               names_to = "comparison", 
+                               values_to = "correlation")
+
+# Plot mit drei abgestuften Lilatönen
+ggplot(ctrl_cor_long, aes(x = fraction, y = correlation, color = comparison)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c(
+    "ctrl1_vs_ctrl2" = "#c9a0dc",  # dunkles Lila (Purple)
+    "ctrl1_vs_ctrl3" = "#A9C1A6",  # Medium Orchid
+    "ctrl2_vs_ctrl3" = "#F5E1A4"   # Orchid
+  )) +
+  ylim(0.4, 1) +  # <<<< Y-Achse begrenzen
+  theme_minimal() +
+  labs(title = "Spearman Correlation of Controls",
+       y = "Spearman ρ",
+       x = "Fraction",
+       color = "Replicate Comparison") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5),
+        plot.title = element_text(hjust = 0.5))
 ```
 Output: very high correlation across the fractions shows reproducability for the control measurments
 -> all above 0.8 
@@ -161,7 +185,27 @@ for (i in 0:24) {
 
 # show results
 print(rnase_correlations)
-plot(rnase_correlations)
+
+rnase_cor_long <- pivot_longer(rnase_correlations, 
+                                cols = starts_with("rnase"), 
+                                names_to = "comparison", 
+                                values_to = "correlation")
+
+# Heatmap-ähnlicher Plot mit abgestuften Lila-Tönen
+ggplot(rnase_cor_long, aes(x = fraction, y = correlation, color = comparison)) +
+  geom_point(size = 3) +
+  scale_color_manual(values = c(
+    "rnase1_vs_rnase2" = "#c9a0dc",  # dunkel-lila
+    "rnase1_vs_rnase3" = "#A9C1A6",  # mittel-lila
+    "rnase2_vs_rnase3" = "#F5E1A4"   # hell-lila
+  )) +
+  theme_minimal() +
+  labs(title = "Spearman Correlation of RNase Replicates",
+       y = "Spearman ρ",
+       x = "Fraction",
+       color = "Replicate Comparison") +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1),
+        plot.title = element_text(hjust = 0.5))
 ```
 Output: correlation amongst the rnase values is sporadically lower compared to the ctrl measurments, still within an acceptable range 
 -> threshold for acceptable values at 0.35
