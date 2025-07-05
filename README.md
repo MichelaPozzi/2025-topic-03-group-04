@@ -180,10 +180,10 @@ flowchart LR
     → Resulting **fraction profile** is rescaled to **100% (ensure consistency).**\
 
     **Normalized Control Dataframe (first 6 rows)**\
-    ![Mein Screenshot](images/screenshot_normalized_control)
+    ![Mein Screenshot](images/screenshot_normalized_Control.png)
 
     **Normalized RNase Dataframe (first 6 rows)**\
-    ![Mein Screenshot](images/screenshot_normalized_rnase)
+    ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
 ### **💥Batch Removal** {#batch-removal}
 
