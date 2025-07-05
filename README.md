@@ -248,8 +248,6 @@ They can influence further observations, analysis, and interpretation\
 
 # **✅Shift Analysis** {#shift-analysis}
 
-## **🎯Objective**
-
 ## ️**📃Steps**
 
 ``` mermaid
@@ -308,12 +306,10 @@ The test evaluates whether the distribution of paired differences is symmetric a
     -   A small W value suggests that most differences go in the same direction (e.g., treatment
         Control is almost always higher than RNase), which indicates a significant difference
 
-    The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
-    -  A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
+    -   The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
+        A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
 
 ### **🤖Logistic Model**
-
-### Objective
 
 A logistic regression model is trained using reference proteins to predict the probability of
 RNA-binding for other proteins from our dataset.
@@ -440,8 +436,6 @@ All data sets on which PCA was performed on, covered roughly 65 % of variance wi
   
 # **📈Linear Regression** {#linear-regression}
 
-## **🎯Objective:**
-
 -   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the
     probability of RNA dependence and assess their statistical significance
 -   for new data: predict RNA dependence based on experimentally accessible features
@@ -485,24 +479,3 @@ flowchart LR
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
 
-\# **Dimension reduction** {#dimension-reduction}
-
-\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
-underlying relations
-
-\## **📃Steps**
-
-\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
-As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
-
-**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
-component. They are stored in the **rotation** factor. By squaring the standard deviation, the
-variance is calculated. Variance can then be used to calculate the percentage explained by each
-principal component. \<br\>
-
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
-PCs. \<br\>
-
-\### **K-Means Clustering** {#k-means}
-
-\### **Chi Squared test** {#chi-square}
