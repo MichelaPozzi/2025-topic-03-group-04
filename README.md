@@ -81,7 +81,8 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 # **🔮Project Overview**
 
 ## Table Of Contents
-
+-   [Data Exploration]
+    - [Reproducability]
 -   [Data Normalization](#data-normalisation)
     -   [Normalisation](#normalisation)
     -   [Batch Removal](#batch-removal)
@@ -94,6 +95,13 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     -   [Chi Squared test] (#chi-squared-test)
 -   [Linear Regression](#linear-regression)
 
+# **Data Exploration**
+-   Examine the dimensions of our dataset and potenital inconsistencies in the produced data. Also, ivestigate wheter the experimental nature of the           measurements are redproducable, and therefore applicable to our analysis. Large scale measurements carry the risk of introducing potential technical variability. By calculating the correlation between all replicates across the fractions for each treatment we can confirm the reliability and stability of the measurements. 
+**1. Dataset Description**
+- ...
+**2. Evaluate Reproducability**
+- The method used was the spearman correlation due to the delicacy/ sensible nature of the comparing values. The control values showed very high correlation and are therefore reproducible, wheras our rnase measurements correlated less in fractions 2, 21 and 23. However, since the majority of the values are still highly correlating, we accept the sporadic variance in the second measurement and deem the data as reproducible. 
+    
 # **🧼Data Normalisation** {#data-normalisation}
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
