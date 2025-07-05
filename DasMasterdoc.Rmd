@@ -371,7 +371,7 @@ head(final_smoothed_rnase)
 sum(is.na(final_smoothed_ctrl))
 sum(is.na(final_smoothed_rnase))
 ```
-#### apply moving average filter to data
+#### checking for replicates with rowsum == 0 
 ```{r}
 # check for any rows with rowSum == 0 (per replicate)
 check_zero_replicates_detailed <- function(df) {

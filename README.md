@@ -92,7 +92,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 -   [Dimension Reduction](#dimension-reduction)
     -   [PCA](#pca)
     -   [k-means](#k--means)
-    -   [Chi Squared test] (#chi-squared-test)
+    -   [Chi Squared test](#chi-squared-test)
 -   [Linear Regression](#linear-regression)
 
 # **Data Exploration** {#data-exploration}
@@ -162,7 +162,7 @@ flowchart LR
 
 2.  **Step 2: Smoothing via Moving Average**\
     A moving average is applied to smooth the values.\
-    çThe average is calculated using the center fraction and its immediate neighbors (left and
+    The average is calculated using the center fraction and its immediate neighbors (left and
     right).\
     → Smoothed values are computed per protein and replicate.
 
@@ -288,22 +288,23 @@ flowchart LR
     The prefix of Delta-COM (and the by the logistic model later on defined threshold) defines the
     shift direction (positive Delta_COM -\> right shift).
 
--   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a
-    non-parametric statistical method used to compare two related samples. In this context, it is
-    used to assess whether the global maximum of the same protein differs between two treatments
-    (Control and RNase), using matched replicates. The test evaluates whether the distribution of
-    paired differences is symmetric around zero, indicating whether one treatment tends to produce
-    consistently higher or lower values than the other — without assuming a normal distribution.
+-   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a non-parametric statistical method used to compare two related samples. In this context, it is used to assess whether the global maximum of the same protein differs between two treatments (Control an RNase), using matched replicates.
+The test evaluates whether the distribution of paired differences is symmetric around zero, indicating whether one treatment tends to produce consistently higher or lower values than the other — without assuming a normal distribution.
 
     **Output:**\
     **The p-value indicates how likely the observed shift of the global maxima occurred by chance.**
     A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.\
+<<<<<<< HEAD
     The test statistic W measures how consistently one condition tends to produce higher or lower
     values than the other.
 
     -   A small W value suggests that most differences go in the same direction (e.g., treatment
         Control is almost always higher than RNase), which indicates a significant difference
 
+=======
+    The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
+    -  A small W value suggests that most differences go in the same direction (e.g., treatment Control is almost always higher than RNase), which indicates a significant difference
+>>>>>>> dbf12dda7a7a168fc72a2a7c0f938882a982cc00
 ### **🤖Logistic Model**
 
 ### Objective
@@ -374,8 +375,16 @@ RNA-binding for other proteins from our dataset.
 
     -\> the predictive accuracy lies way above the "coincidence line"\
 
-# **Dimension reduction** {#dimension-reduction}
+ # **Dimension reduction**  {#dimension-reduction}
+  
+  ## **🎯Objective:**
+-   Reduce dimension for better exploratory analysis
+-   Cluster results to find underlying relations
+  
+  ## **📃Steps**
+     
 
+<<<<<<< HEAD
 ``` mermaid
 flowchart LR
     A[prepare adta] --> B[apply prcomp]
@@ -411,6 +420,21 @@ PCs. \<br\>
 
 ### **Chi Squared test** {#chi-square}
 
+=======
+  ### **Principal component analysis** {#pca}
+To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
+
+**Eigenvalues**
+Eigenvalues reflect the total amount of variance explained by each principal component. They are stored in the **rotation** factor. By squaring the standard deviation, the variance is calculated. Variance can then be used to calculate the percentage explained by each principal component. <br\>
+
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two PCs. <br\>
+  
+  ### **K-Means Clustering** {#k-means}
+  
+  ### **Chi Squared test** {#chi-square}
+  
+  
+>>>>>>> dbf12dda7a7a168fc72a2a7c0f938882a982cc00
 # **📈Linear Regression** {#linear-regression}
 
 ## **🎯Objective:**
@@ -457,3 +481,25 @@ flowchart LR
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
+
+\# **Dimension reduction** {#dimension-reduction}
+
+\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+underlying relations
+
+\## **📃Steps**
+
+\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
+
+**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
+component. They are stored in the **rotation** factor. By squaring the standard deviation, the
+variance is calculated. Variance can then be used to calculate the percentage explained by each
+principal component. \<br\>
+
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
+PCs. \<br\>
+
+\### **K-Means Clustering** {#k-means}
+
+\### **Chi Squared test** {#chi-square}
