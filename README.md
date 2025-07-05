@@ -100,7 +100,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 # **Data Exploration** {#data-exploration}
 
 -   Examine the dimensions of our dataset and potential inconsistencies in the produced data. Also,
-    investigate whether the experimental nature of the measurements are reproducible, and therefore
+    investigate whether the experimental nature of the measurements is reproducible, and therefore
     applicable to our analysis. Large scale measurements carry the risk of introducing potential
     technical variability. By calculating the correlation between all replicates across the
     fractions for each treatment we can confirm the reliability and stability of the measurements.
