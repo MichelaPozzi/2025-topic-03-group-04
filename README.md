@@ -438,7 +438,12 @@ flowchart LR
      
 
   ### **Principal component analysis** {#pca}
-  
+To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
+
+**Eigenvalues**
+Eigenvalues reflect the total amount of variance explained by each principal component. They are stored in the **rotation** factor. By squaring the standard deviation, the variance is calculated. Variance can then be used to calculate the percentage explained by each principal component. <br\>
+
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two PCs. <br\>
   
   ### **K-Means Clustering** {#k-means}
   
