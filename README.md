@@ -146,7 +146,7 @@ flowchart LR
 
 2.  **Step 2: Smoothing via Moving Average**\
     A moving average is applied to smooth the values.\
-çThe average is calculated using the center fraction and its immediate neighbors (left and
+    The average is calculated using the center fraction and its immediate neighbors (left and
     right).\
     → Smoothed values are computed per protein and replicate.
 
@@ -173,81 +173,56 @@ flowchart LR
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
 ### **💥Batch Removal** {#batch-removal}
-**Batch effect:**
-      Disturbances are rooted in technical variances, such as different runs, and not in biological variations.\
-      They can influence further observations, analysis, and interpretation\
-      → Comparisons between replicates to establish proper identification
-             
-1. Identifying and deleting with **limma package**\
-      → removes known batch effects with **removeBatchEffect**
-   
-      → Steps:<br/> 
-        1. **log2 - transformation:**<br/> 
-              `→ stabilizes variance, improves interpretability, reduces outlier effects`\
-        2. **apply function**
-        
-   
-      → Visualizations:<br/>
-         1.1: Boxplot visualization:<br/>
-               → expectation:<br/>
-                     `→ noticeable batch: samples of one batch have a similar median, but differences in batches`<br/>
-               → result:<br/>
-         1.2: PCA visualization:<br/>
-               →  expectation:<br/>
-                     `→ noticeable batch: principal components separate by batch`<br/> 
-               →  result:<br/>
-         1.3: Heatmap visualization:<br/>
-               →  expectation:<br/>
-                      `→noticeable batch: samples are clustered by batch not by biological factors`<br/>
-               →  result:<br/>
-                      before: 
-        
-3. Identifying and deleting with **SVA**<br/>
-    → Surrogate Variable Analysis<br/>
-    → better for unknown batch effect and other disturbances
-    
-     - Steps:<br/>
-        1. **Model preparations**<br/>
-              → create a desgin matrix with a model matrix filled with known factors (replicates and fractions)
-                and a null model matrix filled with no descriptive factors but an intercept<br/>
-        2. **Apply SVA**<br/>
-              → Apply function on data and models<br/>
-        3. **Determine the number of surrogate variables**<br/>
-              → SVA estimates how many Svs are needed to model hidden batch effects<br/>
-              → by searching for combinations not explainable by known variables<br/>
-              → extend the matrix by SVs<br/>
-        4. **Data correction**<br/>
-              → using linear regression<br/>
-              → SVs are used to calculate unwanted effects and remove those<br/>
-        5. **Residues extraction**<br/>
-              → expression data - modeled effects (fraction + replicates + SVs )
-              
-     - Visualizations:<br/>    
-         2.1: Boxplot visualization:<br/>
-               →  expectation:<br/>
-                     `→ noticeable batch: differences in span and spread, big differences between samples caused by batches`<br/>
-               →  result:<br/>
-                      before:<br/>
-         2.2: PCA visualization:<br/>
-               →  expectation:<br/>
-                      `→ noticeable batch: distortion caused by scale differences, principal components show batch separation`<br/>
-               →  result:<br/>
-         2.3: Heatmap visualization:<br/>
-               →  expectation:<br/>
-                     ` → noticeable batch: outliers, high variability`<br/>
-               →  result:<br/>
-               
-4. **Interpretation and results:**<br/>
-    → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on which machines)<br/>
-    → Log2 transformation makes the data less suitable for further analysis<br/>
-    → Batch effect not overly significant<br/>
-    → Removal still could overcorrect biological variances<br/>
-    → Batch cleaned data only used for PCA
-    
-    
-    
-    
-    
+
+**Batch effect:** Disturbances are rooted in technical variances, such as different runs, and not in
+biological variations.\
+They can influence further observations, analysis, and interpretation\
+→ Comparisons between replicates to establish proper identification
+
+1.  Identifying and deleting with **limma package**\
+    → removes known batch effects with **removeBatchEffect**
+
+    → Steps:<br/> 1. **log2 - transformation:**<br/>
+    `→ stabilizes variance, improves interpretability, reduces outlier effects`\
+
+    2.  **apply function**
+
+    → Visualizations:<br/> 1.1: Boxplot visualization:<br/> → expectation:<br/>
+    `→ noticeable batch: samples of one batch have a similar median, but differences in batches`<br/>
+    → result:<br/> 1.2: PCA visualization:<br/> → expectation:<br/>
+    `→ noticeable batch: principal components separate by batch`<br/> → result:<br/> 1.3: Heatmap
+    visualization:<br/> → expectation:<br/>
+    `→noticeable batch: samples are clustered by batch not by biological factors`<br/> →
+    result:<br/> before:
+
+2.  Identifying and deleting with **SVA**<br/> → Surrogate Variable Analysis<br/> → better for
+    unknown batch effect and other disturbances
+
+    -   Steps:<br/>
+        1.  **Model preparations**<br/> → create a desgin matrix with a model matrix filled with
+            known factors (replicates and fractions) and a null model matrix filled with no
+            descriptive factors but an intercept<br/>
+        2.  **Apply SVA**<br/> → Apply function on data and models<br/>
+        3.  **Determine the number of surrogate variables**<br/> → SVA estimates how many Svs are
+            needed to model hidden batch effects<br/> → by searching for combinations not
+            explainable by known variables<br/> → extend the matrix by SVs<br/>
+        4.  **Data correction**<br/> → using linear regression<br/> → SVs are used to calculate
+            unwanted effects and remove those<br/>
+        5.  **Residues extraction**<br/> → expression data - modeled effects (fraction +
+            replicates + SVs )
+    -   Visualizations:<br/>\
+        2.1: Boxplot visualization:<br/> → expectation:<br/>
+        `→ noticeable batch: differences in span and spread, big differences between samples caused by batches`<br/>
+        → result:<br/> before:<br/> 2.2: PCA visualization:<br/> → expectation:<br/>
+        `→ noticeable batch: distortion caused by scale differences, principal components show batch separation`<br/>
+        → result:<br/> 2.3: Heatmap visualization:<br/> → expectation:<br/>
+        `→ noticeable batch: outliers, high variability`<br/> → result:<br/>
+
+3.  **Interpretation and results:**<br/> → SVA better fit due to unknown batch effects ( not known
+    when measurements are taken, or on which machines)<br/> → Log2 transformation makes the data
+    less suitable for further analysis<br/> → Batch effect not overly significant<br/> → Removal
+    still could overcorrect biological variances<br/> → Batch cleaned data only used for PCA
+
 # **✅Shift Analysis** {#shift-analysis}
 
 ## **🎯Objective**
@@ -426,25 +401,25 @@ flowchart LR
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
-    
-    
-  # **Dimension reduction**  {#dimension-reduction}
-  
-  ## **🎯Objective:**
--   Reduce dimension for better exploratory analysis
--   Cluster results to find underlying relations
-  
-  ## **📃Steps**
-     
 
-  ### **Principal component analysis** {#pca}
-To reduce dimensions, the **prcomp** command is used. As it uses singular value decomposition, it has a slightly better numerical accuracy according to R. 
+\# **Dimension reduction** {#dimension-reduction}
 
-**Eigenvalues**
-Eigenvalues reflect the total amount of variance explained by each principal component. They are stored in the **rotation** factor. By squaring the standard deviation, the variance is calculated. Variance can then be used to calculate the percentage explained by each principal component. <br\>
+\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+underlying relations
 
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two PCs. <br\>
-  
-  ### **K-Means Clustering** {#k-means}
-  
-  ### **Chi Squared test** {#chi-square}
+\## **📃Steps**
+
+\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
+
+**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
+component. They are stored in the **rotation** factor. By squaring the standard deviation, the
+variance is calculated. Variance can then be used to calculate the percentage explained by each
+principal component. \<br\>
+
+All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
+PCs. \<br\>
+
+\### **K-Means Clustering** {#k-means}
+
+\### **Chi Squared test** {#chi-square}
