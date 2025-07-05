@@ -81,6 +81,7 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 # **🔮Project Overview**
 
 ## Table Of Contents
+
 -   [Data Exploration](#data-exploration)
 -   [Data Normalization](#data-normalisation)
     -   [Normalisation](#normalisation)
@@ -94,13 +95,21 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
     -   [Chi Squared test] (#chi-squared-test)
 -   [Linear Regression](#linear-regression)
 
-# **Data Exploration**
--   Examine the dimensions of our dataset and potenital inconsistencies in the produced data. Also, ivestigate wheter the experimental nature of the           measurements are redproducable, and therefore applicable to our analysis. Large scale measurements carry the risk of introducing potential technical variability. By calculating the correlation between all replicates across the fractions for each treatment we can confirm the reliability and stability of the measurements. 
-**1. Dataset Description**
-- ...
-**2. Evaluate Reproducability**
-- The method used was the spearman correlation due to the delicacy/ sensible nature of the comparing values. The control values showed very high correlation and are therefore reproducible, wheras our rnase measurements correlated less in fractions 2, 21 and 23. However, since the majority of the values are still highly correlating, we accept the sporadic variance in the second measurement and deem the data as reproducible. 
-    
+# **Data Exploration** {#data-exploration}
+
+-   Examine the dimensions of our dataset and potenital inconsistencies in the produced data. Also,
+    ivestigate wheter the experimental nature of the measurements are redproducable, and therefore
+    applicable to our analysis. Large scale measurements carry the risk of introducing potential
+    technical variability. By calculating the correlation between all replicates across the
+    fractions for each treatment we can confirm the reliability and stability of the measurements.
+    **1. Dataset Description**
+-   ... **2. Evaluate Reproducability**
+-   The method used was the spearman correlation due to the delicacy/ sensible nature of the
+    comparing values. The control values showed very high correlation and are therefore
+    reproducible, wheras our rnase measurements correlated less in fractions 2, 21 and 23. However,
+    since the majority of the values are still highly correlating, we accept the sporadic variance
+    in the second measurement and deem the data as reproducible.
+
 # **🧼Data Normalisation** {#data-normalisation}
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
@@ -191,7 +200,8 @@ They can influence further observations, analysis, and interpretation\
 
     → Steps:<br/> 1. **log2 - transformation:**<br/>
     `→ stabilizes variance, improves interpretability, reduces outlier effects`\
-    2. **apply function**
+
+    2.  **apply function**
 
     → Visualizations:<br/> 1.1: Boxplot visualization:<br/> → expectation:<br/>
     `→ noticeable batch: samples of one batch have a similar median, but differences in batches`<br/>
@@ -293,7 +303,7 @@ flowchart LR
 
     -   A small W value suggests that most differences go in the same direction (e.g., treatment
         Control is almost always higher than RNase), which indicates a significant difference
-        
+
 ### **🤖Logistic Model**
 
 ### Objective
@@ -368,25 +378,25 @@ RNA-binding for other proteins from our dataset.
 
 ``` mermaid
 flowchart LR
-    A[normalized data] --> B[shift distance]
-    A --> C[amplitude changes]
-    A --> D[earth mover test]
-    A --> E[center of mass test]
-    A --> F[wilcoxon test for global maxima]
-    B --> G[logistic model]
-    C --> G
-    D --> G
-    E --> G
-    F --> G
+    A[prepare adta] --> B[apply prcomp]
+    B --> C[explore PCA data]
+    B --> D[elbow and silhouette tests]
+    C --> E[explore Eigenvalues]
+    E --> F[plot PCA and variance]
+    F --> G[label right shift proteins]
+    D --> H[K-means clustering]
+    H --> I[label RNA binding proteins]
+    H --> J[Chi Squared testing] 
 ```
 
-
 ## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+
 underlying relations
 
 ## **📃Steps**
 
 ### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+
 As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
 
 **Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal

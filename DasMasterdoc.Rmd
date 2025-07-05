@@ -4616,6 +4616,7 @@ head(Table_HS_Non_RBP)
 ```
 
 ### connect information on protein features to proteins from dataset
+
 ```{r}
 # check if all our proteins are included in the tables 
 all_proteins <- test_scores_combined_df$Protein
