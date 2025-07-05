@@ -118,8 +118,13 @@ The method used was the spearman correlation due to the sensitivity of the compa
 By receiving correlation values higher than 0.9, the control values showed very high correlation and
 are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21
 and 23. We defined a threshold of reproducibility at 0.7, which the mesurements of fraction 2 did
-not surpass. Nevertheless since the majority of the values are still highly correlating, we accept the
-sporadic variance in the second measurement in application to our analysis, however, we cannot conlcude redproducibility for other measurements
+not surpass. Nevertheless since the majority of the values are still highly correlating, we accept
+the sporadic variance in the second measurement in application to our analysis, however, we cannot
+conlcude redproducibility for other measurements
+![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d)
+![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
+
+
 
 # **🧼Data Normalisation** {#data-normalisation}
 
@@ -195,46 +200,42 @@ They can influence further observations, analysis, and interpretation\
 1.  Identifying and deleting with **limma package**\
     → removes known batch effects with **removeBatchEffect**
 
-    → Steps:<br/> 1. **log2 - transformation:**<br/>
-    `→ stabilizes variance, improves interpretability, reduces outlier effects`\
+    → Steps:
 
+    1.  **log2 - transformation:**\
+        → stabilizes variance, improves interpretability, reduces outlier effects\
     2.  **apply function**
 
-    → Visualizations:<br/> 1.1: Boxplot visualization:<br/> → expectation:<br/>
-    `→ noticeable batch: samples of one batch have a similar median, but differences in batches`<br/>
-    → result:<br/> 1.2: PCA visualization:<br/> → expectation:<br/>
-    `→ noticeable batch: principal components separate by batch`<br/> → result:<br/> 1.3: Heatmap
-    visualization:<br/> → expectation:<br/>
-    `→noticeable batch: samples are clustered by batch not by biological factors`<br/> →
-    result:<br/> before:
+2.  Identifying and deleting with **SVA**\
+    → Surrogate Variable Analysis\
+    → better for unknown batch effect and other disturbances
 
-2.  Identifying and deleting with **SVA**<br/> → Surrogate Variable Analysis<br/> → better for
-    unknown batch effect and other disturbances
+    -   Steps:
 
-    -   Steps:<br/>
-        1.  **Model preparations**<br/> → create a desgin matrix with a model matrix filled with
-            known factors (replicates and fractions) and a null model matrix filled with no
-            descriptive factors but an intercept<br/>
-        2.  **Apply SVA**<br/> → Apply function on data and models<br/>
-        3.  **Determine the number of surrogate variables**<br/> → SVA estimates how many Svs are
-            needed to model hidden batch effects<br/> → by searching for combinations not
-            explainable by known variables<br/> → extend the matrix by SVs<br/>
-        4.  **Data correction**<br/> → using linear regression<br/> → SVs are used to calculate
-            unwanted effects and remove those<br/>
-        5.  **Residues extraction**<br/> → expression data - modeled effects (fraction +
-            replicates + SVs )
-    -   Visualizations:<br/>\
-        2.1: Boxplot visualization:<br/> → expectation:<br/>
-        `→ noticeable batch: differences in span and spread, big differences between samples caused by batches`<br/>
-        → result:<br/> before:<br/> 2.2: PCA visualization:<br/> → expectation:<br/>
-        `→ noticeable batch: distortion caused by scale differences, principal components show batch separation`<br/>
-        → result:<br/> 2.3: Heatmap visualization:<br/> → expectation:<br/>
-        `→ noticeable batch: outliers, high variability`<br/> → result:<br/>
+        1.  **Model preparations**\
+            → create a desgin matrix with a model matrix filled with known factors (replicates and
+            fractions) and a null model matrix filled with no descriptive factors but an intercept\
+        2.  **Apply SVA**\
+            → Apply function on data and models\
+        3.  **Determine the number of surrogate variables**\
+            → SVA estimates how many Svs are needed to model hidden batch effects\
+            → by searching for combinations not explainable by known variables\
+            → extend the matrix by SVs\
+        4.  **Data correction**\
+            → using linear regression\
+            → SVs are used to calculate unwanted effects and remove those\
+        5.  **Residues extraction**\
+            → expression data - modeled effects (fraction + replicates + SVs )\
 
-3.  **Interpretation and results:**<br/> → SVA better fit due to unknown batch effects ( not known
-    when measurements are taken, or on which machines)<br/> → Log2 transformation makes the data
-    less suitable for further analysis<br/> → Batch effect not overly significant<br/> → Removal
-    still could overcorrect biological variances<br/> → Batch cleaned data only used for PCA
+        6.Visualizations
+
+3.  **Interpretation and results:**\
+    → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on
+    which machines)\
+    → Log2 transformation makes the data less suitable for further analysis → Batch effect not
+    overly significant\
+    → Removal still could overcorrect biological variances\
+    → Batch cleaned data only used for PCA
 
 # **✅Shift Analysis** {#shift-analysis}
 
@@ -375,8 +376,8 @@ RNA-binding for other proteins from our dataset.
 
 \# **Dimension reduction** {#dimension-reduction}
 
-\## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
-underlying relations
+\## **🎯Objective:** - Reduce dimension for better exploratory analysis\
+- Cluster results to find underlying relations
 
 \## **📃Steps**
 
@@ -393,42 +394,35 @@ flowchart LR
     H --> J[Chi Squared testing] 
 ```
 
-## **🎯Objective:** - Reduce dimension for better exploratory analysis - Cluster results to find
+### **Principal component analysis** {#pca}
 
-underlying relations
-
-## **📃Steps**
-
-### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
+To reduce dimensions, the **prcomp** command is used.
 
 As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
 
 **Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
 component. They are stored in the **rotation** factor. By squaring the standard deviation, the
 variance is calculated. Variance can then be used to calculate the percentage explained by each
-principal component. \<br\>
+principal component.
 
 All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
-PCs. \<br\>
+PCs.
 
 ### **K-Means Clustering** {#k-means}
 
+The ideal **Amount of clusters** is determined first with an **elbow plot**. The graph gives a
+suggestion of how many clusters should be used. For a more detailed determination the silhouette
+scores are calculated and plotted.
+
+**K-means** is applied and plotted accordung to the previous results.
+
+In the K-means plots **RNA binding proteins** are labled in order to determine a biological
+correlation between RBPs and the resulting clusters.
+
 ### **Chi Squared test** {#chi-square}
 
-\### **Principal component analysis** {#pca} To reduce dimensions, the **prcomp** command is used.
-As it uses singular value decomposition, it has a slightly better numerical accuracy according to R.
-
-**Eigenvalues** Eigenvalues reflect the total amount of variance explained by each principal
-component. They are stored in the **rotation** factor. By squaring the standard deviation, the
-variance is calculated. Variance can then be used to calculate the percentage explained by each
-principal component. \<br\>
-
-All data sets on which PCA was performed on, covered roughly 65 % of variance with their first two
-PCs. \<br\>
-
-\### **K-Means Clustering** {#k-means}
-
-\### **Chi Squared test** {#chi-square}
+In order to check for a significant association between clusters and RBPs.\
+The data is turned into a table and the test executed.
 
 # **📈Linear Regression** {#linear-regression}
 
