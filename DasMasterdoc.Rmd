@@ -4216,7 +4216,7 @@ rownames(ctrl_rsp_df) <- ctrl_rsp_df$X
 ctrl_rsp_T <- ctrl_rsp_df
 str(ctrl_rsp_T)
 
-# 158 observations and 75 features 
+# 177 observations and 75 features 
 ```
 
 #Test data
@@ -4508,6 +4508,16 @@ ggplot(pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   )
 
 ```
+
+
+```{r}
+# Wie viele Proteine werden als Highlight erkannt?
+sum(pca_df$Protein %in% highlight_proteins)   # ← sollte > 0 sein
+table(pca_df$Highlight)                       # Kontroll‑Output
+
+```
+
+
 
 ```{r}
 sum(pca_df$Protein %in% highlight_proteins)
@@ -4906,7 +4916,7 @@ Ctrl_data <- as.data.frame(Ctrl_pca$x)
 Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
 #2. isolate protein names
-Ctrl_data$protein_name <- rownames(Ctrl_data)
+Ctrl_data$protein_name <- rownames(S_corrected_expr_ctrl_df)
 #check if rbp present 
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
@@ -4933,6 +4943,20 @@ ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
 
 ```
 
+
+```{r}
+head(C_kmeans_result)
+```
+
+```{r}
+table(Ctrl_data$is_rbp)
+
+```
+
+```{r}
+head(ctrl_data)
+
+```
 
 ```{r}
 head(Ctrl_data)
