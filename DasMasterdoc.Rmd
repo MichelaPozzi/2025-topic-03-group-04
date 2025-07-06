@@ -370,7 +370,9 @@ head(normed_ctrl_df)
 head(normed_rnase_df)
 ```
 ### Moving Average Filter & Sorting Data
-Goal: Smooth values per protein and replicate & arrange data
+Goal: Apply a moving average filter (window = 3) across fractions to smooth intensity values.
+-> Smoothing is applied per replicate and protein; first and last fraction values are kept unchanged.
+-> The resulting dataframe is then reordered: columns are grouped by fraction (not by replicate).
 ```{r}
 # Mean filter function for a row (preserving first and last value)
 smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
@@ -4587,7 +4589,7 @@ chisq.test(r_tbl)
 
 ```
 #Interpretation:
-p=0.3391 > 0.05 ->non significant
+p=0.1842 > 0.05 ->non significant
 
 ##ctrl
 ```{r}
@@ -4625,10 +4627,727 @@ chisq.test(c_tbl)
 
 ```
 #Interpretation'
+p=0.9864 > 0.05 -> not significant
+
+
+
+<<<<<<< HEAD
+=======
+##Testing non batch corrected data
+
+
+##Control
+
+#check how data set is made up, ctrl
+```{r}
+ctrl_test_df <- as.data.frame(percent_ctrl_df[,-1])
+rownames(ctrl_test_df) <- ctrl_test_df$X
+TC_test <- ctrl_test_df
+str(TC_test)
+
+# we have 3680 observations and 75 features 
+```
+
+
+#Test data
+-> check if varibales are on the same scale 
+```{r}
+apply(TC_test, 2, mean) 
+```
+-> big variations, not centered
+```{r}
+apply(TC_test, 2, sd)
+```
+->  differences, not perfectly scaled 
+
+##pca selbst ctrl 
+-> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
+-> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores 
+```{r}
+test_ctrl_pca <- prcomp(ctrl_test_df, center = TRUE, scale = TRUE)
+
+names(test_ctrl_pca)
+```
+
+```{r}
+head(test_ctrl_pca$x, 10)
+```
+
+-> eigenvalues stored in "rotation" 
+```{r}
+test_ctrl_pca$rotation
+```
+
+-> standard deviation of each principal component is saved in "sdev", as a measure of variance
+-> check how much do points vary on average from the mean
+```{r}
+test_ctrl_pca$sdev
+
+```
+
+-> get variance by squaring the standard deviation
+-> check how much does the data spread out in square units 
+```{r}
+test_ctrl_pca_var <- test_ctrl_pca$sdev^2 # eigenvalues 
+test_ctrl_pca_var
+
+```
+
+Goal: 
+-> control which PC explains how much variance 
+```{r}
+test_ctrl_pca_ve <- test_ctrl_pca_var / sum(test_ctrl_pca_var) 
+test_ctrl_pca_ve_percent <- test_ctrl_pca_ve * 100
+test_ctrl_pca_ve_percent
+```
+-> PC1: 44.3%, PC2:20.79%, PC3:7.807%
+-> TEST MODEL: 40.9, 22.63, 13.46
+
+
+#prozentplot ctrl
+
+```{r}
+#1. plot
+plot(test_ctrl_pca_ve_percent, type = "b", pch = 19,
+     xlab = "Principal Component",
+     ylab = "Explained Variance (%)",
+     main = "Scree Plot: Explained Variance per PC")
+```
+
+
+#barplot ctrl
+
+```{r}
+#plot 
+bar_positions <- barplot(test_ctrl_pca_ve_percent,
+                         main = "Explained Variance per PC (in %)",
+                         xlab = "Principal Component",
+                         ylab = "Explained Variance (%)",
+                         col = "#c9a0dc",
+                        las = 2,
+                         xaxt = "n")  # keine x-Achsen-Beschriftung
+
+axis(1, at = bar_positions, labels = paste0("PC", 1:length(ctrl_pca_ve_percent)), las = 2)
+
+
+
+```
+
+
+##create biplot 
+###plot 
+```{r}
+#1. plot
+biplot(test_ctrl_pca, scale = 0, cex = 0.6,
+       col = c("black", "#c9a0dc"),
+       main="PCA biplot ctrl",
+       xlab = "PC1 (44% variance explained)",  
+       ylab = "PC2 (21% variance explained)")
+```
+
+#test graph 
+```{r}
+
+library(ggbiplot)
+#1. axis
+my_var_explained <- c(41, 23)  
+#2. plot
+ggbiplot(test_ctrl_pca,
+         obs.scale = 1,
+         var.scale = 1,
+         ellipse = FALSE,
+         circle = TRUE,
+         var.axes = TRUE) +
+  xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
+  ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
+  theme_minimal()+
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14)) +
+  guides(colour = "none") 
+   
+
+
+```
+
+
+
+###determine cluster
+#elbowplot 
+Goal: determine what amount of cluster is suitable for kmeans clustering 
+```{r} 
+#1. calculate wss: within-cluster sum of squares
+wss <- sapply(1:25, function(k){
+  kmeans(test_ctrl_pca$x, centers = k, nstart = 25)$tot.withinss
+})
+
+#2. plot
+plot(1:25, wss, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster-variance",
+     main = "Elbow method to determin optimal cluster amount") 
+```
+#Interpretation: 
+-> no clear bend, potentially at 2 
+#silhouette score 
+Goal: determine what amount of cluster is suitable for kmeans clustering 
+
+```{r}
+# Silhouette analysis 
+
+library(cluster)
+library(factoextra)
+
+# 1. Extract PCA-transformed data
+test_ctrl_sil_df <- test_ctrl_pca$x
+
+# 2. Placeholder for average silhouette widths
+test_ctrl_avg_sil <- numeric(length = 9)  # for k = 2 to 10
+
+# 3. Calculate silhouette scores for different k values
+k_values <- 2:10
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+  test_ctrl_km <- kmeans(test_ctrl_sil_df, centers = k, nstart = 25)
+  test_ctrl_ss <- silhouette(test_ctrl_km$cluster, dist(test_ctrl_sil_df))
+  test_ctrl_avg_sil[i] <- mean(test_ctrl_ss[, 3])
+}
+
+# 4. Plot similar to elbow method
+plot(k_values, test_ctrl_avg_sil, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Average silhouette width",
+     main = "Silhouette analysis to determine the optimum number of clusters")
+
+# 5. Identify best k based on max silhouette width
+test_best_k <- k_values[which.max(test_ctrl_avg_sil)]
+
+# 6. Run KMeans and compute silhouette for best k
+test_km_best <- kmeans(test_ctrl_sil_df, centers = test_best_k, nstart = 25)
+test_ctrl_best_sil <- silhouette(test_km_best$cluster, dist(test_ctrl_sil_df))
+
+# 7. Visualize silhouette plot
+fviz_silhouette(
+  test_ctrl_best_sil,
+  test_palette = c("purple", "#A9C1A6"),
+  ggtheme = theme_classic(),
+  main = paste("Silhouette plot for k =", test_best_k)
+)
+
+```
+#Interpretation
+k=2 seems most suitable
+
+###kmeans 
+Goal:divide dataset into k cluster to understand grouping and potentionally find biological relations 
+
+
+```{r}
+#1. apply kmeans to reduced data set 
+# using k=2
+#kmeans runs 25 and uses best result
+TC_kmeans_result <- kmeans(test_ctrl_pca$x, centers = 2, nstart = 25)
+```
+
+
+```{r}
+#1. in which cluster every obserbation is assigned to 
+TC_kmeans_result$cluster    
+
+#2. coordinates the cluster center
+TC_kmeans_result$centers     
+
+#3. shows how compact the clusters are using WSS
+# lower WSS means a more compact cluster
+TC_kmeans_result$tot.withinss
+```
+
+
+```{r}
+#1. prepare data
+#save pca matrix into data frame 
+# add cluster column
+test_ctrl_data <- as.data.frame(test_ctrl_pca$x)
+test_ctrl_data$cluster <- as.factor(TC_kmeans_result$cluster)
+
+#2. plot
+library(ggplot2)
+
+ggplot(test_ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-means clusters in PCA area",
+       x = "Principal component 1 (44.3%)",
+       y = "Principal component 2 (20.8%)") +
+  theme_minimal() +
+  scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
+```
+
+#plot PC1 and PC2 as control 
+```{r}
+first_two_components <- ctrl_data[,1:2]
+plot(first_two_components)
+```
+
+
+
+#rnase
+
+
+#check how data set is made up, 
+```{r}
+rnase_test_df <- as.data.frame(percent_rnase_df[,-1])
+rownames(rnase_test_df) <- rnase_test_df$X
+TR_test <- rnase_test_df
+str(TR_test)
+
+# we have 3680 observations and 75 features 
+```
+
+
+#Test data
+-> check if varibales are on the same scale 
+```{r}
+apply(TR_test, 2, mean) 
+```
+-> mean is not centered
+```{r}
+apply(TR_test, 2, sd)
+```
+-> big differences, not perfectly scaled 
+
+##pca selbst ctrl 
+-> prcomp: uses singular value decomposition, according to r it has slightly better numerical accuracy
+-> center=TRUE, scale=TRUE: makes sure mean ~ 0 , sd ~ 1 -> Z-scores 
+```{r}
+test_rnase_pca <- prcomp(rnase_test_df, center = TRUE, scale = TRUE)
+
+names(test_rnase_pca)
+```
+
+```{r}
+head(test_rnase_pca$x, 10)
+```
+
+-> eigenvalues stored in "rotation" 
+```{r}
+test_rnase_pca$rotation
+```
+
+-> standard deviation of each principal component is saved in "sdev", as a measure of variance
+-> check how much do points vary on average from the mean
+```{r}
+test_rnase_pca$sdev
+
+```
+
+-> get variance by squaring the standard deviation
+-> check how much does the data spread out in square units 
+```{r}
+test_rnase_pca_var <- test_rnase_pca$sdev^2 # eigenvalues 
+test_rnase_pca_var
+
+```
+
+Goal: 
+-> control which PC explains how much variance 
+```{r}
+test_rnase_pca_ve <- test_rnase_pca_var / sum(test_rnase_pca_var) 
+test_rnase_pca_ve_percent <- test_rnase_pca_ve * 100
+test_rnase_pca_ve_percent
+```
+-> PC1: 44.3%, PC2:20.79%, PC3:7.807%
+-> test: 42.05,19.35, 15.13, 8.57
+
+
+#prozentplot ctrl
+
+```{r}
+#1. plot
+plot(test_rnase_pca_ve_percent, type = "b", pch = 19,
+     xlab = "Principal Component",
+     ylab = "Explained Variance (%)",
+     main = "Scree Plot: Explained Variance per PC")
+```
+
+
+#barplot ctrl
+
+```{r}
+#plot 
+bar_positions <- barplot(test_rnase_pca_ve_percent,
+                         main = "Explained Variance per PC (in %)",
+                         xlab = "Principal Component",
+                         ylab = "Explained Variance (%)",
+                         col = "#c9a0dc",
+                        las = 2,
+                         xaxt = "n")  
+
+axis(1, at = bar_positions, labels = paste0("PC", 1:length(rnase_pca_ve_percent)), las = 2)
+
+
+
+```
+
+
+##create biplot 
+###plot 
+```{r}
+#1. plot
+biplot(test_rnase_pca, scale = 0, cex = 0.6,
+       col = c("black", "#c9a0dc"),
+       main="PCA biplot ctrl",
+       xlab = "PC1 (44% variance explained)",  
+       ylab = "PC2 (21% variance explained)")
+```
+
+#test graph 
+```{r}
+
+library(ggbiplot)
+#1. axis
+my_var_explained <- c(42, 19)  
+#2. plot
+ggbiplot(test_rnase_pca,
+         obs.scale = 1,
+         var.scale = 1,
+         ellipse = FALSE,
+         circle = TRUE,
+         var.axes = TRUE) +
+  xlab(paste0("PC1 (", round(my_var_explained[1], 1), "%)")) +
+  ylab(paste0("PC2 (", round(my_var_explained[2], 1), "%)")) +
+  theme_minimal()+
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 14)) +
+  guides(colour = "none") 
+   
+
+
+```
+
+
+
+###determine cluster
+#elbowplot 
+Goal: determine what amount of cluster is suitable for kmeans clustering 
+```{r} 
+#1. calculate wss: within-cluster sum of squares
+wss <- sapply(1:25, function(k){
+  kmeans(test_rnase_pca$x, centers = k, nstart = 25)$tot.withinss
+})
+
+#2. plot
+plot(1:25, wss, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Total within-cluster-variance",
+     main = "Elbow method to determin optimal cluster amount") 
+```
+#Interpretation: 
+-> no clear bend, potentially at 2 
+#silhouette score 
+Goal: determine what amount of cluster is suitable for kmeans clustering 
+
+```{r}
+# Silhouette analysis 
+
+library(cluster)
+library(factoextra)
+
+# 1. Extract PCA-transformed data
+test_rnase_sil_df <- test_rnase_pca$x
+
+# 2. Placeholder for average silhouette widths
+test_rnase_avg_sil <- numeric(length = 9)  # for k = 2 to 10
+
+# 3. Calculate silhouette scores for different k values
+k_values <- 2:10
+for (i in seq_along(k_values)) {
+  k <- k_values[i]
+  test_rnase_km <- kmeans(test_rnase_sil_df, centers = k, nstart = 25)
+  test_rnase_ss <- silhouette(test_rnase_km$cluster, dist(test_rnase_sil_df))
+  test_rnase_avg_sil[i] <- mean(test_rnase_ss[, 3])
+}
+
+# 4. Plot similar to elbow method
+plot(k_values, test_rnase_avg_sil, type = "b", pch = 19,
+     xlab = "Number of clusters (k)",
+     ylab = "Average silhouette width",
+     main = "Silhouette analysis to determine the optimum number of clusters")
+
+# 5. Identify best k based on max silhouette width
+testR_best_k <- k_values[which.max(test_rnase_avg_sil)]
+
+# 6. Run KMeans and compute silhouette for best k
+TR_km_best <- kmeans(test_rnase_sil_df, centers = testR_best_k, nstart = 25)
+test_rnase_best_sil <- silhouette(TR_km_best$cluster, dist(test_rnase_sil_df))
+
+# 7. Visualize silhouette plot
+fviz_silhouette(
+  test_rnase_best_sil,
+  palette = c("#c9a0dc", "#A9C1A6"),
+  ggtheme = theme_classic(),
+  main = paste("Silhouette plot for k =", best_k)
+)
+
+```
+#Interpretation
+k=2 seems most suitable
+
+###kmeans 
+Goal:divide dataset into k cluster to understand grouping and potentionally find biological relations 
+
+
+```{r}
+#1. apply kmeans to reduced data set 
+# using k=2
+#kmeans runs 25 and uses best result
+TR_kmeans_result <- kmeans(test_rnase_pca$x, centers = 2, nstart = 25)
+```
+
+
+```{r}
+#1. in which cluster every obserbation is assigned to 
+TR_kmeans_result$cluster    
+
+#2. coordinates the cluster center
+TR_kmeans_result$centers     
+
+#3. shows how compact the clusters are using WSS
+# lower WSS means a more compact cluster
+TR_kmeans_result$tot.withinss
+```
+
+
+```{r}
+#1. prepare data
+#save pca matrix into data frame 
+# add cluster column
+test_rnase_data <- as.data.frame(test_rnase_pca$x)
+test_rnase_data$cluster <- as.factor(TR_kmeans_result$cluster)
+
+#2. plot
+library(ggplot2)
+
+ggplot(test_rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-means clusters in PCA area",
+       x = "Principal component 1 (44.3%)",
+       y = "Principal component 2 (20.8%)") +
+  theme_minimal() +
+  scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
+```
+
+#plot PC1 and PC2 as control 
+```{r}
+first_two_components <- test_rnase_data[,1:2]
+plot(first_two_components)
+```
+
+
+
+###chi squared
+#isolate RBPs
+
+```{r}
+#1.filter for RBPs
+rbp_only <- df_complete[df_complete$RBP_shift_category %in% c("RBP_left", "RBP_right"), ]
+#2.extract RBPS and store in a separate vector
+rbp_proteins <- rbp_only$Protein
+head(rbp_proteins)
+```
+
+
+#ctrl
+```{r}
+#1.extract protein names
+test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
+#2.set TRUE to RBP and FALSE to non - RBP
+test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
+#3.turn cluster into a factor 
+test_ctrl_data$cluster <- factor(test_ctrl_data$cluster, levels = c(1, 2))  
+#keep cluster as order
+```
+
+```{r}
+#1. create table which sorts RBPs and non-RBPs into clusters
+tc_tbl <- table(test_ctrl_data$is_rbp, test_ctrl_data$cluster)
+show(tc_tbl)
+```
+
+```{r}
+#1.table counts the amount of RBPs
+table(test_ctrl_data$is_rbp)
+str(test_ctrl_data$is_rbp)
+```
+
+
+```{r}
+#1. apply chi sqquared to earlier created table
+chisq.test(tc_tbl)
+
+#no association assuamble due to high p-value 
+```
+#Interpretation:
 p=0.05255 > 0.05
 
+#RNAse
+```{r}
+#1.extract protein names
+test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
+#2.set TRUE to RBP and FALSE to non - RBP
+test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
+#3.turn cluster into a factor 
+test_rnase_data$cluster <- factor(test_rnase_data$cluster, levels = c(1, 2))  
+#keep cluster as order
+```
 
 
+```{r}
+#1. create table which sorts RBPs and non-RBPs into clusters
+tr_tbl <- table(test_rnase_data$is_rbp, test_rnase_data$cluster)
+show(tr_tbl)
+```
+
+```{r}
+#1.table counts the amount of RBPs
+table(test_rnase_data$is_rbp)
+str(test_ctrl_data$is_rbp)
+```
+
+
+```{r}
+#1.table counts the amount of RBPs
+table(test_rnase_data$is_rbp)
+str(test_rnase_data$is_rbp)
+
+```
+
+
+```{r}
+#1. apply chi sqquared to earlier created table
+chisq.test(tr_tbl)
+
+
+```
+#Interpretation: 
+p=0.3391 > 0.05
+
+
+#label RBP in K-means 
+#rnase
+```{r}
+#1. convert PCA ctrl data into dataframe 
+test_rnase_data <- as.data.frame(test_rnase_pca$x)
+test_rnase_data$cluster <- as.factor(TR_kmeans_result$cluster)
+
+#2. isolate protein names
+test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
+#check if rbp present 
+test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
+
+
+#3.plot
+library(ggplot2)
+
+ggplot(test_rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Cluster",
+       shape = "Protein-Typ") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
+
+ggplot(test_rnase_data,aes(x = PC1, y = PC2, color = cluster)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "Protein-Typ")
+
+```
+
+
+#ctrl
+
+```{r}
+#1. convert PCA ctrl data into dataframe 
+test_ctrl_data <- as.data.frame(test_ctrl_pca$x)
+test_ctrl_data$cluster <- as.factor(TC_kmeans_result$cluster)
+
+#2. isolate protein names
+test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
+#check if rbp present 
+test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
+
+
+#3.plot
+library(ggplot2)
+
+ggplot(test_ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "K-Means Cluster im PCA-Raum",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Cluster",
+       shape = "Protein-Typ") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
+
+ggplot(test_ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "Protein-Typ")
+
+```
+
+
+##RSP in PCA 
+#rnase labeling
+
+```{r}
+library(ggplot2)
+
+#1. prepare PCA, extract numerical values
+test_rnase_df <- as.data.frame(percent_rnase_df[,-1])
+TR_pca_result <- prcomp(test_rnase_df, center = TRUE, scale. = TRUE)
+
+#2. convert PCA results into dataframe
+TR_pca_df <- as.data.frame(TR_pca_result$x)
+
+#3. copy protein names from rownames
+TR_pca_df$Protein <- percent_rnase_df$Protein
+
+#4. define righ shift proteins
+test_highlight_proteins <- right_shift_proteins_df$Protein
+
+#5. add column with highlights
+TR_pca_df$Highlight <- ifelse(TR_pca_df$Protein %in% test_highlight_proteins, "Yes", "No")
+unique(TR_pca_df$Highlight)
+
+#6. show how many right shift proteins were detected
+table(TR_pca_df$Highlight)
+
+#7. plot
+ggplot(TR_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
+  geom_point(alpha = 0.8, size = 2) +
+  scale_color_manual(
+  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
+  name = "Highlighted Proteins",
+  labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
+) +
+  labs(title = "PCA Plot with Highlighted Proteins",
+       x = "Principal Component 1",
+       y = "Principal Component 2") +
+  theme_minimal()+
+  theme(
+    legend.position = "right",       
+    legend.title = element_text(face = "bold"),
+    legend.text = element_text(size = 10)
+  )
+
+```
+
+>>>>>>> 45ff27d4643135ffc2410419748ad037d9a07251
 #ctrl
 
 ```{r}
@@ -4645,12 +5364,15 @@ TC_pca_df <- as.data.frame(TC_pca_result$x)
 TC_pca_df$Protein <- percent_ctrl_df$Protein
 
 #4. define righ shift proteins
-C_test_highlight_proteins <- rownames(right_shift_rnase)
+C_test_highlight_proteins <- right_shift_proteins_df$Protein
+print(C_test_highlight_proteins)
+class(C_test_highlight_proteins)
 
 #5. add column with highlights
 TC_pca_df$Highlight <- ifelse(TC_pca_df$Protein %in% C_test_highlight_proteins, "Yes", "No")
 unique(TC_pca_df$Highlight)
-
+print(TC_pca_df$Protein)
+class(test_highlight_proteins)
 #6. show how many right shift proteins were detected
 table(TC_pca_df$Highlight)
 
