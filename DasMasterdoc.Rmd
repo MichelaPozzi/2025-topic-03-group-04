@@ -2521,6 +2521,10 @@ Wilcoxon_Pos_Max <- data.frame(
 # View first few results
 head(Wilcoxon_Pos_Max)
 ```
+output:
+Many proteins have a Wilcoxon test statistic equal to 0.
+This is problematic because, under normal circumstances, a Wilcoxon statistic of 0 indicates a strong and significant shift.
+However, in our case, it can also result from proteins that show no difference at all in global maximum position across conditions — which should not be interpreted as evidence of a significant shift.
 #### skewness of Wilcoxon-statistic
 ```{r}
 #skewness of Wilcoxon-statistic Position of maxima
@@ -2550,8 +2554,8 @@ output:
 #robust scaling
 Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled<- robust_scale(Wilcoxon_Pos_Max$Wilcoxon_statistic)
 
-#scale to 100%
-Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/6)*100
+#scale to 100%: maximum wilcoxon statistic is sum of ranks (1+2+3+4+5+6 = 21)
+Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/21)*100
 head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
 ```
 
