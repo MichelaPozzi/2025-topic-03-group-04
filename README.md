@@ -149,15 +149,15 @@ flowchart LR
 ```
 
 1.  **Step 1: Normalisation per Replicate and Fraction**\
-    Three replicates per fraction are normalized.\
-    Differences between replicates are adjusted based on the most similar replicate pair
-    (normalisation factor).\
-    → pairwise normalisation\
-    → Scaling is both fraction- and replicate-specific.
+    For each fraction, three replicates are normalized by calculating the mean of the two most
+    similar replicates (out of three) as a reference value.\
+    Each replicate is then scaled relative to this reference, adjusting differences based on
+    pairwise similarity.\
+    → This pairwise normalization is both fraction- and replicate-specific.
 
     **Output:**\
-    Two data frames (for Control and RNase), each with 75 columns (3 × 25) containing the scaled
-    protein intensities.\
+    Two data frames (Control and RNase), each containing 75 columns (3 replicates × 25 fractions)
+    with scaled protein intensities.\
     **Normed Control Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normed_control.png)
 
@@ -169,10 +169,6 @@ flowchart LR
     The average is calculated using the center fraction and its immediate neighbors (left and
     right).\
     → Smoothed values are computed per protein and replicate.
-
-    **Output:**\
-    Two data frames (for Control and RNase), each with 75 columns (3 × 25) containing the smoothed
-    values.
 
 3.  **Step 3: Normalisation Across Replicates and Fractions per Protein**\
     Each replicate measurement is normalized individually → each replicate sums to 100%.\
