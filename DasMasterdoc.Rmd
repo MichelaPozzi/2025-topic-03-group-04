@@ -247,7 +247,7 @@ sum(rnase_means_df[, 2]==0)
 
 ```
 ### normalisation factor
-Goal: determine normalisation matrix with normalisation factors from the mean of the two most similar replicates
+Goal: Calculate reference values per fraction by computing the mean of the two most similar replicates (out of three) to serve as normalization basis.
 ```{r}
 # create function to calculate the mean of the two most similar replicates (out of three replicates)
 mean_of_closest_pair <- function(x) {
@@ -293,6 +293,7 @@ print(closest_means_ctrl)
 print(closest_means_rnase)
 ```
 #### create normalisation matrix
+Goal: Create normalization factors for each replicate by dividing the reference mean by the replicate value.
 ```{r}
 n_fractions <- 25
 n_replicates <- 3
@@ -634,8 +635,6 @@ rows_with_zero_sum_rnase <- row_sums_rnase == 0
 # Check if any rows have a sum of zero
 any(rows_with_zero_sum_rnase)
 ```
-
-
 # Visualization of the distribution of any protein before and after rnase treatment
 ```{r}
 # choose a protein and extract data across the fractions
