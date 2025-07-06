@@ -370,7 +370,9 @@ head(normed_ctrl_df)
 head(normed_rnase_df)
 ```
 ### Moving Average Filter & Sorting Data
-Goal: Smooth values per protein and replicate & arrange data
+Goal: Apply a moving average filter (window = 3) across fractions to smooth intensity values.
+-> Smoothing is applied per replicate and protein; first and last fraction values are kept unchanged.
+-> The resulting dataframe is then reordered: columns are grouped by fraction (not by replicate).
 ```{r}
 # Mean filter function for a row (preserving first and last value)
 smooth_and_reorder <- function(df, n_fractions = 25, n_replicates = 3) {
