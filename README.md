@@ -84,20 +84,20 @@ between untreated cell lysates (control samples) and RNase-treated lysates (RNas
 
 ## Table Of Contents
 
--   [Data Exploration](#data-exploration)
--   [Data Normalization](#data-normalisation)
+-   [I. Data Exploration](#data-exploration)
+-   [II. Data Normalization](#data-normalisation)
     -   [Normalisation](#normalisation)
     -   [Batch Removal](#batch-removal)
--   [Shift Analysis](#shift-analysis)
+-   [III. Shift Analysis](#shift-analysis)
     -   [Tests](#tests)
     -   [Logistic Model](#logistisches-model)
--   [Dimension Reduction](#dimension-reduction)
+-   [IV. Linear Regression](#linear-regression)
+-   [V. Dimension Reduction](#dimension-reduction)
     -   [PCA](#pca)
     -   [k-means](#k--means)
     -   [Chi Squared test](#chi-squared-test)
--   [Linear Regression](#linear-regression)
 
-# **Data Exploration** {#data-exploration}
+# **I. Data Exploration** {#data-exploration}
 
 -   Examine the dimensions of our dataset and potential inconsistencies in the produced data. Also,
     investigate whether the experimental nature of the measurements is reproducible, and therefore
@@ -128,7 +128,7 @@ conclude reproducibility for other measurements
 ![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d)
 ![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
 
-# **🧼Data Normalisation** {#data-normalisation}
+# **🧼 II. Data Normalisation** {#data-normalisation}
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and
     conditions (Control vs. RNase) by normalising and transforming the values with following steps:
@@ -258,7 +258,7 @@ They can influence further observations, analysis, and interpretation\
     overly significant\
     → Removal still could overcorrect biological variances
 
-# **✅Shift Analysis** {#shift-analysis}
+# **✅ III. Shift Analysis** {#shift-analysis}
 
 ## ️**📃Steps**
 
@@ -333,11 +333,6 @@ flowchart LR
     -   A small W value suggests that most differences go in the same direction (e.g., treatment
         Control is almost always higher than RNase), which indicates a significant difference
 
-    -   The test statistic W measures how consistently one condition tends to produce higher or
-        lower values than the other. A small W value suggests that most differences go in the same
-        direction (e.g., treatment Control is almost always higher than RNase), which indicates a
-        significant difference
-
 ### **🤖Logistic Model**
 
 A logistic regression model is trained using reference proteins to predict the probability of
@@ -365,7 +360,7 @@ RNA-binding for other proteins from our dataset.
     statistic — reflect the outcomes of computational tests performed on these proteins, capturing
     their RNA-binding behavior.
 
-![](images/clipboard-2044063727.png)
+[Beschreibung des Bildes](images/reference.jpeg)
 
         During training, the model estimates a regression coefficient for each test-derived feature\
         in order to maximize the discrimination between the positive and negative control groups.
@@ -375,7 +370,7 @@ RNA-binding for other proteins from our dataset.
     RNA-binding classification. The regression coefficients reflect the strength and direction with
     which each predictor influences the log-odds of a protein being RNA-binding.
 
-    ![Beschreibung des Bildes](images/featureimportance.jpeg)
+    ![Beschreibung des Bildes](images/feature.jpeg)
 
     -   positive coefficients (purple bars) indicate features that increase the probability of
         RNA-binding
@@ -390,14 +385,14 @@ RNA-binding for other proteins from our dataset.
 
 <p float="left">
 
-<img src="images/shifts.jpeg" width="30%"/>
-<img src="images/directionofproteinshift.jpeg" width="30%"/>
-<img src="images/compositionRBP.jpeg" width="30%"/>
+<img src="images/shift.jpeg" width="30%"/>
+<img src="images/direction.jpeg" width="30%"/>
+<img src="images/predictionquality.jpeg" width="30%"/>
 
 </p>
 
-       Altogether, XX proteins were classified as RNA-binding, of which XX exhibited a right shift.\
-       Excluding the proteins used for model training, XX novel RBPs were identified.
+       Altogether, 740 proteins were classified as RNA-binding, of which 141 exhibited a right shift.\
+       Excluding the proteins used for model training, 320 novel RBPs were identified.
 
 4.  **Accuracy of Model:**\
     visualise the predictive accuracy of our logistic regression model
@@ -406,7 +401,53 @@ RNA-binding for other proteins from our dataset.
 
     -\> the predictive accuracy lies way above the "coincidence line"\
 
-# **Dimension reduction** {#dimension-reduction}
+
+# **📈 IV. Linear Regression** {#linear-regression}
+
+-   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the
+    probability of RNA dependence and assess their statistical significance
+-   for new data: predict RNA dependence based on experimentally accessible features
+
+## **📃Steps**
+
+``` mermaid
+flowchart LR
+    A[load information on protein features] --> B[select independent variables for multiple regression]
+    B --> C[multiple Regression]
+    C --> D[test the individual significance of predictor effects]
+```
+
+1.  **select independent variables for multiple regression**:\
+    Independent variables should exhibit minimal correlation to avoid multicollinearity\
+    Therefore, the correlation between molecular weight, sequence length, and isoelectric point was
+    examined\
+    A strong correlation was observed between molecular weight and sequence length\
+    Since molecular weight is more readily accessible experimentally than sequence length, it was
+    used as a predictor in the multiple regression model along with the isoelectric point (pI).
+
+2.  **multiple regression**:\
+    The multiple regression analysis shows that both the isoelectric point (pI) and molecular weight
+    (Mass_kDa) are significantly associated with the target variable (p \< 0.001). The pI has the
+    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des
+    Bildes](images/3dscatterplotupdated.jpeg)\
+    This 3D scatterplot displays the actual data points alongside the regression plane determined by
+    the multiple regression analysis.\
+    The closer the points lie to the plane, the better the model fits the observed data. Large
+    distances between the points and the plane indicate that the model explains only a small portion
+    of the variance.\
+    Specifically, the model explains approximately 10.8% of the variance (adjusted R² = 0.108).
+
+3.  **test the individual significance of predictor effects**:\
+    t-tests were conducted to determine whether RBPs and non-RBPs differ significantly in their
+    isoelectric point (pI) and molecular weight\
+    ![Beschreibung des Bildes](images/comparisonRBP.jpeg)\
+    A significant association was found between higher isoelectric point (pI) and increased
+    probability of RNA dependence.\
+    On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
+    significant predictor only when pI is accounted for, as demonstrated by the multiple regression
+    analysis.
+    
+# ** V. Dimension reduction** {#dimension-reduction}
 
 ## **🎯Objective:** - Reduce dimension for better exploratory analysis
 
@@ -465,48 +506,3 @@ The data is turned into a table and the test executed.
 
 **Output** For both datasets Ctrl and RNAse we could determine a significant p-value. This indicates
 there is a relation between clusters and RNA binding proteins.
-
-# **📈Linear Regression** {#linear-regression}
-
--   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the
-    probability of RNA dependence and assess their statistical significance
--   for new data: predict RNA dependence based on experimentally accessible features
-
-## **📃Steps**
-
-``` mermaid
-flowchart LR
-    A[load information on protein features] --> B[select independent variables for multiple regression]
-    B --> C[multiple Regression]
-    C --> D[test the individual significance of predictor effects]
-```
-
-1.  **select independent variables for multiple regression**:\
-    Independent variables should exhibit minimal correlation to avoid multicollinearity\
-    Therefore, the correlation between molecular weight, sequence length, and isoelectric point was
-    examined\
-    A strong correlation was observed between molecular weight and sequence length\
-    Since molecular weight is more readily accessible experimentally than sequence length, it was
-    used as a predictor in the multiple regression model along with the isoelectric point (pI).
-
-2.  **multiple regression**:\
-    The multiple regression analysis shows that both the isoelectric point (pI) and molecular weight
-    (Mass_kDa) are significantly associated with the target variable (p \< 0.001). The pI has the
-    stronger effect (t = 21.12), followed by molecular weight (t = 3.38) ![Beschreibung des
-    Bildes](images/3dscatterplotupdated.jpeg)\
-    This 3D scatterplot displays the actual data points alongside the regression plane determined by
-    the multiple regression analysis.\
-    The closer the points lie to the plane, the better the model fits the observed data. Large
-    distances between the points and the plane indicate that the model explains only a small portion
-    of the variance.\
-    Specifically, the model explains approximately 10.8% of the variance (adjusted R² = 0.108).
-
-3.  **test the individual significance of predictor effects**:\
-    t-tests were conducted to determine whether RBPs and non-RBPs differ significantly in their
-    isoelectric point (pI) and molecular weight\
-    ![Beschreibung des Bildes](images/comparisonRBP.jpeg)\
-    A significant association was found between higher isoelectric point (pI) and increased
-    probability of RNA dependence.\
-    On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a
-    significant predictor only when pI is accounted for, as demonstrated by the multiple regression
-    analysis.
