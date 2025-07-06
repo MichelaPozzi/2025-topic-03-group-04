@@ -375,7 +375,7 @@ All data sets on which PCA was performed on, covered roughly 65 % of variance wi
 
 ### **K-Means Clustering** {#k-means}
 
-The ideal **Amount of clusters** is determined first with an **elbow plot**. The graph gives a suggestion of how many clusters should be used. For a more detailed determination the silhouette scores are calculated and plotted.
+The ideal **Amount of clusters** is determined first with an **elbow plot**. The graph gives a suggestion of how many clusters should be used. For a more detailed determination the **silhouette scores** are calculated and plotted.
 
 **K-means** is applied and plotted according to the previous results.
 
@@ -394,4 +394,5 @@ In the K-means plots **RNA binding proteins** are labeled in order to determine 
 In order to check for a significant association between clusters and RBPs.\
 The data is turned into a contingency table and the test executed.
 
-**Output** For both datasets Ctrl and RNAse we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
+**Output:** 
+For both datasets Ctrl and RNAse we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
