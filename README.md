@@ -213,7 +213,7 @@ They can influence further observations, analysis, and interpretation\
     2.  **apply function**
 
     **PCA visualization**\
-    ![Before and after comparison of limma cleaned data](images/RNAse_ctrl_PCA.jpeg)
+    ![Before and after comparison of limma removal](images/RNAse_limma_PCA.jpeg)
 
     **Output**\
     There is no severe change visible, the data before is rather spread out but the batches
@@ -243,7 +243,7 @@ They can influence further observations, analysis, and interpretation\
         6.Visualizations
 
     **PCA visualization**\
-    ![Before and after comparison of SVA cleaned data](images/RNAse_SVA_PCA.png)
+    ![Before and after comparison of SVA cleaned data](images/RNAse_SVA_PCA%20.png)
 
     **Output**\
     With SVA there is a batch effect visible. It is shown in the circular structure beforehand which
