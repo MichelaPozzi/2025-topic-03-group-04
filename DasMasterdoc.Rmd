@@ -3017,99 +3017,6 @@ legend("topright",
 ```
 
 
-```{r}
-colors1 <- c("#F5E1A4","#c9a0dc")  # Segment 1: light beige, Segment 2: light purple
-
-# 1. Plot: Total Proteins vs. Significantly Shifted Proteins
-counts_matrix1 <- matrix(c(
-  total_proteins - num_rbp,  # Number of proteins not shifted
-  num_rbp                    # Number of proteins shifted significantly
-), nrow = 2, byrow = TRUE)
-
-colnames(counts_matrix1) <- c("All Proteins")
-rownames(counts_matrix1) <- c("Non-shifted", "Shifted")
-
-barplot(counts_matrix1,
-        beside = FALSE,
-        col = colors1,
-        border = "white",
-        main = "All Proteins vs. Significant Shifts",
-        ylab = "Number of Proteins",
-        las = 1)
-
-legend("topright",
-       legend = rownames(counts_matrix1),
-       fill = colors1,
-       bty = "n")
-
-# Define colors for next plot (reversed order)
-colors2 <- c("#c9a0dc", "#F5E1A4")
-
-# 2. Plot: Direction of Protein Shifts (Left vs. Right)
-
-# define number of proteins
-num_right_shift <- right_shift_count
-num_left_shift <- num_significant_shifted - right_shift_count
-
-counts_matrix2 <- matrix(c(
-  num_right_shift,  # Number of proteins shifted to the right
-  num_left_shift    # Number of proteins shifted to the left
-), nrow = 2, byrow = TRUE)
-
-colnames(counts_matrix2) <- c("Shifted Proteins")
-rownames(counts_matrix2) <- c("Right Shift", "Left Shift")
-
-barplot(counts_matrix2,
-        beside = FALSE,
-        col = colors2,
-        border = "white",
-        main = "Direction of Protein Shifts",
-        ylab = "Number of Proteins",
-        las = 1,
-        ylim = c(0, num_significant_shifted))
-
-legend("topright",
-       legend = rownames(counts_matrix2),
-       fill = colors2,
-       bty = "n")
-
-# Colors: True Positives purple, False Positives beige, Newly Identified RBPs gray-green
-colors3 <- c("Beige" = "#F5E1A4", "True Positives" = "#c9a0dc", "New RBPs" = "#A9C1A6")
-
-# Number of each group
-false_positives_num <- sum(predicted_negatives == "TRUE")  # Number of False Positives
-true_positives_num <- sum(predicted_non_negative == "TRUE") # Number of True Positives
-
-# Total number of predicted proteins (example)
-total_predicted_proteins <- num_significant_shifted  # Or another appropriate number
-
-# Number of newly identified RBPs
-new_rbps_num <- total_predicted_proteins - (false_positives_num + true_positives_num)
-if (new_rbps_num < 0) new_rbps_num <- 0  # Safety check
-
-# Matrix for barplot: order = False Positives, True Positives, New RBPs
-counts_matrix3 <- matrix(c(false_positives_num, true_positives_num, new_rbps_num),
-                         nrow = 3, byrow = TRUE)
-
-colnames(counts_matrix3) <- c("Prediction Quality")
-rownames(counts_matrix3) <- c("False Positives", "True Positives", "New RBPs")
-
-# Create barplot
-barplot(counts_matrix3,
-        beside = FALSE,
-        col = colors3,
-        border = "white",
-        main = "Prediction Quality with Newly Identified RBPs",
-        ylab = "Number of Proteins",
-        las = 1,
-        ylim = c(0, total_predicted_proteins))
-
-# Add legend
-legend("topright",
-       legend = rownames(counts_matrix3),
-       fill = colors3,
-       bty = "n")
-```
 
 
 ## show result for any desired protein
@@ -4020,179 +3927,8 @@ ggplot(ctrl_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
 ##label RNA binding proteins in K-means
 
 #isolate rbp 
-
-```{r}
-#1.filter for RBPs
-rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
-
-#2.extract RBPS and store in a separate vector
-rbp_proteins <- rbp_only$Protein
-head(rbp_proteins)
-
-```
-
-
-#K-means ctrl 
-```{r}
-#1. convert PCA ctrl data into dataframe 
-Ctrl_data <- as.data.frame(Ctrl_pca$x)
-Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
-
-#2. isolate protein names
-Ctrl_data$protein_name <- rownames(Ctrl_data)
-#check if rbp present 
-Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
-
-
-#3.plot
-library(ggplot2)
-
-ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
-  geom_point(alpha = 0.7, size = 2) +
-  labs(title = "RBP label in K-means, ctrl",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)",
-       color = "Cluster",
-       shape = "Protein-Typ") +
-  theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
-  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
-
-
-ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
-  
-  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "Protein-Typ")
-
-```
-
-```{r}
-head(rnase_pca$x)
-```
-
-
-#K-means rnase 
-```{r}
-#1. convert PCA ctrl data into dataframe 
-rnase_data <- as.data.frame(rnase_pca$x)
-rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
-
-#2. isolate protein names
-rnase_data$protein_name <- rownames(Ctrl_data)
-#check if rbp present 
-rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
-
-
-#3.plot
-library(ggplot2)
-
-ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
-  geom_point(alpha = 0.7, size = 2) +
-  labs(title = "RBP label in K-means, RNAse",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)",
-       color = "Cluster",
-       shape = "Protein-Typ") +
-  theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
-  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
-
-ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
-  
-  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "Protein-Typ")
-
-```
-
-
-
-###CHI squared test 
-
-Goal: Determine if cluster are associated with RNA binding proteins 
-
-#rnase
-
-```{r}
-rnase_data$protein_name <- rownames(Ctrl_data)
-
-#1.set TRUE to RBP and FALSE to non - RBP
-rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
-#2.turn cluster into a factor 
-rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  
-#keep cluster as order
-```
-
-```{r}
-#1. create table which sorts RBPs and non-RBPs into clusters
-r_tbl <- table(rnase_data$is_rbp, rnase_data$cluster)
-show(r_tbl)
-```
-
-```{r}
-#1.table counts the amount of RBPs
-table(rnase_data$is_rbp)
-str(rnase_data$is_rbp)
-```
-
-```{r}
-print(rnase_data)
-```
-
-
-```{r}
-#1. apply chi sqquared to earlier created table
-chisq.test(r_tbl)
-
-
-```
-#Interpretation:
-p=0.3391 > 0.05 ->non significant
-
-##ctrl
-```{r}
-#1.set TRUE to RBP and FALSE to non - RBP
-Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
-#2.turn cluster into a factor 
-Ctrl_data$cluster <- factor(Ctrl_data$cluster, levels = c(1, 2))  
-#keep cluster as order
-```
-
-```{r}
-#1. create table which sorts RBPs and non-RBPs into clusters
-c_tbl <- table(Ctrl_data$is_rbp, Ctrl_data$cluster)
-show(c_tbl)
-```
-
-```{r}
-#1.table counts the amount of RBPs
-table(Ctrl_data$is_rbp)
-str(Ctrl_data$is_rbp)
-```
-
-
-```{r}
-print(Ctrl_data)
-```
-
-
-```{r}
-#1. apply chi sqquared to earlier created table
-chisq.test(c_tbl)
-
-
-```
-#Interpretation'
-p=0.05255 > 0.05
-
-
-# 5. Detection of features predictive of RNA-binding
-# linear regression
-Goal: Identify experimentally accessible predictors of RNA-binding
--> establish relation between predictors and RNA-binding behavior
-
 ### load data with protein features 
 -> dataframe from RBP2GO is loaded that contains information on pI, Mass in kDa and length in AA as possible predictors for RNA-binding
-
 ```{r}
 ### read Table_RBPs
 
@@ -4233,6 +3969,217 @@ Table_HS_Non_RBP = read.delim("cleaned_table.txt",
 head(Table_HS_Non_RBP)
 
 ```
+
+```{r}
+# Select only relevant columns from the RBP and Non-RBP tables
+rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
+non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
+
+# Combine both subsets into a single table
+Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
+
+# # 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
+merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
+                   by.x = "Protein", by.y = "Entry_Name",
+                   all.x = TRUE)  # keep all entries from test_scores_combined_df
+#depict result
+head(merged_df)
+dim(merged_df)
+```
+
+```{r}
+# Select only relevant columns from the RBP and Non-RBP tables
+rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
+non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
+
+# Combine both subsets into a single table
+Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
+
+# # 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
+merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
+                   by.x = "Protein", by.y = "Entry_Name",
+                   all.x = TRUE)  # keep all entries from test_scores_combined_df
+#depict result
+head(merged_df)
+dim(merged_df)
+```
+
+```{r}
+#1.filter for RBPs
+merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
+                   by.x = "Protein", by.y = "Entry_Name",
+                   all.x = TRUE)
+df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
+df_complete$RBP_shift_category <- ifelse(df_complete$probability >= optimal_threshold,
+                                         ifelse(df_complete$Shift_direction_ctrl_to_rnase == "left shift", "RBP_left",
+                                                ifelse(df_complete$Shift_direction_ctrl_to_rnase == "right shift", "RBP_right", "RBP")),
+                                         "Non-RBP")
+
+rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
+
+#2.extract RBPS and store in a separate vector
+rbp_proteins <- rbp_only$Protein
+head(rbp_proteins)
+
+```
+
+
+#K-means ctrl 
+```{r}
+#1. convert PCA ctrl data into dataframe 
+Ctrl_data <- as.data.frame(ctrl_pca$x)
+Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
+
+#2. isolate protein names
+Ctrl_data$protein_name <- c(S_corrected_expr_ctrl_df$Protein)
+#check if rbp present 
+Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+
+
+#3.plot
+library(ggplot2)
+
+ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "RBP label in K-means, ctrl",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Cluster",
+       shape = "Protein-Typ") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
+
+
+ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "Protein-Typ")
+
+```
+
+
+#K-means rnase 
+```{r}
+#1. convert PCA ctrl data into dataframe 
+rnase_data <- as.data.frame(rnase_pca$x)
+rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
+
+#2. isolate protein names
+rnase_data$protein_name <- c(S_corrected_expr_rnase_df$Protein)
+#check if rbp present 
+rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
+
+
+#3.plot
+library(ggplot2)
+
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+  geom_point(alpha = 0.7, size = 2) +
+  labs(title = "RBP label in K-means, RNAse",
+       x = "Hauptkomponente 1 (PC1)",
+       y = "Hauptkomponente 2 (PC2)",
+       color = "Cluster",
+       shape = "Protein-Typ") +
+  theme_minimal() +
+  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
+
+ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
+  
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
+  labs(shape = "Protein-Typ")
+
+```
+
+
+
+###CHI squared test 
+
+Goal: Determine if cluster are associated with RNA binding proteins 
+
+#rnase
+
+```{r}
+#1. Add protein column
+rnase_data$protein_name <-  c(S_corrected_expr_rnase_df$Protein)
+
+#2.set TRUE to RBP and FALSE to non - RBP
+rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
+#3.turn cluster into a factor 
+rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  
+#keep cluster as order
+```
+
+```{r}
+#1. create table which sorts RBPs and non-RBPs into clusters
+r_tbl <- table(rnase_data$is_rbp, rnase_data$cluster)
+show(r_tbl)
+```
+
+```{r}
+#1.table counts the amount of RBPs
+table(rnase_data$is_rbp)
+str(rnase_data$is_rbp)
+```
+
+```{r}
+print(rnase_data)
+```
+
+
+```{r}
+#1. apply chi sqquared to earlier created table
+chisq.test(r_tbl)
+
+
+```
+#Interpretation:
+p=0.3391 > 0.05 ->non significant
+
+##ctrl
+```{r}
+#1. Add protein column
+Ctrl_data$protein_name <-  c(S_corrected_expr_ctrl_df$Protein)
+#2.set TRUE to RBP and FALSE to non - RBP
+Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
+#3.turn cluster into a factor 
+Ctrl_data$cluster <- factor(Ctrl_data$cluster, levels = c(1, 2))  
+#keep cluster as order
+```
+
+```{r}
+#1. create table which sorts RBPs and non-RBPs into clusters
+c_tbl <- table(Ctrl_data$is_rbp, Ctrl_data$cluster)
+show(c_tbl)
+```
+
+```{r}
+#1.table counts the amount of RBPs
+table(Ctrl_data$is_rbp)
+str(Ctrl_data$is_rbp)
+```
+
+
+```{r}
+print(Ctrl_data)
+```
+
+
+```{r}
+#1. apply chi sqquared to earlier created table
+chisq.test(c_tbl)
+
+
+```
+#Interpretation'
+p=0.05255 > 0.05
+
+
+# 5. Detection of features predictive of RNA-binding
+# linear regression
+Goal: Identify experimentally accessible predictors of RNA-binding
+-> establish relation between predictors and RNA-binding behavior
 
 ### connect information on protein features to proteins from dataset
 
@@ -5025,7 +4972,7 @@ head(rbp_proteins)
 #ctrl
 ```{r}
 #1.extract protein names
-test_ctrl_data$protein_name <- rownames(Ctrl_data)
+test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
 #2.set TRUE to RBP and FALSE to non - RBP
 test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
 #3.turn cluster into a factor 
@@ -5058,7 +5005,7 @@ p=0.05255 > 0.05
 #RNAse
 ```{r}
 #1.extract protein names
-test_rnase_data$protein_name <- rownames(Ctrl_data)
+test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
 #2.set TRUE to RBP and FALSE to non - RBP
 test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 #3.turn cluster into a factor 
@@ -5081,12 +5028,9 @@ str(test_ctrl_data$is_rbp)
 
 
 ```{r}
-print(Ctrl_data)
-```
-
-```{r}
-colnames(Ctrl_data)
-colnames(test_ctrl_data)
+#1.table counts the amount of RBPs
+table(test_rnase_data$is_rbp)
+str(test_rnase_data$is_rbp)
 
 ```
 
@@ -5109,7 +5053,7 @@ test_rnase_data <- as.data.frame(test_rnase_pca$x)
 test_rnase_data$cluster <- as.factor(TR_kmeans_result$cluster)
 
 #2. isolate protein names
-test_rnase_data$protein_name <- rownames(Ctrl_data)
+test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
 #check if rbp present 
 test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 
@@ -5144,7 +5088,7 @@ test_ctrl_data <- as.data.frame(test_ctrl_pca$x)
 test_ctrl_data$cluster <- as.factor(TC_kmeans_result$cluster)
 
 #2. isolate protein names
-test_ctrl_data$protein_name <- rownames(Ctrl_data)
+test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
 #check if rbp present 
 test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
 
