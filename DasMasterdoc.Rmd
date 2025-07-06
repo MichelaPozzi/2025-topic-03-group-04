@@ -2757,6 +2757,103 @@ output: for all tests there is a significant difference in the performance of po
 -> reference proteins are suitable for training the logistic model
 
 
+### visualization of performence of reference proteins in tests
+```{r}
+# Pakete laden
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+# Beispielspalten (analog cols_to_test)
+cols_to_test <- c(2,4,5,6,7)
+col_names <- colnames(df_positive_control)[cols_to_test]
+
+n <- length(cols_to_test)
+x_positions <- seq(1, by=1, length.out = n)
+
+# Wertebereich für y-Achse bestimmen
+all_values <- c()
+for(i in seq_along(cols_to_test)) {
+  col_idx <- cols_to_test[i]
+  vals_neg <- as.numeric(df_negative_control[[col_idx]])
+  vals_pos <- as.numeric(df_positive_control[[col_idx]])
+  all_values <- c(all_values, vals_neg, vals_pos)
+}
+
+# Transparente Füllfarben
+fill_neg <- adjustcolor("#c9a0dc", alpha.f = 0.3)
+fill_pos <- adjustcolor("#A9C1A6", alpha.f = 0.3)
+
+plot(NA, 
+     xlim = c(0.5, n + 0.5), 
+     ylim = range(all_values, na.rm = TRUE), 
+     xaxt = "n", 
+     xlab = "", 
+     ylab = "Wert", 
+     main = "Symmetrische geteilte Violinenplots",
+     cex.main = 1,
+     cex.lab = 1
+)
+
+# Lege x-Achse OHNE Labels an
+axis(1, at = x_positions, labels = FALSE, tick = TRUE)
+
+# Schräg gedrehte Labels darunter zeichnen
+text(x = x_positions, y = par("usr")[3] - 0.05 * diff(par("usr")[3:4]), 
+     labels = col_names, 
+     srt = 45,          # Winkel 45 Grad
+     adj = 1,           # rechtsbündig
+     xpd = TRUE,         # Zeichnen außerhalb des Plotbereichs erlauben
+     cex = 0.5)          # Schriftgröße klein
+
+
+for(i in seq_along(cols_to_test)) {
+  col_idx <- cols_to_test[i]
+  x <- x_positions[i]
+  
+  vals_neg <- as.numeric(df_negative_control[[col_idx]])
+  vals_pos <- as.numeric(df_positive_control[[col_idx]])
+  
+  if(sum(!is.na(vals_neg)) < 2 || sum(!is.na(vals_pos)) < 2) next
+  
+  dens_neg <- tryCatch(density(vals_neg, na.rm = TRUE), error = function(e) NULL)
+  dens_pos <- tryCatch(density(vals_pos, na.rm = TRUE), error = function(e) NULL)
+  if(is.null(dens_neg) || is.null(dens_pos)) next
+  
+  max_y <- max(c(dens_neg$y, dens_pos$y))
+  scale_factor <- 0.4 / max_y
+  
+  # linke Hälfte (negative control) mit transparenter Füllung
+  x_left <- x - dens_neg$y * scale_factor
+  y_vals <- dens_neg$x
+  polygon(c(x_left, rev(rep(x, length(x_left)))), 
+          c(y_vals, rev(y_vals)), 
+          col = fill_neg, border = "#c9a0dc")
+  
+  # rechte Hälfte (positive control) mit transparenter Füllung
+  x_right <- x + dens_pos$y * scale_factor
+  y_vals2 <- dens_pos$x
+  polygon(c(rep(x, length(x_right)), rev(x_right)), 
+          c(y_vals2, rev(y_vals2)), 
+          col = fill_pos, border = "#A9C1A6")
+  
+  # Medianlinien
+  med_neg <- median(vals_neg, na.rm = TRUE)
+  med_pos <- median(vals_pos, na.rm = TRUE)
+  
+  lines(c(x - 0.2, x), rep(med_neg, 2), col = "#c9a0dc", lty = 2, lwd = 2)
+  lines(c(x, x + 0.2), rep(med_pos, 2), col = "#A9C1A6", lty = 2, lwd = 2)
+}
+
+legend("topright",
+       legend = c("Negative Control", "Positive Control"),
+       fill = c(fill_neg, fill_pos),    # Transparente Fill-Farben in Legende
+       border = c("#c9a0dc", "#A9C1A6"),
+       bty = "n",
+       cex = 0.8)
+```
+
+
 ### build logistic model
 - logistic model based on all tests is created
 - check for redundancy/multicollinearity using step()function
