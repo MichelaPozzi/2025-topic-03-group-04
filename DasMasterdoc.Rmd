@@ -4491,69 +4491,68 @@ head(rbp_proteins)
 
 #K-means ctrl 
 ```{r}
-#1. convert PCA ctrl data into dataframe 
+# Convert PCA ctrl data into dataframe 
 Ctrl_data <- as.data.frame(ctrl_pca$x)
 Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
-#2. isolate protein names
-Ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
-#check if rbp present 
+# Isolate protein names
+Ctrl_data$protein_name <- percent_ctrl_df$Protein
+
+# Check if protein is an RBP
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
+# Convert logical to labeled factor
+Ctrl_data$protein_type <- factor(Ctrl_data$is_rbp,
+                                 levels = c(FALSE, TRUE),
+                                 labels = c("non-RBP", "RBP"))
 
-#3.plot
+# 5. Plot with shape based on labeled protein type
 library(ggplot2)
 
-ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = protein_type)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "RBP label in K-means, ctrl",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)",
+       x = "PC1",
+       y = "PC2",
        color = "Cluster",
-       shape = "Protein-Typ") +
+       shape = "Protein Type") +
   theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
   scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
 
-
-ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
-  
-  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "Protein-Typ")
 
 ```
 
 
 #K-means rnase 
 ```{r}
-#1. convert PCA ctrl data into dataframe 
+## 1. Convert PCA RNAse data into dataframe 
 rnase_data <- as.data.frame(rnase_pca$x)
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
-#2. isolate protein names
-rnase_data$protein_name <- c(S_corrected_expr_rnase_df$Protein)
-#check if rbp present 
+# 2. Isolate protein names
+rnase_data$protein_name <- S_corrected_expr_rnase_df$Protein
+
+# 3. Check if protein is an RBP and relabel
 rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
+rnase_data$protein_type <- factor(rnase_data$is_rbp,
+                                  levels = c(FALSE, TRUE),
+                                  labels = c("non-RBP", "RBP"))
 
-
-#3.plot
+# 4. Plot with labeled protein type
 library(ggplot2)
 
-ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
+ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = protein_type)) +
   geom_point(alpha = 0.7, size = 2) +
   labs(title = "RBP label in K-means, RNAse",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)",
+       x = "PC1",
+       y = "PC2",
        color = "Cluster",
-       shape = "Protein-Typ") +
+       shape = "Protein Type") +
   theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
+  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
   scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
 
-ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
-  
-  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "Protein-Typ")
 
 ```
 
