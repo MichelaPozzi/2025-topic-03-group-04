@@ -920,7 +920,7 @@ library(limma)
 ctrl_expr_matrix_log <- log2(ctrl_expr_matrix + 1)
 
 #2. Correction with limma
-L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = batch)
+L_ctrl_expr_corrected <- removeBatchEffect(ctrl_expr_matrix_log, batch = LC_batch)
 
 
 
@@ -1374,7 +1374,7 @@ S_corrected_expr_ctrl <- residuals(fit, ctrl_expr_matrix)
 SC_sample_names <- colnames(ctrl_expr_matrix)
 # 2. create batch labels out of sample names 
 #create batches from replicates in order to have comparable batches
-SC_batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+SC_batch <- sub(".*_(Rep\\d)", "\\1", SC_sample_names)
 SC_batch <- factor(SC_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
 # 3. assign colors 
@@ -1616,7 +1616,7 @@ SR_sample_names <- colnames(rnase_expr_matrix)
 
 # 2. create batch labels out of sample names 
 #create batches from replicates in order to have comparable batches
-SR_batch <- sub(".*_(Rep\\d)", "\\1", sample_names)
+SR_batch <- sub(".*_(Rep\\d)", "\\1", SR_sample_names)
 SR_batch <- factor(SR_batch, levels = c("Rep1", "Rep2", "Rep3"))
 
 # 2. assign colors
@@ -1704,7 +1704,7 @@ plot(SR_pca_before$x[, 1:2],
      cex.main=0.8,
      xlab = "PC1", ylab = "PC2")
 
-legend("topright", legend = levels(SR_batch), col = batch_colors, pch = 19,cex=0.4)
+legend("topright", legend = levels(SR_batch), col = SR_batch_colors, pch = 19,cex=0.4)
 
 # PCA after correction
 plot(SR_pca_after$x[, 1:2],
@@ -3046,6 +3046,22 @@ right_shift_count <- nrow(filtered_df)
 print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
 ```
+
+```{r}
+# Right shift proteins that are in neither control group
+novel_right_shift_proteins <- test_scores_combined_df[
+  test_scores_combined_df$Shift_direction_ctrl_to_rnase == "right shift" &
+  test_scores_combined_df$probability >= optimal_threshold &
+  !(test_scores_combined_df$Protein %in% df_positive_control$Protein) &
+  !(test_scores_combined_df$Protein %in% df_negative_control$Protein),
+]
+
+cat("Anzahl neu identifizierter 'Right Shift' Proteine:", nrow(novel_right_shift_proteins), "\n")
+head(novel_right_shift_proteins$Protein)
+
+ 
+```
+
 
 # visualisation of test-model results 
 ## composition of found RBPS
