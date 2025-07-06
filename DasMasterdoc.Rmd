@@ -3493,7 +3493,6 @@ legend("topright",
        fill = c("lightblue", "lightpink"),
        border = c("blue", "red"),
        bty="n")
-
 ```
 Output: visualization of a negative control and positive control protein, as well as one newly identified as shifting
 
@@ -4594,7 +4593,7 @@ chisq.test(r_tbl)
 
 ```
 #Interpretation:
-p=0.1842 > 0.05 ->non significant
+p=4.237e-09 < 0.05 -> significant
 
 ##ctrl
 ```{r}
@@ -4632,7 +4631,7 @@ chisq.test(c_tbl)
 
 ```
 #Interpretation'
-p=0.9864 > 0.05 -> not significant
+p=2.2e-16 < 0.05 -> significant: there is a connection between clusters found through PCA and classification of proteins as RBPs
 
 
 
@@ -4642,16 +4641,6 @@ p=0.9864 > 0.05 -> not significant
 table(test_ctrl_data$is_rbp)
 str(test_ctrl_data$is_rbp)
 ```
-
-
-```{r}
-#1. apply chi sqquared to earlier created table
-chisq.test(tc_tbl)
-
-#no association assuamble due to high p-value 
-```
-#Interpretation:
-p=0.05255 > 0.05
 
 #RNAse
 ```{r}
@@ -4693,7 +4682,7 @@ chisq.test(tr_tbl)
 
 ```
 #Interpretation: 
-p=0.3391 > 0.05
+p=4.237e-09 < 0.05 -> significant: a direct connection can be made between clusters and classification as RBPs
 
 
 #label RBP in K-means 
