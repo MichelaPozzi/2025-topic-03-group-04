@@ -381,13 +381,11 @@ The ideal **Amount of clusters** is determined first with an **elbow plot**. The
 
 In the K-means plots **RNA binding proteins** are labeled in order to determine a biological correlation between RBPs and the resulting clusters.
 
-![RNAse Clusters](images/PCArnase.png)
+<img src="images/PCArnase.jpeg" width="50%"/> <img src="images/PCActrl.jpeg" width="50%"/>
 
 ### **Chi Squared test** {#chi-square}
 
 In order to check for a significant association between clusters and RBPs.\
-The data is turned into a table and the test executed.
-
-![Labeled RBPs](images/PCActrl.jpeg)
+The data is turned into a contingency table and the test executed.
 
 **Output** For both datasets Ctrl and RNAse we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
