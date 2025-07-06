@@ -268,8 +268,12 @@ flowchart LR
     components. Due to the distribution in the saccharose gradient that distance gives us an
     estimate of the change caused to the protein assembly after RNase treatment
 
+    **Output:** The bigger the shift distance the higher the probability for significant shift
+
 -   **Amplitude Changes:** The amplitude of the global maximum is determined in order to uncover a
     possible change in protein-complex assembly after RNase treatment
+
+    **Output:** A significant change between the amplitudes indicates a strong effect of RNase on the protein content.
 
 -   **Earth Mover Test (EMD):** The Earth Mover’s Distance (EMD) measures **how much "work" is
     needed to transform one distribution into another**. In this context, it reflects how much
