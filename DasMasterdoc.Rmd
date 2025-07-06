@@ -4570,6 +4570,11 @@ rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))
 ```
 
 ```{r}
+head(rnase)
+```
+
+
+```{r}
 #1. create table which sorts RBPs and non-RBPs into clusters
 r_tbl <- table(rnase_data$is_rbp, rnase_data$cluster)
 show(r_tbl)
@@ -4620,7 +4625,7 @@ str(Ctrl_data$is_rbp)
 
 
 ```{r}
-print(Ctrl_data)
+print(ctrl_data)
 ```
 
 
@@ -4636,53 +4641,12 @@ p=2.2e-16 < 0.05 -> significant: there is a connection between clusters found th
 
 
 
+
 ```{r}
 #1.table counts the amount of RBPs
 table(test_ctrl_data$is_rbp)
 str(test_ctrl_data$is_rbp)
 ```
-
-#RNAse
-```{r}
-#1.extract protein names
-test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
-#2.set TRUE to RBP and FALSE to non - RBP
-test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
-#3.turn cluster into a factor 
-test_rnase_data$cluster <- factor(test_rnase_data$cluster, levels = c(1, 2))  
-#keep cluster as order
-```
-
-
-```{r}
-#1. create table which sorts RBPs and non-RBPs into clusters
-tr_tbl <- table(test_rnase_data$is_rbp, test_rnase_data$cluster)
-show(tr_tbl)
-```
-
-```{r}
-#1.table counts the amount of RBPs
-table(test_rnase_data$is_rbp)
-str(test_ctrl_data$is_rbp)
-```
-
-
-```{r}
-#1.table counts the amount of RBPs
-table(test_rnase_data$is_rbp)
-str(test_rnase_data$is_rbp)
-
-```
-
-
-```{r}
-#1. apply chi sqquared to earlier created table
-chisq.test(tr_tbl)
-
-
-```
-#Interpretation: 
-p=4.237e-09 < 0.05 -> significant: a direct connection can be made between clusters and classification as RBPs
 
 
 #label RBP in K-means 

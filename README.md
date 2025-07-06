@@ -240,8 +240,8 @@ They can influence further observations, analysis, and interpretation\
     which machines)\
     → Log2 transformation makes the data less suitable for further analysis → Batch effect not
     overly significant\
-    → Removal still could overcorrect biological variances\
-    → Batch cleaned data only used for PCA
+    → Removal still could overcorrect biological variances
+   
 
 # **✅Shift Analysis** {#shift-analysis}
 
