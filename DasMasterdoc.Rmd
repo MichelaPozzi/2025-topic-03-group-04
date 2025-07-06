@@ -4267,7 +4267,7 @@ df_complete$RBP_shift_category <- ifelse(df_complete$probability >= optimal_thre
                                                 ifelse(df_complete$Shift_direction_ctrl_to_rnase == "right shift", "RBP_right", "RBP")),
                                          "Non-RBP")
 
-rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
+rbp_only <- df_complete[df_complete$RBP_shift_category %in% c("RBP_left", "RBP_right"), ]
 
 #2.extract RBPS and store in a separate vector
 rbp_proteins <- rbp_only$Protein
@@ -4939,13 +4939,12 @@ plot(first_two_components)
 
 
 
-###chi squqred
+###chi squared
 #isolate RBPs
 
 ```{r}
 #1.filter for RBPs
-rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
-print(df_complete$RBP_shift_category)
+rbp_only <- df_complete[df_complete$RBP_shift_category %in% c("RBP_left", "RBP_right"), ]
 #2.extract RBPS and store in a separate vector
 rbp_proteins <- rbp_only$Protein
 head(rbp_proteins)
