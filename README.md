@@ -111,7 +111,7 @@ The dataset contains all the concentrations detected with massspectrometry for 3
 contains 150 columns, made up from the 2 treatments with each three replicates per fraction. The
 initial measurement did not contain any NAs.
 
-![](images/clipboard-3241059977.png)
+![Beschreibung des Bildes](images/Screenshot-(4).jpeg)
 
 **2. Evaluate Reproducibility**
 
