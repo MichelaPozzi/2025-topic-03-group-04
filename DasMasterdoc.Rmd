@@ -247,7 +247,7 @@ sum(rnase_means_df[, 2]==0)
 
 ```
 ### normalisation factor
-Goal: determine normalisation matrix with normalisation factors from the mean of the two most similar replicates
+Goal: Calculate reference values per fraction by computing the mean of the two most similar replicates (out of three) to serve as normalization basis.
 ```{r}
 # create function to calculate the mean of the two most similar replicates (out of three replicates)
 mean_of_closest_pair <- function(x) {
@@ -293,6 +293,7 @@ print(closest_means_ctrl)
 print(closest_means_rnase)
 ```
 #### create normalisation matrix
+Goal: Create normalization factors for each replicate by dividing the reference mean by the replicate value.
 ```{r}
 n_fractions <- 25
 n_replicates <- 3
@@ -634,8 +635,6 @@ rows_with_zero_sum_rnase <- row_sums_rnase == 0
 # Check if any rows have a sum of zero
 any(rows_with_zero_sum_rnase)
 ```
-
-
 # Visualization of the distribution of any protein before and after rnase treatment
 ```{r}
 # choose a protein and extract data across the fractions
@@ -720,6 +719,110 @@ text(x = mean(c(fraktionen[max_ctrl_idx], fraktionen[max_rnase_idx])),
      y = arrow_y + 0.08 * arrow_y,
      labels = "Shift Distance", col = "black", cex = 0.8)
 
+```
+
+# visualize normalisation
+```{r}
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(scales)
+
+# define color
+ctrl_fill_color <- alpha("#A9C1A6", 0.3)
+ctrl_line_color <- alpha("#A9C1A6", 1)
+rnase_fill_color <- alpha("#c9a0dc", 0.3)
+rnase_line_color <- alpha("#c9a0dc", 1)
+
+# 1. Convert raw data to long format
+ctrl_long <- df_ctrl %>%
+  pivot_longer(cols = -Protein_Name, names_to = "Sample", values_to = "Intensity") %>%
+  separate(Sample, into = c("Fraction", "Condition", "Replicate"), sep = "_", extra = "drop") %>%
+  mutate(
+    Fraction = as.integer(sub("Fraction", "", Fraction)),
+    Condition = "Ctrl",
+    Status = "Raw",
+    Intensity = as.numeric(Intensity)
+  )
+
+rnase_long <- df_rnase %>%
+  pivot_longer(cols = -Protein_Name, names_to = "Sample", values_to = "Intensity") %>%
+  separate(Sample, into = c("Fraction", "Condition", "Replicate"), sep = "_", extra = "drop") %>%
+  mutate(
+    Fraction = as.integer(sub("Fraction", "", Fraction)),
+    Condition = "RNase",
+    Status = "Raw",
+    Intensity = as.numeric(Intensity)
+  )
+
+raw_all <- bind_rows(ctrl_long, rnase_long)
+
+# 2. Convert normalized data to long format
+norm_ctrl_long <- normalized_ctrl_df %>%
+  pivot_longer(cols = -Protein, names_to = "Fraction", values_to = "Intensity") %>%
+  mutate(
+    Fraction = as.integer(sub("Fraction", "", Fraction)),
+    Condition = "Ctrl",
+    Status = "Normalized",
+    Intensity = as.numeric(Intensity)
+  ) %>%
+  rename(Protein_Name = Protein)
+
+norm_rnase_long <- normalized_rnase_df %>%
+  pivot_longer(cols = -Protein, names_to = "Fraction", values_to = "Intensity") %>%
+  mutate(
+    Fraction = as.integer(sub("Fraction", "", Fraction)),
+    Condition = "RNase",
+    Status = "Normalized",
+    Intensity = as.numeric(Intensity)
+  ) %>%
+  rename(Protein_Name = Protein)
+
+norm_all <- bind_rows(norm_ctrl_long, norm_rnase_long)
+
+# 3. Combine both datasets
+combined <- bind_rows(raw_all, norm_all)
+
+# 4. Determine smallest positive value (for offset)
+min_positive <- combined %>%
+  filter(!is.na(Intensity), Intensity > 0) %>%
+  summarise(min_value = min(Intensity)) %>%
+  pull(min_value)
+
+# 5. Replace zero and NA values with the smallest positive value
+# Then calculate shifted log10 values (smallest value set to 0)
+combined_shifted <- combined %>%
+  mutate(
+    Intensity_fixed = ifelse(is.na(Intensity) | Intensity <= 0, min_positive, Intensity),
+    Intensity_shifted = log10(Intensity_fixed) - log10(min_positive)
+  )
+
+# 6. Filter only the first 10 proteins
+combined_10_shifted <- combined_shifted %>%
+  filter(Protein_Name %in% unique(Protein_Name)[1:10])
+
+# 7. Plot with shifted log10 scale
+ggplot(combined_10_shifted, aes(x = Fraction, y = Intensity_shifted, color = Status)) +
+  geom_point(alpha = 0.7) +
+  scale_color_manual(values = c(
+    "Raw" = ctrl_line_color,
+    "Normalized" = rnase_line_color
+  )) +
+  facet_grid(Condition ~ Protein_Name) +
+  labs(title = "Proportionally shifted log10 intensities (min value set to 0)",
+       x = "Fraction", y = "Shifted log10 Intensity") +
+  theme_minimal(base_size = 8) +
+  theme(
+    axis.text.x = element_text(size = 5, angle = 45, hjust = 1),     # Fraction numbers smaller & angled
+    axis.text.y = element_text(size = 6),                            # Y-axis text smaller
+    axis.title = element_text(size = 7),                            # Axis titles smaller
+    strip.text.x = element_text(size = 5, margin = margin(b = 3)),   # Protein names (x facets) smaller
+    strip.text.y = element_text(size = 6, margin = margin(r = 3)),   # y facets smaller
+    legend.text = element_text(size = 6),                           # Legend text smaller
+    legend.title = element_text(size = 7),                          # Legend title smaller
+    panel.spacing.x = unit(0.5, "lines"),                           # Less spacing between x facets
+    panel.spacing.y = unit(0.5, "lines")                            # Less spacing between y facets
+  )
 ```
 
 
