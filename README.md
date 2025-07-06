@@ -210,7 +210,9 @@ They can influence further observations, analysis, and interpretation\
 
     1.  **log2 - transformation:**\
         → stabilizes variance, improves interpretability, reduces outlier effects\
-    2.  **apply function**
+    2.  **apply function**  
+    
+    ![Before and after comparison of limma cleaned data](images/RNAse_ctrl_PCA.jpeg)
 
 2.  Identifying and deleting with **SVA**\
     → Surrogate Variable Analysis\
@@ -235,13 +237,14 @@ They can influence further observations, analysis, and interpretation\
 
         6.Visualizations
 
+    ![Before and after comparison of SVA cleaned data](images/RNAse_SVA_PCA.png)
+
 3.  **Interpretation and results:**\
     → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on
     which machines)\
     → Log2 transformation makes the data less suitable for further analysis → Batch effect not
     overly significant\
     → Removal still could overcorrect biological variances
-   
 
 # **✅Shift Analysis** {#shift-analysis}
 
@@ -268,12 +271,15 @@ flowchart LR
     components. Due to the distribution in the saccharose gradient that distance gives us an
     estimate of the change caused to the protein assembly after RNase treatment.
 
-    **Output:** The bigger the shift distance the higher the impact of RNase on the characteristics of the protein.
+    **Output:** The bigger the shift distance the higher the impact of RNase on the characteristics
+    of the protein.
 
 -   **Amplitude Changes:** The amplitude of the global maximum is determined in order to uncover a
-    possible change in the protein content given in the fraction, as well as protein-complex assembly after RNase treatment
+    possible change in the protein content given in the fraction, as well as protein-complex
+    assembly after RNase treatment
 
-    **Output:** A significant change between the amplitudes indicates a strong effect of RNase on the protein content per fraction.
+    **Output:** A significant change between the amplitudes indicates a strong effect of RNase on
+    the protein content per fraction.
 
 -   **Earth Mover Test (EMD):** The Earth Mover’s Distance (EMD) measures **how much "work" is
     needed to transform one distribution into another**. In this context, it reflects how much
