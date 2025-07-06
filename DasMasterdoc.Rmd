@@ -135,15 +135,15 @@ ctrl_cor_long <- pivot_longer(ctrl_correlations,
                                names_to = "comparison", 
                                values_to = "correlation")
 
-# Plot mit drei abgestuften Lilatönen
+# Plot 
 ggplot(ctrl_cor_long, aes(x = fraction, y = correlation, color = comparison)) +
   geom_point(size = 3) +
   scale_color_manual(values = c(
-    "ctrl1_vs_ctrl2" = "#c9a0dc",  # dunkles Lila (Purple)
-    "ctrl1_vs_ctrl3" = "#A9C1A6",  # Medium Orchid
-    "ctrl2_vs_ctrl3" = "#F5E1A4"   # Orchid
+    "ctrl1_vs_ctrl2" = "#c9a0dc", 
+    "ctrl1_vs_ctrl3" = "#A9C1A6",  
+    "ctrl2_vs_ctrl3" = "#F5E1A4"   
   )) +
-  ylim(0.4, 1) +  # <<<< Y-Achse begrenzen
+  ylim(0.4, 1) +  
   theme_minimal() +
   labs(title = "Spearman Correlation of Controls",
        y = "Spearman ρ",
@@ -191,13 +191,13 @@ rnase_cor_long <- pivot_longer(rnase_correlations,
                                 names_to = "comparison", 
                                 values_to = "correlation")
 
-# Heatmap-ähnlicher Plot mit abgestuften Lila-Tönen
+# Plot
 ggplot(rnase_cor_long, aes(x = fraction, y = correlation, color = comparison)) +
   geom_point(size = 3) +
   scale_color_manual(values = c(
-    "rnase1_vs_rnase2" = "#c9a0dc",  # dunkel-lila
-    "rnase1_vs_rnase3" = "#A9C1A6",  # mittel-lila
-    "rnase2_vs_rnase3" = "#F5E1A4"   # hell-lila
+    "rnase1_vs_rnase2" = "#c9a0dc",  
+    "rnase1_vs_rnase3" = "#A9C1A6",  
+    "rnase2_vs_rnase3" = "#F5E1A4"   
   )) +
   theme_minimal() +
   labs(title = "Spearman Correlation of RNase Replicates",
@@ -920,7 +920,7 @@ colnames(L_ctrl_expr_corrected) <- short_labels
 colnames(ctrl_expr_matrix_log) <- short_labels
 
 #1. create annotation for Heatmap
-annotation_col <- data.frame(SC_Batch = SC_batch)
+annotation_col <- data.frame(LC_Batch = LC_batch)
 rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
 
 #2. 
@@ -929,7 +929,7 @@ library(pheatmap)
 # heatmap before correction
 pheatmap(ctrl_expr_matrix_log,
          annotation_col = annotation_col,
-         annotation_colors = list(SC_Batch = SC_batch_colors),
+         annotation_colors = list(LC_Batch = LC_batch_colors),
          main = "Heatmap before limma batch correction, ctrl",
          fontsize_col=5)
 
@@ -938,7 +938,7 @@ pheatmap(ctrl_expr_matrix_log,
 # heatmap after correction
 pheatmap(L_ctrl_expr_corrected,
          annotation_col = annotation_col,
-         annotation_colors = list(SC_Batch = SC_batch_colors),
+         annotation_colors = list(LC_Batch = LC_batch_colors),
          main = "Heatmap after limma batch correction, ctrl ",
          fontsize_col=5)
 ```
@@ -952,7 +952,7 @@ before the correction there is no separation visible, after the correction there
 ```{r}
 
 #add column with protein names again 
-ctrl_expr_corrected_df <- data.frame(
+L_ctrl_expr_corrected_df <- data.frame(
   Protein = percent_ctrl_df[, 1],  
 L_ctrl_expr_corrected,               
   check.names = FALSE                  # Prevents renaming of columns
@@ -1141,7 +1141,7 @@ colnames(L_rnase_expr_corrected) <- short_labels
 colnames(rnase_expr_matrix_log) <- short_labels
 
 #1. create annotation for Heatmap
-annotation_col <- data.frame(SC_Batch = SC_batch)
+annotation_col <- data.frame(LC_Batch = LC_batch)
 rownames(annotation_col) <- colnames(ctrl_expr_matrix_log)
 
 #2. 
@@ -1150,7 +1150,7 @@ library(pheatmap)
 # heatmap before correction
 pheatmap(rnase_expr_matrix_log,
          annotation_col = annotation_col,
-         annotation_colors = list(SC_Batch = SC_batch_colors),
+         annotation_colors = list(LC_Batch = LC_batch_colors),
          main = "Heatmap before limma batch correction, RNAse",
          fontsize_col=5)
 
@@ -1159,7 +1159,7 @@ pheatmap(rnase_expr_matrix_log,
 # heatmap after correction
 pheatmap(L_rnase_expr_corrected,
          annotation_col = annotation_col,
-         annotation_colors = list(SC_Batch = SC_batch_colors),
+         annotation_colors = list(LC_Batch = LC_batch_colors),
          main = "Heatmap after limma batch correction, RNAse",
          fontsize_col=5)
 
@@ -1176,7 +1176,7 @@ no change visible
 #add column with protein names again 
 rnase_expr_corrected_df <- data.frame(
   Protein = percent_ctrl_df[, 1],  
-  rnase_expr_corrected,                
+  L_rnase_expr_corrected,                
   check.names = FALSE                 # Prevents renaming of columns
 )
 ```
@@ -1491,7 +1491,7 @@ R_mod_sv <- cbind(mod, sva_res_rnase$sv)
 
 # 7. Correct data with SV using linear regression 
 # lmFit and eBayes are tools from limma used to fit linear regression to expression data
-fit <- lmFit(rnase_expression_matrix, mod_sv)
+fit <- lmFit(rnase_expr_matrix, mod_sv)
 fit <- eBayes(fit)
 
 # extract residues: expressions data - modelled effects (fraction + replicate + SVs) 
@@ -1582,7 +1582,7 @@ after: no separation visible
 
 ```{r}
 
-# 1) PCA vorbereiten
+# 1) prepare PCA 
 SR_pca_before <- prcomp(t(rnase_expr_matrix), scale. = TRUE)
 SR_pca_after  <- prcomp(t(S_corrected_expr_rnase), scale. = TRUE)
 # Transposing the matrix is necessary because the observations and variables are swapped
@@ -1610,7 +1610,7 @@ plot(SR_pca_after$x[, 1:2],
      xlab = "PC1", ylab = "PC2")
 legend("topright", legend = levels(SC_batch), col = colors, pch = 19,cex=0.4)
 
-# 5) Layout zurücksetzen
+# 5) reset layout to single plot default
 par(mfrow = c(1, 1))
 
 ```
@@ -1728,7 +1728,7 @@ find_peaks_diff <- function(x, threshold = 2) {
   
   dx <- diff(x)
   
-  # Interne Punkte prüfen: vorher steigend, danach fallend
+  # Ensure maximum instead of minimum
   for (i in 2:(n-1)) {
     if (x[i] >= threshold && dx[i-1] > 0 && dx[i] < 0) {
       peaks[i] <- TRUE
@@ -2698,6 +2698,11 @@ output:
 
 ## visulaization of the tests' influence on the final probability score
 ```{r}
+logistic_model <- glm(label ~ EMD + Shift_Distance_ctrl_to_rnase + amplitude_changes + Center_of_Mass + Wilcoxon_statistic_Max,
+                      data = df_all,
+                      family = "binomial")
+
+
 # Check if the model is a logistic regression (binomial family)
 if (inherits(logistic_model, "glm") && family(logistic_model)$family == "binomial") {
   
@@ -2906,6 +2911,113 @@ print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_thr
 # visualisation of test-model results 
 ## composition of found RBPS
 ```{r}
+# DataFrames mit Proteinnamen
+total_proteins <- data.frame(Protein = test_scores_combined_df$Protein)
+num_rbp <- data.frame(Protein = df_positive_control$Protein)
+
+# Anzahl berechnen
+total_count <- nrow(total_proteins)
+rbp_count <- nrow(num_rbp)
+
+# Farben
+colors1 <- c("#F5E1A4","#c9a0dc")
+
+# Matrix erstellen für Barplot
+counts_matrix1 <- matrix(c(
+  total_count - rbp_count,  
+  rbp_count
+), nrow = 2, byrow = TRUE)
+
+colnames(counts_matrix1) <- c("All Proteins")
+rownames(counts_matrix1) <- c("Non-shifted", "Shifted")
+
+# Barplot
+barplot(counts_matrix1,
+        beside = FALSE,
+        col = colors1,
+        border = "white",
+        main = "All Proteins vs. Significant Shifts",
+        ylab = "Number of Proteins",
+        las = 1)
+
+# Legende
+legend("topright",
+       legend = rownames(counts_matrix1),
+       fill = colors1,
+       bty = "n")
+
+
+# Define colors for next plot (reversed order)
+colors2 <- c("#c9a0dc", "#F5E1A4")
+
+# 2. Plot: Direction of Protein Shifts (Left vs. Right)
+
+# define number of proteins
+num_right_shift <- right_shift_count
+num_left_shift <- num_significant_shifted - right_shift_count
+
+counts_matrix2 <- matrix(c(
+  num_right_shift,  # Number of proteins shifted to the right
+  num_left_shift    # Number of proteins shifted to the left
+), nrow = 2, byrow = TRUE)
+
+colnames(counts_matrix2) <- c("Shifted Proteins")
+rownames(counts_matrix2) <- c("Right Shift", "Left Shift")
+
+barplot(counts_matrix2,
+        beside = FALSE,
+        col = colors2,
+        border = "white",
+        main = "Direction of Protein Shifts",
+        ylab = "Number of Proteins",
+        las = 1,
+        ylim = c(0, num_significant_shifted))
+
+legend("topright",
+       legend = rownames(counts_matrix2),
+       fill = colors2,
+       bty = "n")
+
+# Colors: True Positives purple, False Positives beige, Newly Identified RBPs gray-green
+colors3 <- c("Beige" = "#F5E1A4", "True Positives" = "#c9a0dc", "New RBPs" = "#A9C1A6")
+
+# Number of each group
+false_positives_num <- sum(predicted_negatives == "TRUE")  # Number of False Positives
+true_positives_num <- sum(predicted_non_negative == "TRUE") # Number of True Positives
+
+# Total number of predicted proteins (example)
+total_predicted_proteins <- num_significant_shifted  # Or another appropriate number
+
+# Number of newly identified RBPs
+new_rbps_num <- total_predicted_proteins - (false_positives_num + true_positives_num)
+if (new_rbps_num < 0) new_rbps_num <- 0  # Safety check
+
+# Matrix for barplot: order = False Positives, True Positives, New RBPs
+counts_matrix3 <- matrix(c(false_positives_num, true_positives_num, new_rbps_num),
+                         nrow = 3, byrow = TRUE)
+
+colnames(counts_matrix3) <- c("Prediction Quality")
+rownames(counts_matrix3) <- c("False Positives", "True Positives", "New RBPs")
+
+# Create barplot
+barplot(counts_matrix3,
+        beside = FALSE,
+        col = colors3,
+        border = "white",
+        main = "Prediction Quality with Newly Identified RBPs",
+        ylab = "Number of Proteins",
+        las = 1,
+        ylim = c(0, total_predicted_proteins))
+
+# Add legend
+legend("topright",
+       legend = rownames(counts_matrix3),
+       fill = colors3,
+       bty = "n")
+```
+
+
+```{r}
 colors1 <- c("#F5E1A4","#c9a0dc")  # Segment 1: light beige, Segment 2: light purple
 
 # 1. Plot: Total Proteins vs. Significantly Shifted Proteins
@@ -2998,6 +3110,7 @@ legend("topright",
        fill = colors3,
        bty = "n")
 ```
+
 
 ## show result for any desired protein
 Enter a protein name to visualize its distribution across conditions (Control and RNase).
@@ -3222,9 +3335,9 @@ plot(ctrl_spline$x, ctrl_spline$y,
      col = "lightblue",
      lwd = 2,
      ylim = range(c(ctrl_y, rnase_y)),
-     xlab = "Fraktion",
-     ylab = "Intensität",
-     main = paste("Smoothed Fraktionsprofil für", protein_of_interest),
+     xlab = "Fraction",
+     ylab = "Intensity",
+     main = paste("Smoothed Fraction distribution for", protein_of_interest),
      cex.lab = 1.3,       # bigger axis title
      cex.main = 1.5,      # bigger main title
      cex.axis = 1.1,      # bigger axis scale
@@ -3274,7 +3387,7 @@ fractions <- 1:25
 ctrl_y <- as.numeric(ctrl_profile)
 rnase_y <- as.numeric(rnase_profile)
 
-# smooth over the lines with spline() -> muss das auch wieder
+# smooth over the lines with spline() 
 ctrl_spline <- spline(fractions, ctrl_y, n = 200)
 rnase_spline <- spline(fractions, rnase_y, n = 200)
 
@@ -3286,13 +3399,13 @@ plot(ctrl_spline$x, ctrl_spline$y,
      col = "lightblue",
      lwd = 2,
      ylim = range(c(ctrl_y, rnase_y)),
-     xlab = "Fraktion",
-     ylab = "Intensität",
-     main = paste("Smoothed Fraktionsprofil für", protein_of_interest),
-     cex.lab = 1.3,       # größere Achsentitel
-     cex.main = 1.5,      # größerer Haupttitel
-     cex.axis = 1.1,      # größere Achsenbeschriftungen
-     bty = "n"            # kein Rahmen um den Plot
+     xlab = "Fraction",
+     ylab = "Intensity",
+     main = paste("Smoothed Fraction distribution for", protein_of_interest),
+     cex.lab = 1.3,       
+     cex.main = 1.5,      
+     cex.axis = 1.1,     
+     bty = "n"          
 )
 
 # Add smooth RNase-line
@@ -3341,8 +3454,8 @@ plot(NA,
      ylim = range(all_values, na.rm = TRUE),
      xaxt = "n",
      xlab = "",
-     ylab = "Intensität",
-     main = "Symmetrische Violinplots")
+     ylab = "Intensity",
+     main = "Symmetric Violinplots")
 
 axis(1, at = x_positions, labels = proteins, las = 2)
 
@@ -3467,7 +3580,7 @@ ctrl_pca$sdev
 -> get variance by squaring the standard deviation
 -> check how much does the data spread out in square units 
 ```{r}
-ctrl_pca_var <- rnase_pca$sdev^2 # eigenvalues 
+ctrl_pca_var <- ctrl_pca$sdev^2 # eigenvalues 
 ctrl_pca_var
 
 ```
@@ -3659,8 +3772,6 @@ ggplot(ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
   theme_minimal() +
   scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
-
-
 
 #plot PC1 and PC2 as control 
 ```{r}
@@ -3857,14 +3968,14 @@ rnase_km_best <- kmeans(rnase_sil_df, centers = best_k, nstart = 25)
 rnase_best_sil <- silhouette(rnase_km_best$cluster, dist(rnase_sil_df))
 
 # 7. Visualize silhouette plot
+palette_colors <- c("#c9a0dc", "#A9C1A6", "#F5E1A4")[1:best_k]
+
 fviz_silhouette(
   rnase_best_sil,
-  palette = c("#c9a0dc", "#A9C1A6"),
+  palette = palette_colors,
   ggtheme = theme_classic(),
   main = paste("RNAse silhouette plot for k =", best_k)
 )
-
-
 
 ```
 #Interpretation
@@ -3914,8 +4025,6 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
   scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
 
-
-
 #plot PC1 and PC2 as control
 ```{r}
 first_two_components <- rnase_data[,1:2]
@@ -3927,7 +4036,7 @@ plot(first_two_components)
 ```{r}
 #create dataframe with right shift proteins only
 # convert matrices to dataframes
-corrected_ctrl_df <- as.data.frame(corrected_expr_ctrl, stringsAsFactors = FALSE)
+corrected_ctrl_df <- as.data.frame(corrected_expr_ctrl_df, stringsAsFactors = FALSE)
 corrected_rnase_df <- as.data.frame(corrected_expr_rnase, stringsAsFactors = FALSE)
 
 # add column with protein names to newly created dataframes
@@ -4058,11 +4167,11 @@ head(rbp_proteins)
 #K-means ctrl 
 ```{r}
 #1. convert PCA ctrl data into dataframe 
-Ctrl_data <- as.data.frame(ctrl_pca$x)
+Ctrl_data <- as.data.frame(Ctrl_pca$x)
 Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
 #2. isolate protein names
-Ctrl_data$protein_name <- c(S_corrected_expr_ctrl_df$Protein)
+Ctrl_data$protein_name <- rownames(Ctrl_data)
 #check if rbp present 
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
@@ -4089,6 +4198,10 @@ ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
 
 ```
 
+```{r}
+head(rnase_pca$x)
+```
+
 
 #K-means rnase 
 ```{r}
@@ -4097,7 +4210,7 @@ rnase_data <- as.data.frame(rnase_pca$x)
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
 #2. isolate protein names
-rnase_data$protein_name <- c(S_corrected_expr_rnase_df$Protein)
+rnase_data$protein_name <- rownames(Ctrl_data)
 #check if rbp present 
 rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
 
@@ -4132,12 +4245,11 @@ Goal: Determine if cluster are associated with RNA binding proteins
 #rnase
 
 ```{r}
-#1. Add protein column
-rnase_data$protein_name <-  c(S_corrected_expr_rnase_df$Protein)
+rnase_data$protein_name <- rownames(Ctrl_data)
 
-#2.set TRUE to RBP and FALSE to non - RBP
+#1.set TRUE to RBP and FALSE to non - RBP
 rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
-#3.turn cluster into a factor 
+#2.turn cluster into a factor 
 rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  
 #keep cluster as order
 ```
@@ -4170,11 +4282,9 @@ p=0.3391 > 0.05 ->non significant
 
 ##ctrl
 ```{r}
-#1. Add protein column
-Ctrl_data$protein_name <-  c(S_corrected_expr_ctrl_df$Protein)
-#2.set TRUE to RBP and FALSE to non - RBP
+#1.set TRUE to RBP and FALSE to non - RBP
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
-#3.turn cluster into a factor 
+#2.turn cluster into a factor 
 Ctrl_data$cluster <- factor(Ctrl_data$cluster, levels = c(1, 2))  
 #keep cluster as order
 ```
@@ -5047,7 +5157,7 @@ head(rbp_proteins)
 #ctrl
 ```{r}
 #1.extract protein names
-test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
+test_ctrl_data$protein_name <- rownames(Ctrl_data)
 #2.set TRUE to RBP and FALSE to non - RBP
 test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
 #3.turn cluster into a factor 
@@ -5080,7 +5190,7 @@ p=0.05255 > 0.05
 #RNAse
 ```{r}
 #1.extract protein names
-test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
+test_rnase_data$protein_name <- rownames(Ctrl_data)
 #2.set TRUE to RBP and FALSE to non - RBP
 test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 #3.turn cluster into a factor 
@@ -5103,9 +5213,13 @@ str(test_ctrl_data$is_rbp)
 
 
 ```{r}
-#1.table counts the amount of RBPs
-table(test_rnase_data$is_rbp)
-str(test_rnase_data$is_rbp)
+print(Ctrl_data)
+```
+
+```{r}
+colnames(Ctrl_data)
+colnames(test_ctrl_data)
+
 ```
 
 
@@ -5127,7 +5241,7 @@ test_rnase_data <- as.data.frame(test_rnase_pca$x)
 test_rnase_data$cluster <- as.factor(TR_kmeans_result$cluster)
 
 #2. isolate protein names
-test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
+test_rnase_data$protein_name <- rownames(Ctrl_data)
 #check if rbp present 
 test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 
@@ -5162,7 +5276,7 @@ test_ctrl_data <- as.data.frame(test_ctrl_pca$x)
 test_ctrl_data$cluster <- as.factor(TC_kmeans_result$cluster)
 
 #2. isolate protein names
-test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
+test_ctrl_data$protein_name <- rownames(Ctrl_data)
 #check if rbp present 
 test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
 
