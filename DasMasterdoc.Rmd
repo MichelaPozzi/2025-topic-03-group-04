@@ -3660,6 +3660,8 @@ ggplot(ctrl_data, aes(x = PC1, y = PC2, color = cluster)) +
   scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
 
+
+
 #plot PC1 and PC2 as control 
 ```{r}
 first_two_components <- ctrl_data[,1:2]
@@ -3912,6 +3914,8 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster)) +
   scale_color_manual(values = c("#c9a0dc","#A9C1A6"))
 ```
 
+
+
 #plot PC1 and PC2 as control
 ```{r}
 first_two_components <- rnase_data[,1:2]
@@ -4054,11 +4058,11 @@ head(rbp_proteins)
 #K-means ctrl 
 ```{r}
 #1. convert PCA ctrl data into dataframe 
-Ctrl_data <- as.data.frame(Ctrl_pca$x)
+Ctrl_data <- as.data.frame(ctrl_pca$x)
 Ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
 #2. isolate protein names
-Ctrl_data$protein_name <- rownames(Ctrl_data)
+Ctrl_data$protein_name <- c(S_corrected_expr_ctrl_df$Protein)
 #check if rbp present 
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
 
@@ -4085,10 +4089,6 @@ ggplot(Ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
 
 ```
 
-```{r}
-head(rnase_pca$x)
-```
-
 
 #K-means rnase 
 ```{r}
@@ -4097,7 +4097,7 @@ rnase_data <- as.data.frame(rnase_pca$x)
 rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
 #2. isolate protein names
-rnase_data$protein_name <- rownames(Ctrl_data)
+rnase_data$protein_name <- c(S_corrected_expr_rnase_df$Protein)
 #check if rbp present 
 rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
 
@@ -4132,11 +4132,12 @@ Goal: Determine if cluster are associated with RNA binding proteins
 #rnase
 
 ```{r}
-rnase_data$protein_name <- rownames(Ctrl_data)
+#1. Add protein column
+rnase_data$protein_name <-  c(S_corrected_expr_rnase_df$Protein)
 
-#1.set TRUE to RBP and FALSE to non - RBP
+#2.set TRUE to RBP and FALSE to non - RBP
 rnase_data$is_rbp <- rnase_data$protein_name %in% rbp_proteins
-#2.turn cluster into a factor 
+#3.turn cluster into a factor 
 rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))  
 #keep cluster as order
 ```
@@ -4169,9 +4170,11 @@ p=0.3391 > 0.05 ->non significant
 
 ##ctrl
 ```{r}
-#1.set TRUE to RBP and FALSE to non - RBP
+#1. Add protein column
+Ctrl_data$protein_name <-  c(S_corrected_expr_ctrl_df$Protein)
+#2.set TRUE to RBP and FALSE to non - RBP
 Ctrl_data$is_rbp <- Ctrl_data$protein_name %in% rbp_proteins
-#2.turn cluster into a factor 
+#3.turn cluster into a factor 
 Ctrl_data$cluster <- factor(Ctrl_data$cluster, levels = c(1, 2))  
 #keep cluster as order
 ```
@@ -5044,7 +5047,7 @@ head(rbp_proteins)
 #ctrl
 ```{r}
 #1.extract protein names
-test_ctrl_data$protein_name <- rownames(Ctrl_data)
+test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
 #2.set TRUE to RBP and FALSE to non - RBP
 test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
 #3.turn cluster into a factor 
@@ -5077,7 +5080,7 @@ p=0.05255 > 0.05
 #RNAse
 ```{r}
 #1.extract protein names
-test_rnase_data$protein_name <- rownames(Ctrl_data)
+test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
 #2.set TRUE to RBP and FALSE to non - RBP
 test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 #3.turn cluster into a factor 
@@ -5100,13 +5103,9 @@ str(test_ctrl_data$is_rbp)
 
 
 ```{r}
-print(Ctrl_data)
-```
-
-```{r}
-colnames(Ctrl_data)
-colnames(test_ctrl_data)
-
+#1.table counts the amount of RBPs
+table(test_rnase_data$is_rbp)
+str(test_rnase_data$is_rbp)
 ```
 
 
@@ -5128,7 +5127,7 @@ test_rnase_data <- as.data.frame(test_rnase_pca$x)
 test_rnase_data$cluster <- as.factor(TR_kmeans_result$cluster)
 
 #2. isolate protein names
-test_rnase_data$protein_name <- rownames(Ctrl_data)
+test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
 #check if rbp present 
 test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 
@@ -5163,7 +5162,7 @@ test_ctrl_data <- as.data.frame(test_ctrl_pca$x)
 test_ctrl_data$cluster <- as.factor(TC_kmeans_result$cluster)
 
 #2. isolate protein names
-test_ctrl_data$protein_name <- rownames(Ctrl_data)
+test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
 #check if rbp present 
 test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
 
