@@ -304,7 +304,17 @@ flowchart LR
     distribution functions (ECDFs) of the two conditions. **Higher EMD indicates greater differences
     in distribution shape.**
 
--   **Center Of Mass Test (COM):** The Center of Mass Test calculates the intensity-weighted average
+-   **Center Of Mass Test (COM):**
+    Center of Mass Test (COM):
+    COM calculates the intensity-weighted average position of a protein’s distribution.
+
+    Delta-COM compares this position between two treatments Control and RNase.
+
+    **Output:** 
+    A larger absolute Delta-COM indicates a stronger shift, with the sign showing shift direction (positive = right shift).
+
+
+The Center of Mass Test calculates the intensity-weighted average
     of fraction numbers,which represent the **"center" of a protein's distribution** (=COM).
 
     The COM is calculated and compared between the two treatments (=Delta-COM).
@@ -320,9 +330,7 @@ flowchart LR
 -   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a
     non-parametric statistical method used to compare two related samples. In this context, it is
     used to assess whether the global maximum of the same protein differs between two treatments
-    (Control an RNase), using matched replicates. The test evaluates whether the distribution of
-    paired differences is symmetric around zero, indicating whether one treatment tends to produce
-    consistently higher or lower values than the other — without assuming a normal distribution.
+    (Control an RNase), using matched replicates.
 
     **Output:**\
     **The p-value indicates how likely the observed shift of the global maxima occurred by chance.**
