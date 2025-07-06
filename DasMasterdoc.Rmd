@@ -3047,6 +3047,20 @@ print(right_shift_proteins_df)
 print(paste("Anzahl der 'right shift'-Proteine mit Probability ≥", optimal_threshold, ":", right_shift_count))
 ```
 
+### filter all newly identifed proteins
+```{r}
+novel_shifted_proteins <- test_scores_combined_df[
+  test_scores_combined_df$probability >= optimal_threshold &
+  !(test_scores_combined_df$Protein %in% df_positive_control$Protein) &
+  !(test_scores_combined_df$Protein %in% df_negative_control$Protein),
+]
+
+cat("number of newly identified 'Shifted' Proteins:", nrow(novel_shifted_proteins), "\n")
+head(novel_shifted_proteins$Protein)
+
+```
+
+### filter all newly identified right shift proteins
 ```{r}
 # Right shift proteins that are in neither control group
 novel_right_shift_proteins <- test_scores_combined_df[
@@ -3056,7 +3070,7 @@ novel_right_shift_proteins <- test_scores_combined_df[
   !(test_scores_combined_df$Protein %in% df_negative_control$Protein),
 ]
 
-cat("Anzahl neu identifizierter 'Right Shift' Proteine:", nrow(novel_right_shift_proteins), "\n")
+cat("number of newly identified 'Right Shift' Proteins:", nrow(novel_right_shift_proteins), "\n")
 head(novel_right_shift_proteins$Protein)
 
  
@@ -3171,6 +3185,7 @@ legend("topright",
        bty = "n")
 ```
 
+
 ### visualization of shift direction
 ```{r}
 # Join dataframes including global maxima and calculate their differences
@@ -3235,6 +3250,8 @@ legend("center",
        text.col = "black",
        cex = 0.7       
 )
+
+print(highlight)
 
 ```
 
