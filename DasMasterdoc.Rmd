@@ -3300,7 +3300,318 @@ legend("topright",
 ```
 Output: visualization of a negative control and positive control protein, as well as one newly identified as shifting
 
-# 4. dimension reduction
+# 4. Detection of features predictive of RNA-binding
+# linear regression
+Goal: Identify experimentally accessible predictors of RNA-binding
+-> establish relation between predictors and RNA-binding behavior
+
+### connect information on protein features to proteins from dataset
+### load data with protein features 
+-> dataframe from RBP2GO is loaded that contains information on pI, Mass in kDa and length in AA as possible predictors for RNA-binding
+```{r}
+### read Table_RBPs
+
+# read table
+raw <- readLines("data/Table_HS_RBP.txt")
+# extract everything below row 7
+raw_data <- raw[7:length(raw)]
+
+# clean the table
+clean_data <- gsub('\\"', '', raw_data)
+writeLines(clean_data, "cleaned_table.txt")
+Table_HS_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_RBP)
+
+```
+
+```{r}
+# read Table_Non_RBP
+
+
+# whole table
+raw <- readLines("data/Table_HS_Non_RBP.txt")
+# extract everything below row 7
+raw_data <- raw[7:length(raw)]
+
+# clean the table 
+clean_data <- gsub('\\"', '', raw_data)
+writeLines(clean_data, "cleaned_table.txt")
+Table_HS_Non_RBP = read.delim("cleaned_table.txt",
+                    sep = "\t",
+                    header = TRUE,
+                    stringsAsFactors = FALSE,
+                    check.names = FALSE)
+head(Table_HS_Non_RBP)
+
+```
+
+```{r}
+# check if all our proteins are included in the tables 
+all_proteins <- test_scores_combined_df$Protein
+proteins_rbp <- Table_HS_RBP$Entry_Name
+proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
+
+is_in_rbp_or_nonrbp <- test_scores_combined_df %in% proteins_rbp | test_scores_combined_df %in% proteins_non_rbp
+
+all(is_in_rbp_or_nonrbp)
+
+```
+
+
+```{r}
+# Select only relevant columns from the RBP and Non-RBP tables
+rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
+non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
+
+# Combine both subsets into a single table
+Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
+
+# # 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
+merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
+                   by.x = "Protein", by.y = "Entry_Name",
+                   all.x = TRUE)  # keep all entries from test_scores_combined_df
+#depict result
+head(merged_df)
+dim(merged_df)
+```
+
+## determinantion of suitable predictors for multiple regression
+- Independent variables should exhibit minimal correlation to avoid multicollinearity
+-> correlation between molecular weight, sequence length, and isoelectric point was examined
+```{r}
+# select relevant columns
+df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
+# which parameters can be used in multiple regression: correlation between independent variables should be as low as possible
+
+cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
+cor(df_complete$Mass_kDa, df_complete$Length_AA, method = "pearson")
+cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
+
+```
+output:
+- there is no strong correlation between pI and mass nor between pI and length
+- a strong correlation was observed between molecular weight and sequence length
+-> since molecular weight is more readily accessible experimentally than sequence length, it was used as a predictor in the multiple regression model along with the isoelectric point (pI)
+
+
+## multiple regression
+goal: assess whether isoelectric point (pI) and molecular mass are reliable predictors of RNA-binding probability
+```{r}
+# multiple regression: probability ~ pI + Mass_kDa
+model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
+
+summary(model)
+
+```
+output:
+- both the isoelectric point (pI) and molecular weight (Mass_kDa) are significantly associated with the target variable (p < 0.001)
+- pI has the stronger effect (t = 20.70), followed by molecular weight (t = 3.38) 
+- After accounting for mass, proteins with higher pI tend to have a higher probability of RNA-binding, and similarly, after accounting for pI, higher mass is associated with higher probability
+- the model explains approximately 10.8% of the variance (adjusted R² = 0.108)
+- model with two predictors is significantly better than null model
+
+### visualization of multiple regression
+- hyperplane depicts relation between probability and predictors according to the multiple regression model
+```{r}
+
+# visualization of linear regression using hyperplanes
+
+install.packages("scatterplot3d") 
+library(scatterplot3d)
+
+
+depth <- df_complete$probability
+
+# colorscheme
+farben <- colorRampPalette(c("#b19cd9", "#7b59b9", "#4b0082"))(100)
+
+color_index <- cut(depth, breaks = 100, labels = FALSE)
+point_colors <- farben[color_index]
+
+s3d <- scatterplot3d(df_complete$pI, df_complete$Mass_kDa, df_complete$probability,
+                     xlab = "pI", ylab = "Masse (kDa)", zlab = "Probability",
+                     pch = 16, color = point_colors,
+                     highlight.3d = FALSE,
+                     type = "p", angle = 55)
+
+s3d$plane3d(model, col = "#4b0082")
+
+
+
+# Koordinaten der Regressionsfläche berechnen
+plane <- predict(model, 
+                 newdata = data.frame(pI = df_complete$pI, 
+                                      Mass_kDa = df_complete$Mass_kDa))
+
+# Fläche einzeichnen
+s3d$plane3d(model)
+```
+output:
+- The closer the points lie to the plane, the better the model fits the observed data
+- Large distances between the points and the plane indicate that the model explains only a small portion of the variance
+-> depicts that only approximately 11% of variance is explained by the model
+
+### visualization of multiple regression
+interactive hyperplane displays the same relatins as the chunk above but offers a better spacial unterstanding
+```{r}
+# create interactive hyperplane 
+
+
+install.packages("plotly")
+library(plotly)
+
+# new classification
+df_complete$RBP_shift_category <- ifelse(df_complete$probability >= optimal_threshold,
+                                         ifelse(df_complete$Shift_direction_ctrl_to_rnase == "left shift", "RBP_left",
+                                                ifelse(df_complete$Shift_direction_ctrl_to_rnase == "right shift", "RBP_right", "RBP")),
+                                         "Non-RBP")
+
+
+# grid for regressionplane
+pI_seq <- seq(min(df_complete$pI), max(df_complete$pI), length.out = 30)
+Mass_seq <- seq(min(df_complete$Mass_kDa), max(df_complete$Mass_kDa), length.out = 30)
+grid <- expand.grid(pI = pI_seq, Mass_kDa = Mass_seq)
+grid$predicted <- predict(model, newdata = grid)
+
+# determine colors
+farben <- list("RBP_left" = "#c9a0dc",     # hell-lila
+               "RBP_right" = "#7a42a6",    # dunkel-lila
+               "RBP" = "purple",
+               "Non-RBP" = "lightgray")
+
+# Plotly Plot 
+fig <- plot_ly()
+
+# RBP_left
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "RBP_left"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["RBP_left"]], size = 4),
+              name = "RBP (left shift)")
+
+# RBP_right
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "RBP_right"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["RBP_right"]], size = 4),
+              name = "RBP (right shift)")
+
+# RBP without Shift-Direction 
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "RBP"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["RBP"]], size = 4),
+              name = "RBP (no shift info)")
+
+# Non-RBP
+fig <- fig %>%
+  add_markers(data = subset(df_complete, RBP_shift_category == "Non-RBP"),
+              x = ~pI, y = ~Mass_kDa, z = ~probability,
+              marker = list(color = farben[["Non-RBP"]], size = 4),
+              name = "Non-RBP")
+
+# Regressionplane
+fig <- fig %>%
+  add_surface(x = ~pI_seq,
+              y = ~Mass_seq,
+              z = matrix(grid$predicted, nrow = 30),
+              opacity = 0.5,
+              colorscale = "Purples",
+              showscale = FALSE,
+              name = "Regression Surface")
+
+# Layout
+fig <- fig %>%
+  layout(scene = list(
+    xaxis = list(title = "pI"),
+    yaxis = list(title = "Mass (kDa)", tick0 = 0, dtick = 100, range = c(0, 1000)),
+    zaxis = list(title = "Probability")
+  ),
+  legend = list(title = list(text = "<b>Protein Classification</b>")))
+
+fig
+
+
+```
+## check individual relation between predictors and probability
+### determine whether there is a signifcant relation between a higher pI and an increased probability for RNA-binding
+- using a t-test the pIs of RBPs and Non-RBPs are compared
+```{r}
+
+#hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
+
+# Group proteins based on optimal threshold:
+df_complete$RBP_group <- ifelse(df_complete$probability > optimal_threshold,
+                               "RBP", "Non-RBP")
+
+# Optional: check mean pI values per group to confirm
+aggregate(pI ~ RBP_group, data = df_complete, mean)
+
+# Perform one-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
+# as big sample sizes are used, it was assumed that the central limit theorem applies (meaning the data follows a normal distribution)
+t_test_result <- t.test(
+  df_complete$pI[df_complete$RBP_group == "RBP"],
+  df_complete$pI[df_complete$RBP_group == "Non-RBP"],
+  alternative = "greater"
+)
+
+print(t_test_result)
+
+```
+output:
+- there is a signifcant difference between the pIs of RBPs and Non-RBPs
+-> RBPs tend to have a higher pI
+
+### visualization of relation between pI and probability
+```{r}
+
+
+# create boxplot
+boxplot(pI ~ RBP_group,
+        data = df_complete,
+        col = c("#A9C1A6", "#c9a0dc"),
+        main = "compare pI\nbetween RBP and Non-RBP",
+        xlab = "group",
+        ylab = "isoelectric point (pI)")
+
+# calculate mean
+mean_rbp <- mean(df_complete$pI[df_complete$RBP_group == "RBP"])
+mean_nonrbp <- mean(df_complete$pI[df_complete$RBP_group == "Non-RBP"])
+
+print(mean_rbp)
+print(mean_nonrbp)
+
+# depict mean in plot
+points(c(1, 2), c(mean_nonrbp, mean_rbp), pch = 19, col = "coral")
+
+# Oadd legend
+legend("topright", legend = c("Mean"), col = "coral", pch = 19)
+
+```
+### determine whether there is a signifcant relation between mass and the probability for RNA-binding
+- using a t-test the mass of RBPs and Non-RBPs are compared
+```{r}
+#check whether mass differs significantly between RBPs and Non-RBPs
+
+# Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
+t_test_result <- t.test(
+  df_complete$Mass_kDa[df_complete$RBP_group == "RBP"],
+  df_complete$Mass_kDa[df_complete$RBP_group == "Non-RBP"],
+)
+
+print(t_test_result)
+```
+output:
+- there is no significant relation between mass and probability
+-> the signficant relation only exists after accounting for pI in the context of the multiple regression model
+
+
+
+# 5. dimension reduction
 
 ### PCA
 Goal: Reduce dimension and further visualize data in clusters with only the most important structures. Batch cleaned data is used in order to ensure no technical variation. 
@@ -3927,65 +4238,6 @@ ggplot(ctrl_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
 ##label RNA binding proteins in K-means
 
 #isolate rbp 
-### load data with protein features 
--> dataframe from RBP2GO is loaded that contains information on pI, Mass in kDa and length in AA as possible predictors for RNA-binding
-```{r}
-### read Table_RBPs
-
-# read table
-raw <- readLines("data/Table_HS_RBP.txt")
-# extract everything below row 7
-raw_data <- raw[7:length(raw)]
-
-# clean the table
-clean_data <- gsub('\\"', '', raw_data)
-writeLines(clean_data, "cleaned_table.txt")
-Table_HS_RBP = read.delim("cleaned_table.txt",
-                    sep = "\t",
-                    header = TRUE,
-                    stringsAsFactors = FALSE,
-                    check.names = FALSE)
-head(Table_HS_RBP)
-
-```
-
-```{r}
-# read Table_Non_RBP
-
-
-# whole table
-raw <- readLines("data/Table_HS_Non_RBP.txt")
-# extract everything below row 7
-raw_data <- raw[7:length(raw)]
-
-# clean the table 
-clean_data <- gsub('\\"', '', raw_data)
-writeLines(clean_data, "cleaned_table.txt")
-Table_HS_Non_RBP = read.delim("cleaned_table.txt",
-                    sep = "\t",
-                    header = TRUE,
-                    stringsAsFactors = FALSE,
-                    check.names = FALSE)
-head(Table_HS_Non_RBP)
-
-```
-
-```{r}
-# Select only relevant columns from the RBP and Non-RBP tables
-rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
-non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
-
-# Combine both subsets into a single table
-Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
-
-# # 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
-merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
-                   by.x = "Protein", by.y = "Entry_Name",
-                   all.x = TRUE)  # keep all entries from test_scores_combined_df
-#depict result
-head(merged_df)
-dim(merged_df)
-```
 
 ```{r}
 # Select only relevant columns from the RBP and Non-RBP tables
@@ -4174,275 +4426,6 @@ chisq.test(c_tbl)
 ```
 #Interpretation'
 p=0.05255 > 0.05
-
-
-# 5. Detection of features predictive of RNA-binding
-# linear regression
-Goal: Identify experimentally accessible predictors of RNA-binding
--> establish relation between predictors and RNA-binding behavior
-
-### connect information on protein features to proteins from dataset
-
-```{r}
-# check if all our proteins are included in the tables 
-all_proteins <- test_scores_combined_df$Protein
-proteins_rbp <- Table_HS_RBP$Entry_Name
-proteins_non_rbp <- Table_HS_Non_RBP$Entry_Name
-
-is_in_rbp_or_nonrbp <- test_scores_combined_df %in% proteins_rbp | test_scores_combined_df %in% proteins_non_rbp
-
-all(is_in_rbp_or_nonrbp)
-
-```
-
-
-```{r}
-# Select only relevant columns from the RBP and Non-RBP tables
-rbp_subset <- Table_HS_RBP[, c("Entry_Name", "pI", "Mass_kDa" , "Length_AA")]
-non_rbp_subset <- Table_HS_Non_RBP[, c("Entry_Name", "pI", "Mass_kDa", "Length_AA")]
-
-# Combine both subsets into a single table
-Table_HS_Combined <- rbind(rbp_subset, non_rbp_subset)
-
-# # 3. Merge: Proteinname-Spalten heißen unterschiedlich -> by.x / by.y verwenden
-merged_df <- merge(test_scores_combined_df, Table_HS_Combined,
-                   by.x = "Protein", by.y = "Entry_Name",
-                   all.x = TRUE)  # keep all entries from test_scores_combined_df
-#depict result
-head(merged_df)
-dim(merged_df)
-```
-
-## determinantion of suitable predictors for multiple regression
-- Independent variables should exhibit minimal correlation to avoid multicollinearity
--> correlation between molecular weight, sequence length, and isoelectric point was examined
-```{r}
-# select relevant columns
-df_complete <- merged_df[complete.cases(merged_df[, c("probability", "pI", "Mass_kDa")]), ]
-# which parameters can be used in multiple regression: correlation between independent variables should be as low as possible
-
-cor(df_complete$Mass_kDa, df_complete$pI, method = "pearson")
-cor(df_complete$Mass_kDa, df_complete$Length_AA, method = "pearson")
-cor(df_complete$pI, df_complete$Length_AA, method = "pearson")
-
-```
-output:
-- there is no strong correlation between pI and mass nor between pI and length
-- a strong correlation was observed between molecular weight and sequence length
--> since molecular weight is more readily accessible experimentally than sequence length, it was used as a predictor in the multiple regression model along with the isoelectric point (pI)
-
-
-## multiple regression
-goal: assess whether isoelectric point (pI) and molecular mass are reliable predictors of RNA-binding probability
-```{r}
-# multiple regression: probability ~ pI + Mass_kDa
-model <- lm(probability ~ pI + Mass_kDa, data = df_complete)
-
-summary(model)
-
-```
-output:
-- both the isoelectric point (pI) and molecular weight (Mass_kDa) are significantly associated with the target variable (p < 0.001)
-- pI has the stronger effect (t = 20.70), followed by molecular weight (t = 3.38) 
-- After accounting for mass, proteins with higher pI tend to have a higher probability of RNA-binding, and similarly, after accounting for pI, higher mass is associated with higher probability
-- the model explains approximately 10.8% of the variance (adjusted R² = 0.108)
-- model with two predictors is significantly better than null model
-
-### visualization of multiple regression
-- hyperplane depicts relation between probability and predictors according to the multiple regression model
-```{r}
-
-# visualization of linear regression using hyperplanes
-
-install.packages("scatterplot3d") 
-library(scatterplot3d)
-
-
-depth <- df_complete$probability
-
-# Farbverlauf: dunkel-lila -> mittleres Lila -> helles Lila
-farben <- colorRampPalette(c("#b19cd9", "#7b59b9", "#4b0082"))(100)
-
-color_index <- cut(depth, breaks = 100, labels = FALSE)
-point_colors <- farben[color_index]
-
-s3d <- scatterplot3d(df_complete$pI, df_complete$Mass_kDa, df_complete$probability,
-                     xlab = "pI", ylab = "Masse (kDa)", zlab = "Probability",
-                     pch = 16, color = point_colors,
-                     highlight.3d = FALSE,
-                     type = "p", angle = 55)
-
-s3d$plane3d(model, col = "#4b0082")
-
-
-
-# Koordinaten der Regressionsfläche berechnen
-plane <- predict(model, 
-                 newdata = data.frame(pI = df_complete$pI, 
-                                      Mass_kDa = df_complete$Mass_kDa))
-
-# Fläche einzeichnen
-s3d$plane3d(model)
-```
-output:
-- The closer the points lie to the plane, the better the model fits the observed data
-- Large distances between the points and the plane indicate that the model explains only a small portion of the variance
--> depicts that only approximately 11% of variance is explained by the model
-
-### visualization of multiple regression
-interactive hyperplane displays the same relatins as the chunk above but offers a better spacial unterstanding
-```{r}
-# create interactive hyperplane 
-
-
-install.packages("plotly")
-library(plotly)
-
-# new classification
-df_complete$RBP_shift_category <- ifelse(df_complete$probability >= optimal_threshold,
-                                         ifelse(df_complete$Shift_direction_ctrl_to_rnase == "left shift", "RBP_left",
-                                                ifelse(df_complete$Shift_direction_ctrl_to_rnase == "right shift", "RBP_right", "RBP")),
-                                         "Non-RBP")
-
-
-# grid for regressionplane
-pI_seq <- seq(min(df_complete$pI), max(df_complete$pI), length.out = 30)
-Mass_seq <- seq(min(df_complete$Mass_kDa), max(df_complete$Mass_kDa), length.out = 30)
-grid <- expand.grid(pI = pI_seq, Mass_kDa = Mass_seq)
-grid$predicted <- predict(model, newdata = grid)
-
-# determine colors
-farben <- list("RBP_left" = "#c9a0dc",     # hell-lila
-               "RBP_right" = "#7a42a6",    # dunkel-lila
-               "RBP" = "purple",
-               "Non-RBP" = "lightgray")
-
-# Plotly Plot 
-fig <- plot_ly()
-
-# RBP_left
-fig <- fig %>%
-  add_markers(data = subset(df_complete, RBP_shift_category == "RBP_left"),
-              x = ~pI, y = ~Mass_kDa, z = ~probability,
-              marker = list(color = farben[["RBP_left"]], size = 4),
-              name = "RBP (left shift)")
-
-# RBP_right
-fig <- fig %>%
-  add_markers(data = subset(df_complete, RBP_shift_category == "RBP_right"),
-              x = ~pI, y = ~Mass_kDa, z = ~probability,
-              marker = list(color = farben[["RBP_right"]], size = 4),
-              name = "RBP (right shift)")
-
-# RBP without Shift-Direction 
-fig <- fig %>%
-  add_markers(data = subset(df_complete, RBP_shift_category == "RBP"),
-              x = ~pI, y = ~Mass_kDa, z = ~probability,
-              marker = list(color = farben[["RBP"]], size = 4),
-              name = "RBP (no shift info)")
-
-# Non-RBP
-fig <- fig %>%
-  add_markers(data = subset(df_complete, RBP_shift_category == "Non-RBP"),
-              x = ~pI, y = ~Mass_kDa, z = ~probability,
-              marker = list(color = farben[["Non-RBP"]], size = 4),
-              name = "Non-RBP")
-
-# Regressionplane
-fig <- fig %>%
-  add_surface(x = ~pI_seq,
-              y = ~Mass_seq,
-              z = matrix(grid$predicted, nrow = 30),
-              opacity = 0.5,
-              colorscale = "Purples",
-              showscale = FALSE,
-              name = "Regression Surface")
-
-# Layout
-fig <- fig %>%
-  layout(scene = list(
-    xaxis = list(title = "pI"),
-    yaxis = list(title = "Mass (kDa)", tick0 = 0, dtick = 100, range = c(0, 1000)),
-    zaxis = list(title = "Probability")
-  ),
-  legend = list(title = list(text = "<b>Protein Classification</b>")))
-
-fig
-
-
-```
-## check individual relation between predictors and probability
-### determine whether there is a signifcant relation between a higher pI and an increased probability for RNA-binding
-- using a t-test the pIs of RBPs and Non-RBPs are compared
-```{r}
-
-#hypothesis: proteins with a higher pI are more significantly more likely to be RBPs -> have positively charged domains at physiological pH -> are more likely to bind negatively charged RNA
-
-# Group proteins based on optimal threshold:
-df_complete$RBP_group <- ifelse(df_complete$probability > optimal_threshold,
-                               "RBP", "Non-RBP")
-
-# Optional: check mean pI values per group to confirm
-aggregate(pI ~ RBP_group, data = df_complete, mean)
-
-# Perform one-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
-# as big sample sizes are used, it was assumed that the central limit theorem applies (meaning the data follows a normal distribution)
-t_test_result <- t.test(
-  df_complete$pI[df_complete$RBP_group == "RBP"],
-  df_complete$pI[df_complete$RBP_group == "Non-RBP"],
-  alternative = "greater"
-)
-
-print(t_test_result)
-
-```
-output:
-- there is a signifcant difference between the pIs of RBPs and Non-RBPs
--> RBPs tend to have a higher pI
-
-### visualization of relation between pI and probability
-```{r}
-
-
-# create boxplot
-boxplot(pI ~ RBP_group,
-        data = df_complete,
-        col = c("#A9C1A6", "#c9a0dc"),
-        main = "compare pI\nbetween RBP and Non-RBP",
-        xlab = "group",
-        ylab = "isoelectric point (pI)")
-
-# calculate mean
-mean_rbp <- mean(df_complete$pI[df_complete$RBP_group == "RBP"])
-mean_nonrbp <- mean(df_complete$pI[df_complete$RBP_group == "Non-RBP"])
-
-print(mean_rbp)
-print(mean_nonrbp)
-
-# depict mean in plot
-points(c(1, 2), c(mean_nonrbp, mean_rbp), pch = 19, col = "coral")
-
-# Oadd legend
-legend("topright", legend = c("Mean"), col = "coral", pch = 19)
-
-```
-### determine whether there is a signifcant relation between mass and the probability for RNA-binding
-- using a t-test the mass of RBPs and Non-RBPs are compared
-```{r}
-#check whether mass differs significantly between RBPs and Non-RBPs
-
-# Perform two-sided Welch Two Sample t-test comparing pI of RBP vs Non-RBP
-t_test_result <- t.test(
-  df_complete$Mass_kDa[df_complete$RBP_group == "RBP"],
-  df_complete$Mass_kDa[df_complete$RBP_group == "Non-RBP"],
-)
-
-print(t_test_result)
-```
-output:
-- there is no significant relation between mass and probability
--> the signficant relation only exists after accounting for pI in the context of the multiple regression model
-
 
 
 
@@ -4962,7 +4945,7 @@ plot(first_two_components)
 ```{r}
 #1.filter for RBPs
 rbp_only <- df_complete[df_complete$RBP_shift_category == "RBP", ]
-
+print(df_complete$RBP_shift_category)
 #2.extract RBPS and store in a separate vector
 rbp_proteins <- rbp_only$Protein
 head(rbp_proteins)
