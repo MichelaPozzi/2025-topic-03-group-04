@@ -4569,9 +4569,6 @@ rnase_data$cluster <- factor(rnase_data$cluster, levels = c(1, 2))
 #keep cluster as order
 ```
 
-```{r}
-head(rnase)
-```
 
 
 ```{r}
