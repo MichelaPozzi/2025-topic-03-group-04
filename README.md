@@ -210,9 +210,14 @@ They can influence further observations, analysis, and interpretation\
 
     1.  **log2 - transformation:**\
         → stabilizes variance, improves interpretability, reduces outlier effects\
-    2.  **apply function**  
-    
+    2.  **apply function**
+
+    **PCA visualization**\
     ![Before and after comparison of limma cleaned data](images/RNAse_ctrl_PCA.jpeg)
+
+    **Output**\
+    There is no severe change visible, the data before is rather spread out but the batches
+    themselves do not cluster extremely.
 
 2.  Identifying and deleting with **SVA**\
     → Surrogate Variable Analysis\
@@ -237,7 +242,14 @@ They can influence further observations, analysis, and interpretation\
 
         6.Visualizations
 
+    **PCA visualization**\
     ![Before and after comparison of SVA cleaned data](images/RNAse_SVA_PCA.png)
+
+    **Output**\
+    With SVA there is a batch effect visible. It is shown in the circular structure beforehand which
+    doesn\`t directly hint at a batch effect between replicates but other more hidden possible
+    effects. Afterwards the point are more centered and there is no structure visible, overall they
+    seem more homogeneous .
 
 3.  **Interpretation and results:**\
     → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on
