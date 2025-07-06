@@ -1923,6 +1923,7 @@ global_ctrl <- process_df_global_maxima(normalized_ctrl_df, threshold = 2)
 global_rnase <- process_df_global_maxima(normalized_rnase_df, threshold = 2)
 
 head(global_ctrl)
+head(global_rnase)
 
 ```
 # Classification of RBP and Non-RBP according to logistic model
@@ -2292,72 +2293,6 @@ center_of_mass_df$shift_direction <- ifelse(center_of_mass_df$Delta_COM > 0, "ri
 # show results
 head(center_of_mass_df)
 ```
-### visualization of shift direction
-```{r}
-# Join dataframes including global maxima and calculate their differences
-df_diff_peaks <- center_of_mass_df[, 2:6]
-
-df_diff_peaks$diff <- center_of_mass_df$Delta_COM
-
-# calculate limits for axes
-max_val <- max(
-  df_diff_peaks$COM_Control,
-  df_diff_peaks$COM_RNase_Control,
-  na.rm = TRUE
-) * 1.1
-
-# define colors based on Delta_COM direction
-colors <- ifelse(df_diff_peaks$diff > 0, "#c9a0dc",      # right shift
-                 ifelse(df_diff_peaks$diff < 0, "#A9C1A6", # left shift
-                        "#F5E1A4"))                        # no shift
-
-
-
-# Set layout for plot and separate legend area
-layout(matrix(1:2, nrow = 1), widths = c(4, 1))
-
-# Plot margins
-par(mar = c(5, 4, 4, 1))  # Bottom, left, top, right
-
-# Plot the scatterplot
-plot(
-  df_diff_peaks$COM_RNase,
-  df_diff_peaks$COM_Control,
-  xlim = c(0, max_val),
-  ylim = c(0, max_val),
-  xlab = "Center of Mass RNase",
-  ylab = "Center of Mass Control",
-  main = "Shift Direction",
-  pch = 19,
-  col = colors
-)
-
-# Reference line y = x
-abline(a = 0, b = 1, col = "grey", lty = 2)
-
-# Switch to legend area (right panel)
-par(mar = c(0, 0, 4, 0))  # No axis, top margin for title
-
-# Draw an empty plot for the legend
-plot.new()
-
-# Draw well-formatted legend with clearer colors
-legend("center",
-       legend = c(
-         expression("Right shift ("*Delta*"COM > 0)"),
-         expression("Left shift ("*Delta*"COM < 0)"),
-         expression("No shift ("*Delta*"COM = 0)")
-       ),
-       col = c("#c9a0dc", "#A9C1A6", "#F5E1A4"),
-       pch = 19,
-       title = "Shift Direction",
-       bty = "n",
-       pt.cex = 1,     
-       text.col = "black",
-       cex = 0.7       
-)
-
-```
 #### skewness of center of mass
 Goal: determine whether the delta center of mass values are skewed or not
 If skewed: robust scaling is possible
@@ -2500,7 +2435,7 @@ for (i in 1:nrow(fraktion_pos_ctrl_df)) {
   if (all(ctrl_values == rnase_values)) {
     # No difference → Wilcoxon test not defined
     p_values[i] <- 1
-    test_statistics[i] <- 0  # or NA, depending on your needs
+    test_statistics[i] <- 21  # explanation below
   } else {
     # Run paired Wilcoxon test
     test_result <- wilcox.test(ctrl_values, rnase_values, paired = TRUE, exact = FALSE)
@@ -2522,9 +2457,11 @@ Wilcoxon_Pos_Max <- data.frame(
 head(Wilcoxon_Pos_Max)
 ```
 output:
-Many proteins have a Wilcoxon test statistic equal to 0.
-This is problematic because, under normal circumstances, a Wilcoxon statistic of 0 indicates a strong and significant shift.
-However, in our case, it can also result from proteins that show no difference at all in global maximum position across conditions — which should not be interpreted as evidence of a significant shift.
+When all paired differences are zero, the test is undefined, so the statistic is NA.
+Using zero or small values for NAs would imply a strong difference (since small W indicates significance), which is incorrect for equal paired samples.
+To include these cases in a combined test score where lower W indicates stronger effect, assigning the maximum possible W (e.g., 21 for n=6 pairs) to NAs can be a practical way to treat “no difference” cases as neutral or non-significant.
+This avoids interpreting NAs as missing and ensures consistency in scoring, especially if your analysis assumes numeric values for all proteins.
+However, this is a heuristic, not a statistical rule, since max W usually indicates a strong positive shift, not equality.
 #### skewness of Wilcoxon-statistic
 ```{r}
 #skewness of Wilcoxon-statistic Position of maxima
@@ -2547,7 +2484,8 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      col = "violet", pos = 4)
 ```
 output:
-- skewness > 1 -> robust scaling can be applied
+- skewness -1 < -0,0508 < 1 -> robust scaling cannot be applied
+-> error in Wilcoxon test was recognized too late -> there was no time to find a better suited scaling method for all tests -> for consistency robust scaling was applied nonetheless
 
 #### scaling
 ```{r}
@@ -2760,19 +2698,19 @@ output: for all tests there is a significant difference in the performance of po
 
 ### visualization of performence of reference proteins in tests
 ```{r}
-# Pakete laden
+# Load libraries
 library(ggplot2)
 library(dplyr)
 library(tidyr)
 
-# Beispielspalten (analog cols_to_test)
+# Example columns to test (analogous to cols_to_test)
 cols_to_test <- c(2,4,5,6,7)
 col_names <- colnames(df_positive_control)[cols_to_test]
 
 n <- length(cols_to_test)
-x_positions <- seq(1, by=1, length.out = n)
+x_positions <- seq(1, by = 1, length.out = n)
 
-# Wertebereich für y-Achse bestimmen
+# Determine range of y-axis values
 all_values <- c()
 for(i in seq_along(cols_to_test)) {
   col_idx <- cols_to_test[i]
@@ -2781,7 +2719,7 @@ for(i in seq_along(cols_to_test)) {
   all_values <- c(all_values, vals_neg, vals_pos)
 }
 
-# Transparente Füllfarben
+# Transparent fill colors
 fill_neg <- adjustcolor("#c9a0dc", alpha.f = 0.3)
 fill_pos <- adjustcolor("#A9C1A6", alpha.f = 0.3)
 
@@ -2790,23 +2728,22 @@ plot(NA,
      ylim = range(all_values, na.rm = TRUE), 
      xaxt = "n", 
      xlab = "", 
-     ylab = "Wert", 
-     main = "Symmetrische geteilte Violinenplots",
+     ylab = "Value", 
+     main = "Negative Control vs Positive Control",
      cex.main = 1,
      cex.lab = 1
 )
 
-# Lege x-Achse OHNE Labels an
+# Draw x-axis without labels
 axis(1, at = x_positions, labels = FALSE, tick = TRUE)
 
-# Schräg gedrehte Labels darunter zeichnen
+# Draw rotated labels below the axis
 text(x = x_positions, y = par("usr")[3] - 0.05 * diff(par("usr")[3:4]), 
      labels = col_names, 
-     srt = 45,          # Winkel 45 Grad
-     adj = 1,           # rechtsbündig
-     xpd = TRUE,         # Zeichnen außerhalb des Plotbereichs erlauben
-     cex = 0.5)          # Schriftgröße klein
-
+     srt = 45,          # 45 degree angle
+     adj = 1,           # right aligned
+     xpd = TRUE,        # allow drawing outside plot region
+     cex = 0.5)         # small font size
 
 for(i in seq_along(cols_to_test)) {
   col_idx <- cols_to_test[i]
@@ -2824,21 +2761,21 @@ for(i in seq_along(cols_to_test)) {
   max_y <- max(c(dens_neg$y, dens_pos$y))
   scale_factor <- 0.4 / max_y
   
-  # linke Hälfte (negative control) mit transparenter Füllung
+  # Left half (negative control) with transparent fill
   x_left <- x - dens_neg$y * scale_factor
   y_vals <- dens_neg$x
   polygon(c(x_left, rev(rep(x, length(x_left)))), 
           c(y_vals, rev(y_vals)), 
           col = fill_neg, border = "#c9a0dc")
   
-  # rechte Hälfte (positive control) mit transparenter Füllung
+  # Right half (positive control) with transparent fill
   x_right <- x + dens_pos$y * scale_factor
   y_vals2 <- dens_pos$x
   polygon(c(rep(x, length(x_right)), rev(x_right)), 
           c(y_vals2, rev(y_vals2)), 
           col = fill_pos, border = "#A9C1A6")
   
-  # Medianlinien
+  # Median lines
   med_neg <- median(vals_neg, na.rm = TRUE)
   med_pos <- median(vals_pos, na.rm = TRUE)
   
@@ -2848,10 +2785,11 @@ for(i in seq_along(cols_to_test)) {
 
 legend("topright",
        legend = c("Negative Control", "Positive Control"),
-       fill = c(fill_neg, fill_pos),    # Transparente Fill-Farben in Legende
+       fill = c(fill_neg, fill_pos),    # Transparent fill colors in legend
        border = c("#c9a0dc", "#A9C1A6"),
        bty = "n",
        cex = 0.8)
+
 ```
 
 
@@ -3217,7 +3155,72 @@ legend("topright",
        bty = "n")
 ```
 
+### visualization of shift direction
+```{r}
+# Join dataframes including global maxima and calculate their differences
+df_diff_peaks <- center_of_mass_df[, 2:6]
 
+df_diff_peaks$diff <- center_of_mass_df$Delta_COM
+
+# calculate limits for axes
+max_val <- max(
+  df_diff_peaks$COM_Control,
+  df_diff_peaks$COM_RNase_Control,
+  na.rm = TRUE
+) * 1.1
+
+colors <- ifelse(df_diff_peaks$diff > 0 & test_scores_combined_df$probability > optimal_threshold, "#c9a0dc",      # right shift 
+                 ifelse(df_diff_peaks$diff < 0 & test_scores_combined_df$probability > optimal_threshold, "#A9C1A6", # left shift
+                        "#F5E1A4"))   # no shift
+                  
+
+
+
+# Set layout for plot and separate legend area
+layout(matrix(1:2, nrow = 1), widths = c(4, 1))
+
+# Plot margins
+par(mar = c(5, 4, 4, 1))  # Bottom, left, top, right
+
+# Plot the scatterplot
+plot(
+  df_diff_peaks$COM_RNase,
+  df_diff_peaks$COM_Control,
+  xlim = c(0, max_val),
+  ylim = c(0, max_val),
+  xlab = "Center of Mass RNase",
+  ylab = "Center of Mass Control",
+  main = "Shift Direction",
+  pch = 19,
+  col = colors
+)
+
+# Reference line y = x
+abline(a = 0, b = 1, col = "grey", lty = 2)
+
+# Switch to legend area (right panel)
+par(mar = c(0, 0, 4, 0))  # No axis, top margin for title
+
+# Draw an empty plot for the legend
+plot.new()
+
+# Draw well-formatted legend with clearer colors
+legend("center",
+       legend = c(
+         expression("Right shift ("*Delta*"COM > 0)"),
+         expression("Left shift ("*Delta*"COM < 0)"),
+         expression("No shift ("*Delta*"COM = 0)")
+       ),
+       col = c("#c9a0dc", "#A9C1A6", "#F5E1A4"),
+       pch = 19,
+       title = "Shift Direction",
+       bty = "n",
+       pt.cex = 1,     
+       text.col = "black",
+       cex = 0.7       
+)
+
+```
 
 
 ## show result for any desired protein
