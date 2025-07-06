@@ -164,11 +164,13 @@ flowchart LR
     **Normed RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normed_rnase.png)
 
-2.  **Step 2: Smoothing via Moving Average (Transformation)**\
-    A moving average is applied to smooth the values.\
-    The average is calculated using the center fraction and its immediate neighbors (left and
-    right).\
-    → Smoothed values are computed per protein and replicate.
+2.  **Step 2: Smoothing via Moving Average**\
+    To reduce local fluctuations, a moving average is applied to each replicate of each protein
+    across the 25 fractions.\
+    For each center fraction (except the first and last), the mean of its value and its two
+    neighbors (left and right) is computed.\
+    → Smoothing is done separately per protein and replicate.\
+    → The first and last fractions remain unchanged to preserve boundaries.
 
 3.  **Step 3: Normalisation Across Replicates and Fractions per Protein**\
     Each replicate measurement is normalized individually → each replicate sums to 100%.\
