@@ -172,17 +172,23 @@ flowchart LR
     → Smoothing is done separately per protein and replicate.\
     → The first and last fractions remain unchanged to preserve boundaries.
 
-3.  **Step 3: Normalisation Across Replicates and Fractions per Protein**\
-    Each replicate measurement is normalized individually → each replicate sums to 100%.\
-    Then, for each fraction, the mean across replicates is calculated and normalized again to sum to
-    100.\
+3.  **Step 3: Normalisation Across Replicates and Fractions**
+
+    **3.1 Normalize Replicates:**\
+    Each replicate (per protein) is scaled such that the total intensity across all 25 fractions
+    sums to 100%. This ensures comparability across replicates.
+
+    **3.2 Average Across Replicates:**\
+    For each fraction, the mean intensity across the three normalized replicates is computed,
+    resulting in a single distribution per protein.
+
+    **3.3 Normalize Averaged Profile:**\
+    The resulting profile (mean per fraction) is again scaled so that the sum across all 25
+    fractions equals 100%. This ensures the averaged profiles remain on a comparable scale.
 
     **Output:**\
-    Two data frames (for Control and RNase), each with 25 columns containing the final normalized
-    data.\
-    → **Normalized replicates and fractions** to make their intensity distributions comparable.\
-    → Each **replicate** is scaled so that the total signal **sums to 100% (per protein)**.\
-    → Resulting **fraction profile** is rescaled to **100% (ensure consistency).**\
+    Two final data frames (Control and RNase), each containing 25 columns (fractions) with
+    normalized, comparable protein distributions.
 
     **Normalized Control Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_Control.png)
