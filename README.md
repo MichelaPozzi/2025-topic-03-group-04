@@ -48,7 +48,8 @@ Link Poster:
 <https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3> \#
 **Group 4 Data Analysis Projekt**
 
-# Silent Signals: Protein Features as Predictors of RNA Interaction
+# Compatibility test: From 0 - 1, how interacting are you?​
+## - Protein features as predictors of RNA interactions
 
 RNA–protein complexes are key regulators of numerous cellular processes. In recent years,
 proteome-wide experimental and computational approaches to study RNA-binding proteins (RBPs) have
@@ -360,7 +361,7 @@ RNA-binding for other proteins from our dataset.
     statistic — reflect the outcomes of computational tests performed on these proteins, capturing
     their RNA-binding behavior.
 
-[Beschreibung des Bildes](images/reference.jpeg)
+![Beschreibung des Bildes](images/reference.jpeg)
 
         During training, the model estimates a regression coefficient for each test-derived feature\
         in order to maximize the discrimination between the positive and negative control groups.
@@ -447,7 +448,7 @@ flowchart LR
     significant predictor only when pI is accounted for, as demonstrated by the multiple regression
     analysis.
     
-# ** V. Dimension reduction** {#dimension-reduction}
+# **V. Dimension reduction** {#dimension-reduction}
 
 ## **🎯Objective:** - Reduce dimension for better exploratory analysis
 
