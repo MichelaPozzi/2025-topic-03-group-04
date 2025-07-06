@@ -266,14 +266,14 @@ flowchart LR
 -   **Shift Distance:** By subtracting the position of the global maximum from the control sample
     from the position of the RNase maximum we can calculate the migration of the major protein
     components. Due to the distribution in the saccharose gradient that distance gives us an
-    estimate of the change caused to the protein assembly after RNase treatment
+    estimate of the change caused to the protein assembly after RNase treatment.
 
-    **Output:** The bigger the shift distance the higher the probability for significant shift
+    **Output:** The bigger the shift distance the higher the impact of RNase on the characteristics of the protein.
 
 -   **Amplitude Changes:** The amplitude of the global maximum is determined in order to uncover a
-    possible change in protein-complex assembly after RNase treatment
+    possible change in the protein content given in the fraction, as well as protein-complex assembly after RNase treatment
 
-    **Output:** A significant change between the amplitudes indicates a strong effect of RNase on the protein content.
+    **Output:** A significant change between the amplitudes indicates a strong effect of RNase on the protein content per fraction.
 
 -   **Earth Mover Test (EMD):** The Earth Mover’s Distance (EMD) measures **how much "work" is
     needed to transform one distribution into another**. In this context, it reflects how much
