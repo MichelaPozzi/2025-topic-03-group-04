@@ -967,7 +967,7 @@ legend("topright",
 ```
 
 #Interpretation 
-There is no severe change visible, and the data is now log transformed making it hard to use it for further steps 
+There is no severe change visible 
 
 
 ## Batch effect pca limma ctrl
@@ -1004,18 +1004,15 @@ legend("topright", legend = levels(LC_batch), col = LC_batch_colors, pch = 19)
 
 ```
 
-```{r}
-dim(ctrl_expr_matrix_log)
-```
 
 
 #interpretation
-There is no severe change visible, also there is no distinct differences between replicates, which rules out a severe batch effect 
+There is no severe change visible, also there is no distinct differences between replicates
 
 ##heatmap
 #expectation: 
 before: samples are grouped by batch, there is a clear separation of batches shown in the annotation 
-after: samples are gruped according to biological feature, no separation 
+after: samples are grouped according to biological features, no separation 
 
 
 ```{r}
@@ -1050,7 +1047,8 @@ pheatmap(L_ctrl_expr_corrected,
 
 
 #interpretation 
-before the correction there is no separation visible, after the correction there is a slight switch visible which does not seem to improve the dataset 
+before the correction there is no major separation visible, after the correction there is a slight change visible 
+
 
 ##protein names back
 ```{r}
@@ -1194,7 +1192,7 @@ legend("topright",
 ```
 
 #Interpretation 
-There is no severe change visible, and the data is now log transformed, making it hard to use it for further steps 
+There is no severe change visible  
 
 #more visualizing
 
@@ -1217,14 +1215,16 @@ par(mfrow = c(1, 2))
 plot(LR_pca_before$x[, 1:2],
      col = colors,
      pch = 19,
-     main =  "PCA before limma correction, RNAse")
+     main =  "PCA before limma correction, RNAse", 
+     cex.main=0.8)
 legend("topright", legend = levels(LR_batch), col = colors, pch = 19)
 
 # PCA after correction
 plot(LR_pca_after$x[, 1:2],
      col = colors,
      pch = 19,
-     main = "PCA after limma correction, RNAse")
+     main = "PCA after limma correction, RNAse", 
+     cex.main=0.8)
 legend("topright", legend = levels(LR_batch), col = colors, pch = 19)
 
 ```
@@ -1432,13 +1432,13 @@ legend("topright",
 ```
 
 #Interpretation 
-before: there is no big differences between replicates visible and median appears to be on a similar level 
-after: big shifts and no visible improvement  
+before: there is some differences between replicates visible but median appears to be on a similar level 
+after: big shifts, differences in replicates not as severe 
 
 
 ## visualisierung mittels PCA
 #expectations 
-before: distortion caused by scale differences, principle components show batch separation 
+before: possible distortion caused by scale differences, principle components show batch separation 
 after: no separation visible
 
 ```{r}
@@ -1479,8 +1479,8 @@ legend("topright", legend = levels(SC_batch), col = colors, pch = 19, cex=0.4)
 ```
 
 #Interpretation 
-before: There is no severe change visible, also there are no distinct differences between replicates, which rules out a severe batch effect 
-after: bigger difference visible but there appear to be more clusters between batches
+before: No distinct differences between replicates, or separation by PCs
+after: Spread is not as severe 
 
 
 ##Heatmap
@@ -1522,7 +1522,7 @@ pheatmap(S_corrected_expr_ctrl,
 
 #Interpretation
 before: there is no extreme clustering but still some visible 
-after: it does not seem to have improved, instead more clusters are visible
+after: slight scale difference, difference in clustering 
 
 
 
@@ -1675,8 +1675,8 @@ legend("topright",
 ```
 
 #Interpretation 
-Before: There are no big differences between replicates visible, andthe  median appears to be on a similar level 
-After: big shifts and no visible improvement  
+before: there is some differences between replicates visible but median appears to be on a similar level 
+after: big shifts, differences in replicates not as severe 
 
 
 ## visualisierung mittels PCA
@@ -1719,8 +1719,8 @@ par(mfrow = c(1, 1))
 
 ```
 #Interpretation 
-before: There is no severe change visible, also there are no distinct differences between replicates, which rules out a severe batch effect 
-after: bigger difference visible but there appear to be more clusters between batches
+before: No distinct differences between replicates, no obvious separation by PCs 
+after: reduced separation and clustering visi
 
 ##Heatmap
 #expectations
@@ -1767,14 +1767,9 @@ pheatmap(S_corrected_expr_rnase,
 ```
 
 
-```{r}
-head(S_corrected_expr_rnase)
-```
-
-
 #Interpretation
-Before: There is no extreme clustering, but still some visible 
-After: it does not seem to have improved; instead, more clusters are visible
+Before: Clustering is visible in the annotation 
+After: Difference in scale, clusters still appear
 
 
 
