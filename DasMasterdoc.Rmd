@@ -5217,7 +5217,7 @@ TR_pca_df <- as.data.frame(TR_pca_result$x)
 TR_pca_df$Protein <- percent_rnase_df$Protein
 
 #4. define righ shift proteins
-test_highlight_proteins <- rownames(right_shift_rnase)
+test_highlight_proteins <- right_shift_proteins_df$Protein
 
 #5. add column with highlights
 TR_pca_df$Highlight <- ifelse(TR_pca_df$Protein %in% test_highlight_proteins, "Yes", "No")
@@ -5262,12 +5262,15 @@ TC_pca_df <- as.data.frame(TC_pca_result$x)
 TC_pca_df$Protein <- percent_ctrl_df$Protein
 
 #4. define righ shift proteins
-C_test_highlight_proteins <- rownames(right_shift_rnase)
+C_test_highlight_proteins <- right_shift_proteins_df$Protein
+print(C_test_highlight_proteins)
+class(C_test_highlight_proteins)
 
 #5. add column with highlights
 TC_pca_df$Highlight <- ifelse(TC_pca_df$Protein %in% C_test_highlight_proteins, "Yes", "No")
 unique(TC_pca_df$Highlight)
-
+print(TC_pca_df$Protein)
+class(test_highlight_proteins)
 #6. show how many right shift proteins were detected
 table(TC_pca_df$Highlight)
 
