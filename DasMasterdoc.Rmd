@@ -4036,8 +4036,8 @@ plot(first_two_components)
 ```{r}
 #create dataframe with right shift proteins only
 # convert matrices to dataframes
-corrected_ctrl_df <- as.data.frame(corrected_expr_ctrl_df, stringsAsFactors = FALSE)
-corrected_rnase_df <- as.data.frame(corrected_expr_rnase, stringsAsFactors = FALSE)
+corrected_ctrl_df <- as.data.frame(S_corrected_expr_ctrl, stringsAsFactors = FALSE)
+corrected_rnase_df <- as.data.frame(S_corrected_expr_rnase, stringsAsFactors = FALSE)
 
 # add column with protein names to newly created dataframes
 corrected_ctrl_with_protein <- cbind(Protein = protein_names, corrected_ctrl_df)
