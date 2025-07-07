@@ -23,13 +23,17 @@ Welcome to the **Proteome-wide Screen for RNA-dependent Proteins** project! This
 -   [Rajagopal-Proteome-Wide Identification of RNA-Dependent Proteins in Lung Cancer Cells-2022-Cancers.pdf](https://github.com/user-attachments/files/19981723/Rajagopal-Proteome-Wide.Identification.of.RNA-Dependent.Proteins.in.Lung.Cancer.Cells-2022-Cancers.pdf)
 -   [Rajagopal et al., An atlas of RNA-dependent proteins in cell division reveals the riboregulation of mitotic protein-protein interactions. Nat. Commun. 16, 2325 (2025).pdf](https://github.com/user-attachments/files/19981728/Rajagopal.et.al.An.atlas.of.RNA-dependent.proteins.in.cell.division.reveals.the.riboregulation.of.mitotic.protein-protein.interactions.Nat.Commun.16.2325.2025.pdf)
 
-Link Poster: <https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3> \# **Group 4 Data Analysis Projekt**
+Link Poster: <https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3>
+
+\# **Group 4 Data Analysis Projekt**
 
 # Compatibility test: From 0 - 1, how interacting are you?​
 
-## - Protein features as predictors of RNA interactions
+## Protein features as predictors of RNA interactions
 
 RNA–protein complexes are key regulators of numerous cellular processes. In recent years, proteome-wide experimental and computational approaches to study RNA-binding proteins (RBPs) have gained increasing scientific relevance and attention. Recent research has revealed a link between dysfunctional RBPs and the development of various types of cancer. These findings now open the door to a previously underexplored area: RNA-dependent proteins — a class of proteins whose protein–protein interactome is modulated by RNA.
+
+Exploratory question: Predictive Potential – Do Isoelectric Point and Mass Indicate Shifting Behavior?
 
 ## **🎯 Project Objective**
 
@@ -80,7 +84,7 @@ The method used was the spearman correlation due to the sensitivity of the compa
 
 **Output**:
 
-By receiving correlation values higher than 0.9, the control values showed very high correlation and are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21 and 23. We defined a threshold of reproducibility at 0.7, which the measurements of fraction 2 did not surpass. Nevertheless since the majority of the values are still highly correlating, we accept the sporadic variance in the second measurement in application to our analysis, however, we cannot conclude reproducibility for other measurements ![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d) ![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
+By receiving correlation values higher than 0.9, the control values showed very high correlation and are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21 and 23. We defined a threshold of reproducibility at 0.7, which the measurements of fraction 2 did not surpass. Nevertheless since the majority of the values are still highly correlating, we accept the sporadic variance in the second measurement in application to our analysis, however, we cannot conclude reproducibility for other measurements. ![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d) ![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
 
 # **🧼 II. Data Normalisation** {#data-normalisation}
 
@@ -185,7 +189,7 @@ They can influence further observations, analysis, and interpretation\
     ![Before and after comparison of SVA cleaned data](images/RNAse_SVA_PCA%20.png)
 
     **Output**\
-    With SVA there is a batch effect visible. It is shown in the circular structure beforehand which doesn\`t directly hint at a batch effect between replicates but other more hidden possible effects. Afterwards the point are more centered and there is no structure visible, overall they seem more homogeneous .
+    With SVA there is a batch effect visible. It is shown in the circular structure beforehand which does not directly hint at a batch effect between replicates but other more hidden possible effects. Afterwards the point are more centered and there is no structure visible, overall they seem more homogeneous .
 
 3.  **Interpretation and results:**\
     → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on which machines)\
@@ -231,21 +235,7 @@ flowchart LR
     Delta-COM compares this position between two treatments Control and RNase.
 
     **Output:**\
-    A larger absolute Delta-COM indicates a stronger shift, with the sign showing shift direction (positive = right shift).
-
-The Center of Mass Test calculates the intensity-weighted average of fraction numbers,which represent the **"center" of a protein's distribution** (=COM).
-
-```         
-The COM is calculated and compared between the two treatments (=Delta-COM).
-
-**Output:**\
-Difference between both treatments and the average position of the protein distribution (=
-center of protein distribution) per protein along the gradient.\
-**A higher absolute Delta-COM value indicates that the protein's intensity profile has moved
-noticeably along the gradient.**\
-The prefix of Delta-COM (and the by the logistic model later on defined threshold) defines the
-shift direction (positive Delta_COM -\> right shift).
-```
+    A higher absolute Delta-COM indicates a stronger shift, with the sign showing shift direction (positive = right shift).
 
 -   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a non-parametric statistical method used to compare two related samples. In this context, it is used to assess whether the global maximum of the same protein differs between two treatments (Control an RNase), using matched replicates.
 
@@ -283,7 +273,7 @@ A logistic regression model is trained using reference proteins to predict the p
 2.  **Regression Coefficients:**\
     The results indicate that all predictors - meaning test-derived features - significantly affect RNA-binding classification. The regression coefficients reflect the strength and direction with which each predictor influences the log-odds of a protein being RNA-binding.
 
-    ![Beschreibung des Bildes](images/feature.jpeg)
+    ![Beschreibung des Bildes](images/features.jpeg)
 
     -   positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
     -   negative coefficients (green bars) indicate features that decrease the probability of RNA-binding\
@@ -342,10 +332,10 @@ flowchart LR
 
 # **V. Dimension reduction** {#dimension-reduction}
 
-## **🎯Objective:**   
+## **🎯Objective:**
 
-- Reduce dimension for better exploratory analysis
-- Cluster results to find underlying relations
+-   Reduce dimension for better exploratory analysis
+-   Cluster results to find underlying relations
 
 ## **📃Steps**
 
@@ -382,18 +372,13 @@ The ideal **Amount of clusters** is determined first with an **elbow plot**. The
 
 In the K-means plots **RNA binding proteins** are labeled in order to determine a biological correlation between RBPs and the resulting clusters.
 
-<table>
-  <tr>
-    <td><img src="images/Clusterrnase.jpeg" width="100%"/></td>
-    <td><img src="images/Clusterctrl.jpeg" width="100%"/></td>
-  </tr>
-</table>
-
+|                               |                              |
+|-------------------------------|------------------------------|
+| ![](images/Clusterrnase.jpeg) | ![](images/Clusterctrl.jpeg) |
 
 ### **Chi Squared test** {#chi-square}
 
 In order to check for a significant association between clusters and RBPs.\
 The data is turned into a contingency table and the test executed.
 
-**Output:** 
-For both datasets Ctrl and RNAse we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
+**Output:** For Ctrl we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
