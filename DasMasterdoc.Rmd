@@ -4724,7 +4724,7 @@ table(TR_pca_df$Highlight)
 ggplot(TR_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   geom_point(alpha = 0.8, size = 2) +
   scale_color_manual(
-  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
+  values = c("Yes" = "#c9a0dc", "No" = "#A9C1A6"),
   name = "Highlighted Proteins",
   labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
 ) +
@@ -4775,7 +4775,7 @@ table(TC_pca_df$Highlight)
 ggplot(TC_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
   geom_point(alpha = 0.8, size = 2) +
   scale_color_manual(
-  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
+  values = c("Yes" = "#c9a0dc", "No" = "#A9C1A6"),
   name = "Highlighted Proteins",
   labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
 ) +
@@ -4988,169 +4988,10 @@ chisq.test(c_tbl)
 #Interpretation'
 p=2.2e-16 < 0.05 -> significant: there is a connection between clusters found through PCA and classification of proteins as RBPs
 
-#label RBP in K-means 
-#rnase
-```{r}
-#1. convert PCA ctrl data into dataframe 
-test_rnase_data <- as.data.frame(rnase_pca$x)
-test_rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
-
-#2. isolate protein names
-test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
-#check if rbp present 
-test_rnase_data$is_rbp <- test_rnase_data$protein_name %in% rbp_proteins
 
 
-#3.plot
-library(ggplot2)
-
-ggplot(test_rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
-  geom_point(alpha = 0.7, size = 2) +
-  labs(title = "K-Means Cluster im PCA-Raum",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)",
-       color = "Cluster",
-       shape = "Protein-Typ") +
-  theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
-  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
-
-ggplot(test_rnase_data,aes(x = PC1, y = PC2, color = cluster)) +
-  
-  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "Protein-Typ")
-
-```
 
 
-#ctrl
 
-```{r}
-#1. convert PCA ctrl data into dataframe 
-test_ctrl_data <- as.data.frame(ctrl_pca$x)
-test_ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
-
-#2. isolate protein names
-test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
-#check if rbp present 
-test_ctrl_data$is_rbp <- test_ctrl_data$protein_name %in% rbp_proteins
-
-
-#3.plot
-library(ggplot2)
-
-ggplot(test_ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = is_rbp)) +
-  geom_point(alpha = 0.7, size = 2) +
-  labs(title = "K-Means Cluster im PCA-Raum",
-       x = "Hauptkomponente 1 (PC1)",
-       y = "Hauptkomponente 2 (PC2)",
-       color = "Cluster",
-       shape = "Protein-Typ") +
-  theme_minimal() +
-  scale_shape_manual(values = c(`FALSE` = 16, `TRUE` = 17)) + 
-  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
-
-ggplot(test_ctrl_data,aes(x = PC1, y = PC2, color = cluster)) +
-  
-  scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  labs(shape = "Protein-Typ")
-
-```
-
-
-##RSP in PCA 
-#rnase labeling
-
-```{r}
-library(ggplot2)
-
-#1. prepare PCA, extract numerical values
-test_rnase_df <- as.data.frame(percent_rnase_df[,-1])
-TR_pca_result <- prcomp(test_rnase_df, center = TRUE, scale. = TRUE)
-
-#2. convert PCA results into dataframe
-TR_pca_df <- as.data.frame(TR_pca_result$x)
-
-#3. copy protein names from rownames
-TR_pca_df$Protein <- percent_rnase_df$Protein
-
-#4. define righ shift proteins
-test_highlight_proteins <- right_shift_proteins_df$Protein
-
-#5. add column with highlights
-TR_pca_df$Highlight <- ifelse(TR_pca_df$Protein %in% test_highlight_proteins, "Yes", "No")
-unique(TR_pca_df$Highlight)
-
-#6. show how many right shift proteins were detected
-table(TR_pca_df$Highlight)
-
-#7. plot
-ggplot(TR_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
-  geom_point(alpha = 0.8, size = 2) +
-  scale_color_manual(
-  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
-  name = "Highlighted Proteins",
-  labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
-) +
-  labs(title = "PCA Plot RNAse with Highlighted Proteins",
-       x = "Principal Component 1",
-       y = "Principal Component 2") +
-  theme_minimal()+
-  theme(
-    legend.position = "right",       
-    legend.title = element_text(face = "bold"),
-    legend.text = element_text(size = 10)
-  )
-
-```
-
-
-#ctrl
-
-```{r}
-library(ggplot2)
-
-#1. prepare PCA, extract numerical values
-test_ctrl_df <- as.data.frame(percent_ctrl_df[,-1])
-TC_pca_result <- prcomp(test_ctrl_df, center = TRUE, scale. = TRUE)
-
-#2. convert PCA results into dataframe
-TC_pca_df <- as.data.frame(TC_pca_result$x)
-
-#3. copy protein names from rownames
-TC_pca_df$Protein <- percent_ctrl_df$Protein
-
-#4. define righ shift proteins
-C_test_highlight_proteins <- right_shift_proteins_df$Protein
-print(C_test_highlight_proteins)
-class(C_test_highlight_proteins)
-
-#5. add column with highlights
-TC_pca_df$Highlight <- ifelse(TC_pca_df$Protein %in% C_test_highlight_proteins, "Yes", "No")
-unique(TC_pca_df$Highlight)
-print(TC_pca_df$Protein)
-class(test_highlight_proteins)
-#6. show how many right shift proteins were detected
-table(TC_pca_df$Highlight)
-
-#7. plot
-ggplot(TC_pca_df, aes(x = PC1, y = PC2, color = Highlight)) +
-  geom_point(alpha = 0.8, size = 2) +
-  scale_color_manual(
-  values = c("Yes" = "#c9a0dc", "No" = "lightgrey"),
-  name = "Highlighted Proteins",
-  labels = c("Yes" = "Right shift proteins", "No" = "Other proteins")
-) +
-  labs(title = "PCA Plot Ctrl with Highlighted Proteins",
-       x = "Principal Component 1",
-       y = "Principal Component 2") +
-  theme_minimal()+
-  theme(
-    legend.position = "right",       
-    legend.title = element_text(face = "bold"),
-    legend.text = element_text(size = 10)
-  )
-
-```
 
 
