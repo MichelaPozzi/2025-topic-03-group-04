@@ -25,7 +25,7 @@ To achieve this, we investigate the influence of RNA on protein complexes by com
 - 2. data normalisation (Ellinor, Laura, Zoe)
 - 3. shift analysis (Ellinor, Laura, Nora)
 - 4. dimension reduction (Zoe)
-- 5. detection of features predictive of RNA-binding (Ellinor, Laura)
+- 5. detection of features predictive of RNA-binding (Laura)
 
 ## libraries
 - limma
