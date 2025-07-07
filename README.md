@@ -385,7 +385,7 @@ The data is turned into a contingency table and the test executed.
 **Output:** 
 For Ctrl we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
 
-### **VI. Literature**
+# **VI. Literature**
 - Caudron-Herger, Maiwen et al.:R-DeeP: Proteome-wide and Quantitative Identification of RNA-Dependent Proteins by Density Gradient Ultracentrifugation, Molecular Cell, Volume 75, Issue 1, 184 - 199 (2019).
 - Caudron-Herger, M., Wassmer, E., Nasa, I. et al. Identification, quantification and bioinformatic analysis of RNA-dependent proteins by RNase treatment and density gradient ultracentrifugation using R-DeeP. Nat Protoc 15, 1338–1370 (2020).
 - Rajagopal, V., et al.:Proteome-Wide Identification of RNA-Dependent Proteins in Lung Cancer Cells. Cancers (2022).
