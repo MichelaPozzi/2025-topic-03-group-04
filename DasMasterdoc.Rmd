@@ -4551,7 +4551,7 @@ ggplot(Ctrl_data, aes(x = PC1, y = PC2, color = cluster, shape = protein_type)) 
        shape = "Protein Type") +
   theme_minimal() +
   scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "#A9C1A6"))
 
 
 ```
@@ -4584,7 +4584,7 @@ ggplot(rnase_data, aes(x = PC1, y = PC2, color = cluster, shape = protein_type))
        shape = "Protein Type") +
   theme_minimal() +
   scale_shape_manual(values = c("non-RBP" = 16, "RBP" = 17)) +
-  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "lightgrey"))
+  scale_color_manual(values = c("1" = "#c9a0dc", "2" = "#A9C1A6"))
 
 
 ```
