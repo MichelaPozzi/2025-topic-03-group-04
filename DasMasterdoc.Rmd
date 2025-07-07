@@ -1367,7 +1367,7 @@ before: there is some differences between replicates visible but median appears 
 after: big shifts, differences in replicates not as severe 
 
 
-## visualisierung mittels PCA
+## Visualization via PCA
 #expectations 
 before: possible distortion caused by scale differences, principle components show batch separation 
 after: no separation visible
@@ -3591,16 +3591,6 @@ shinyApp(ui, server)
 
 
 ```
-
-## optional - save right shift proteins as text file
-```{r}#
-# Nur die Protein-Namen als Vektor
-protein_names <- right_shift_proteins_df$Protein
-
-# Schreibe sie zeilenweise in eine Textdatei
-writeLines(protein_names, "right_shift_proteins.txt")
-```
-
 
 #### violinplots
 Goal: show the distribution of the protein in direct comparison 
