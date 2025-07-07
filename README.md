@@ -1,4 +1,4 @@
-# 2025-topic-03-group-04
+# 🧬2025-topic-03-group-04
 
 Link Poster: <https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3>
 
@@ -120,9 +120,9 @@ flowchart LR
 
 ### **💥Batch Removal**
 
-**Batch effect:** Disturbances are rooted in technical variances, such as different runs, and not in biological variations.\
-They can influence further observations, analysis, and interpretation\
-→ Comparisons between replicates to establish proper identification
+    **Batch effect:** Disturbances are rooted in technical variances, such as different runs, and not in biological variations.\
+    They can influence further observations, analysis, and interpretation\
+    → Comparisons between replicates to establish proper identification
 
 1.  Identifying and deleting with **limma package**\
     → removes known batch effects with **removeBatchEffect**
