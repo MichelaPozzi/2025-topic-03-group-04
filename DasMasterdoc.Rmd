@@ -21,11 +21,11 @@ The aim of this project is the automated identification of RNA-dependent protein
 To achieve this, we investigate the influence of RNA on protein complexes by comparing protein distribution profiles between untreated cell lysates (control samples) and RNase-treated lysates (RNase samples
 
 ## Steps
-- 1. data exploration
-- 2. data normalisation
-- 3. shift analysis
-- 4. dimension reduction
-- 5. detection of features predictive of RNA-binding
+- 1. data exploration (Nora)
+- 2. data normalisation (Ellinor, Laura, Zoe)
+- 3. shift analysis (Ellinor, Laura, Nora)
+- 4. dimension reduction (Zoe)
+- 5. detection of features predictive of RNA-binding (Ellinor, Laura)
 
 ## libraries
 - limma
@@ -60,7 +60,7 @@ A549_NS <- read.csv(csv_file, sep = ";")
 print(A549_NS)
 ```
 
-# 1. data exploration
+# 1. data exploration (Nora)
 ```{r}
 #data exploration
 print(A549_NS)
@@ -212,7 +212,7 @@ Output: correlation amongst the rnase values is sporadically lower compared to t
 -> evaluation is therefore reproducable as well 
 
 # 2. data normalisation
-## normalisation
+## normalisation (Ellinor, Laura)
 ### normalisation per fraction
 Goal: receive basis for subsequent normalisation
 #### determine columnwise mean
@@ -828,7 +828,7 @@ ggplot(combined_10_shifted, aes(x = Fraction, y = Intensity_shifted, color = Sta
 ```
 
 
-###Batch Effect###
+###Batch Effect### (Zoe)
 Goal: Determine if there is a batch effect and remove it. Batch effect in this case refers to differences in data not related to biological reasons but rather technological faults. 
 
 ##CONTROL
@@ -1791,7 +1791,7 @@ head(S_corrected_expr_rnase_df)
 ```
  
  
-# 3. shift analysis
+# 3. shift analysis (Ellinor, Laura, Nora)
 Goal: Classify proteins as RNA-dependent (RDP) or non-RNA-dependent (non-RDP) based on differences between control and RNase condition
 ## Tests
 Goal: characterize the differences between Ctrl and RNase for each protein
@@ -3852,7 +3852,7 @@ legend("topright",
 ```
 Output: visualization of a negative control and positive control protein, as well as one newly identified as shifting
 
-# 4. Detection of features predictive of RNA-binding
+# 4. Detection of features predictive of RNA-binding (Laura)
 # linear regression
 Goal: Identify experimentally accessible predictors of RNA-binding
 -> establish relation between predictors and RNA-binding behavior
@@ -4163,7 +4163,7 @@ output:
 
 
 
-# 5. dimension reduction
+# 5. dimension reduction (Zoe)
 
 ### PCA
 Goal: Reduce dimension and further visualize data in clusters with only the most important structures. Batch cleaned data is used in order to ensure no technical variation. 
