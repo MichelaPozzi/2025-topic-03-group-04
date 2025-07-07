@@ -384,8 +384,8 @@ In the K-means plots **RNA binding proteins** are labeled in order to determine 
 
 <table>
   <tr>
-    <td><img src="images/PCArnase.jpeg" width="100%"/></td>
-    <td><img src="images/PCActrl.jpeg" width="100%"/></td>
+    <td><img src="images/Clusterrnase.jpeg" width="100%"/></td>
+    <td><img src="images/Clusterctrl.jpeg" width="100%"/></td>
   </tr>
 </table>
 
