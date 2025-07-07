@@ -4743,11 +4743,9 @@ table(Ctrl_data$is_rbp)
 str(Ctrl_data$is_rbp)
 ```
 
-
 ```{r}
 print(ctrl_data)
 ```
-
 
 ```{r}
 #1. apply chi sqquared to earlier created table
@@ -4757,17 +4755,6 @@ chisq.test(c_tbl)
 ```
 #Interpretation'
 p=2.2e-16 < 0.05 -> significant: there is a connection between clusters found through PCA and classification of proteins as RBPs
-
-
-
-
-
-```{r}
-#1.table counts the amount of RBPs
-table(test_ctrl_data$is_rbp)
-str(test_ctrl_data$is_rbp)
-```
-
 
 #label RBP in K-means 
 #rnase
