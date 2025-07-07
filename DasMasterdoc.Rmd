@@ -2437,41 +2437,40 @@ for (i in 1:nrow(fraktion_pos_ctrl_df)) {
   non_zero_diffs <- diffs[diffs != 0]
   
   if (length(non_zero_diffs) == 0) {
-    # All differences are 0 → test nicht definiert
+    # All differences are 0 → test not defined
     p_values[i] <- 1
     wilcoxon_stats[i] <- 3
   } else {
-    # Ränge der absoluten Differenzen berechnen
+    # Compute ranks of absolute differences
     ranks <- rank(abs(non_zero_diffs))
     
-    # W+ = Summe der Ränge für positive Differenzen
+    # W+ = sum of ranks for positive differences
     W_plus <- sum(ranks[non_zero_diffs > 0])
     
-    # W- = Summe der Ränge für negative Differenzen
+    # W- = sum of ranks for negative differences
     W_minus <- sum(ranks[non_zero_diffs < 0])
     
-    # Teststatistik: das Minimum der beiden
+    # Test statistic: the minimum of both
     W_stat <- min(W_plus, W_minus)
     
-    # Berechne den p-Wert mit wilcox.test (nur für p-Wert, nicht für Statistik)
+    # Compute the p-value using wilcox.test (only for p-value, not for statistic)
     test_result <- wilcox.test(ctrl_values, rnase_values, paired = TRUE, exact = FALSE)
     
-    # Speichere Ergebnisse
+    # Store results
     p_values[i] <- test_result$p.value
     wilcoxon_stats[i] <- W_stat
   }
 }
 
-# Kombiniere die Ergebnisse
+# Combine the results
 Wilcoxon_Pos_Max_Manual <- data.frame(
   Protein = fraktion_pos_ctrl_df[[1]],
   P_value = p_values,
   Wilcoxon_statistic = wilcoxon_stats
 )
 
-# Ergebnisse anzeigen
+# Display results
 head(Wilcoxon_Pos_Max_Manual)
-
 ```
 output:
 When all paired differences are zero, the test is undefined, so the statistic is NA.
@@ -2899,6 +2898,236 @@ output:
 - positive coefficients (purple bars) indicate features that increase the probability of RNA-binding
 - negative coefficients (green bars) indicate features that decrease the probability of RNA-binding
 -> EMD has the strongest influence on the probability of RNA-binding
+
+### Investigating the Negative Coefficient of Center_of_Mass in the Logistic Regression Model
+Goal: Analyze why the Center_of_Mass (COM) predictor shows a negative effect in the logistic regression by examining model summary, correlations with other predictors, and visualizing both combined and isolated effects of Center_of_Mass on the outcome variable.
+```{r}
+# 1. View summary of the reduced logistic regression model
+summary(step_model)
+
+# 2. Compute correlation matrix of all predictors
+cor_matrix <- cor(df_all[, c("EMD", "Shift_Distance_ctrl_to_rnase", 
+                             "amplitude_changes", "Center_of_Mass", 
+                             "Wilcoxon_statistic_Max")], use = "complete.obs")
+print(round(cor_matrix, 2))
+
+# Optional: Visualize correlations as heatmap
+library(corrplot)
+corrplot::corrplot(cor_matrix, method = "color", type = "upper", tl.cex = 0.8)
+
+# 3. Visualize the relationship between Center of Mass and the outcome variable
+library(ggplot2)
+ggplot(df_all, aes(x = Center_of_Mass, y = label)) +
+  geom_jitter(height = 0.05, width = 0, alpha = 0.3) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), color = "#c9a0dc") +
+  labs(title = "Effect of Center_of_Mass on Probability",
+       x = "Center of Mass", y = "Probability (Logistic Fit)")
+
+# 4. Visualize isolated effect of Center_of_Mass holding other predictors constant
+plot_data <- data.frame(Center_of_Mass = seq(min(df_all$Center_of_Mass, na.rm = TRUE),
+                                             max(df_all$Center_of_Mass, na.rm = TRUE),
+                                             length.out = 100))
+
+# Set all other features to their mean for prediction
+for (feature in setdiff(names(coef(step_model))[-1], "Center_of_Mass")) {
+  plot_data[[feature]] <- mean(df_all[[feature]], na.rm = TRUE)
+}
+
+# Predict probabilities
+plot_data$predicted_prob <- predict(step_model, newdata = plot_data, type = "response")
+
+# Plot predicted probabilities
+ggplot(plot_data, aes(x = Center_of_Mass, y = predicted_prob)) +
+  geom_line(color = "black") +
+  labs(title = "Predicted Probability vs. Center_of_Mass (Holding Other Features Constant)",
+       x = "Center of Mass", y = "Predicted Probability")
+
+# 5. Optional: Fit a model using Center_of_Mass alone
+single_model <- glm(label ~ Center_of_Mass, data = df_all, family = binomial)
+summary(single_model)
+
+# Visualization: Simple logistic regression with only Center_of_Mass
+ggplot(df_all, aes(x = Center_of_Mass, y = label)) +
+  geom_jitter(height = 0.05, width = 0, alpha = 0.3) +
+  geom_smooth(method = "glm", method.args = list(family = "binomial"), color = "#A9C1A6") +
+  labs(title = "Logistic Regression: Center_of_Mass Only",
+       x = "Center of Mass", y = "Probability")
+```
+Output:
+Center_of_Mass positively correlates with the outcome on its own but shows a negative association when controlling for other variables, likely due to correlations among predictors influencing the direction of its effect.
+#### Modeling and Visualizing the Effect of PC1 on Outcome Using a Reduced Logistic Regression
+Goal: Standardize selected predictors, fit a logistic regression with less correlated variables including PC1, and visualize how predicted probabilities change with PC1 while holding other predictors constant.
+```{r}
+# 1. Standardize (scale) two predictors
+df_all$amplitude_changes_z <- as.numeric(scale(df_all$amplitude_changes))
+df_all$Wilcoxon_statistic_Max_z <- as.numeric(scale(df_all$Wilcoxon_statistic_Max))
+
+# 2. Reduced logistic regression model with less correlated predictors
+clean_model <- glm(label ~ PC1 + amplitude_changes_z + Wilcoxon_statistic_Max_z,
+                   data = df_all,
+                   family = binomial)
+
+# 3. Display model summary
+summary(clean_model)
+
+# 4. Generate prediction data (vary PC1, keep other variables constant)
+plot_data <- data.frame(
+  PC1 = seq(min(df_all$PC1, na.rm = TRUE), max(df_all$PC1, na.rm = TRUE), length.out = 100),
+  amplitude_changes_z = mean(df_all$amplitude_changes_z, na.rm = TRUE),
+  Wilcoxon_statistic_Max_z = mean(df_all$Wilcoxon_statistic_Max_z, na.rm = TRUE)
+)
+
+# 5. Predict probabilities
+plot_data$predicted_prob <- predict(clean_model, newdata = plot_data, type = "response")
+
+# 6. Visualize prediction curve
+library(ggplot2)
+ggplot(plot_data, aes(x = PC1, y = predicted_prob)) +
+  geom_line(color = "#2C3E50", size = 1.2) +
+  labs(title = "Predicted Probability vs. PC1 (Other Features Held Constant)",
+       x = "PC1 (Principal Component 1)",
+       y = "Predicted Probability") +
+  theme_minimal()
+```
+Output:
+-> higher values of PC1 and amplitude changes significantly increase the likelihood of the positive class
+-> higher Wilcoxon_statistic_Max slightly decreases it
+Overall, all predictors contribute meaningfully, and the model (with PC1) fits the data well.
+# PCA Analysis of Center_of_Mass and EMD Variables
+Goal: Perform principal component analysis on the variables Center_of_Mass and EMD, quantify the variance explained by each principal component, and examine the loadings to understand variable contributions to PC1 and PC2.
+```{r}
+# Perform PCA using only Center_of_Mass and EMD (scaled)
+pca_result <- prcomp(df_all[, c("Center_of_Mass", "EMD")], scale. = TRUE)
+
+# Extract loadings (weights of original variables on PC1 and PC2)
+loadings <- pca_result$rotation
+print(loadings)
+
+# Calculate proportion of variance explained by each principal component
+var_explained <- pca_result$sdev^2 / sum(pca_result$sdev^2)
+print(var_explained)
+
+# Optional: Plot scree plot to visualize variance explained
+plot(var_explained, type = "b", xlab = "Principal Component", ylab = "Proportion of Variance Explained")
+
+# Print example interpretation
+cat("PC1 explains", round(var_explained[1] * 100, 2), "% of variance.\n")
+cat("Loadings for PC1:\n")
+print(round(loadings[, 1], 3))
+```
+Output:
+PCA on Center_of_Mass and EMD shows that the first principal component (PC1) explains an overwhelming majority of the variance — about 99.86%.
+Both variables contribute equally and positively to PC1 with loadings of approximately 0.707 each.
+-> PC1 effectively represents a combined measure of Center_of_Mass and EMD.
+#### Data Preparation, PCA Integration, Logistic Regression Modeling, and Weighted Score Visualization
+Goal: Label and combine positive and negative control datasets, perform PCA on selected variables, incorporate PC1 into a logistic regression model with stepwise selection, calculate weighted scores from the final model coefficients, and visualize score distributions by class using a boxplot.
+```{r}
+# 1. Add labels
+df_positive_control$label <- 1
+df_negative_control$label <- 0
+
+# 2. Combine datasets
+df_all <- rbind(
+  df_positive_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "label")],
+  df_negative_control[, c("EMD", "Shift_Distance_ctrl_to_rnase", "amplitude_changes", "Center_of_Mass", "Wilcoxon_statistic_Max", "label")]
+)
+
+# 3. Check for NAs in PCA variables and remove if necessary
+pca_vars <- df_all[, c("Center_of_Mass", "EMD")]
+complete_cases <- complete.cases(pca_vars)
+pca_vars_clean <- pca_vars[complete_cases, ]
+
+# 4. Perform PCA (scale variables to make COM and EMD comparable)
+pca_result <- prcomp(pca_vars_clean, scale. = TRUE)
+
+# 5. Insert PC1 scores back into full df_all (NA for missing cases)
+df_all$PC1 <- NA
+df_all$PC1[complete_cases] <- pca_result$x[, 1]
+
+# 6. Full model with PC1 (replacing EMD & COM), others remain the same
+full_model_pca <- glm(label ~ PC1 + Shift_Distance_ctrl_to_rnase + amplitude_changes + Wilcoxon_statistic_Max,
+                      data = df_all,
+                      family = binomial)
+
+# 7. Stepwise model selection based on AIC
+step_model_pca <- step(full_model_pca, direction = "both", trace = FALSE)
+
+# 8. Summary of the final model
+summary(step_model_pca)
+
+# 9. Calculate weighted scores (selected features × coefficients)
+coeffs <- coef(step_model_pca)[-1]  # exclude intercept
+selected_features <- names(coeffs)
+df_all$weighted_score <- rowSums(sweep(df_all[, selected_features], 2, coeffs, FUN = "*"), na.rm = TRUE)
+
+# 10. Boxplot of weighted scores by class
+boxplot(weighted_score ~ label, data = df_all,
+        names = c("Negative", "Positive"),
+        xlab = "Class Label", ylab = "Weighted Score",
+        main = "Distribution of Weighted Scores by Class")
+```
+Output:
+PC1 and amplitude_changes have strong positive effects on the probability of the positive class, both highly significant.
+Wilcoxon_statistic_Max has a small but significant negative effect.
+The residual deviance (1177.9) and AIC (1185.9) suggest a good model fit, though not optimal compared to alternative models.
+#### Plotting Feature Importance from Logistic Regression Model Coefficients
+Goal: Verify that the model is a logistic regression with a binomial family, extract and rank the model coefficients by absolute value (excluding intercept), and visualize feature importance as a horizontal bar plot colored by coefficient sign.
+```{r}
+# Check if step_model_pca is a logistic regression model with binomial family
+if (inherits(step_model_pca, "glm") && family(step_model_pca)$family == "binomial") {
+  
+  # Extract coefficients (remove intercept)
+  coeffs <- coef(step_model_pca)
+  coeffs <- coeffs[-1]
+  
+  # Create dataframe for plotting
+  df_coeffs <- data.frame(
+    Feature = names(coeffs),
+    Coefficient = coeffs,
+    Importance = abs(coeffs)
+  )
+  
+  # Optional: Sort by importance descending
+  df_coeffs <- df_coeffs[order(-df_coeffs$Importance), ]
+  
+  # Plot using ggplot2
+  library(ggplot2)
+  ggplot(df_coeffs, aes(x = reorder(Feature, Importance), y = Coefficient, fill = Coefficient > 0)) +
+    geom_col() +
+    coord_flip() +  # horizontal bars
+    scale_fill_manual(values = c("TRUE" = "#c9a0dc", "FALSE" = "#A9C1A6"), guide = "none") +
+    labs(
+      subtitle = "Feature Importance in Logistic Regression Model with PCA",
+      x = "Feature",
+      y = "Regression Coefficient"
+    ) +
+    theme_minimal(base_size = 14)
+  
+} else {
+  stop("The model is not a logistic regression with binomial family.")
+}
+```
+#### Model Comparison: Original vs. PCA-Based Logistic Regression Using Deviance, AIC, and Likelihood-Ratio Test
+Goal: Compare the predictive performance and parsimony of two logistic regression models—one using original features and the other incorporating Principal Component Analysis (PCA)—in order to determine which model better explains the binary outcome (label).
+```{r}
+# Vergleich der Modelle: Residual Deviance und AIC
+cat("Old Model (step_model):\n")
+cat("Residual Deviance:", step_model$deviance, "\n")
+cat("AIC:", AIC(step_model), "\n\n")
+
+cat("New PCA Model (step_model_pca):\n")
+cat("Residual Deviance:", step_model_pca$deviance, "\n")
+cat("AIC:", AIC(step_model_pca), "\n\n")
+
+# Likelihood-Ratio-Test zum Modellvergleich
+anova_result <- anova(step_model, step_model_pca, test = "Chisq")
+print(anova_result)
+```
+Output:
+Although PCA was used to reduce multicollinearity between highly correlated predictors (EMD and Center_of_Mass), the original logistic regression model without PCA components demonstrated a significantly better fit.
+-> lower residual deviance and AIC
+-> likelihood-ratio test confirmed that replacing the original variables with PC1 leads to a statistically     significant loss of explanatory power
+=> the non-PCA model is preferred for capturing the biological signal.
 
 ## ROC Curve Visualizing test-model performance
 Goal: evaluate the predictive accuracy of the logistic regression model by showing the trade-off between the true positive rate (sensitivity) and false positive rate (1 - specificity) across different classification thresholds
