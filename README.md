@@ -288,8 +288,8 @@ A logistic regression model is trained using reference proteins to predict the p
 
 </p>
 
-       Altogether, 740 proteins were classified as RNA-binding, of which 141 exhibited a right shift.\
-       Excluding the proteins used for model training, 320 novel RBPs were identified.
+       Altogether, 730 proteins were classified as RNA-binding, of which 140 exhibited a right shift.\
+       Excluding the proteins used for model training, 311 novel RBPs were identified.
 
 4.  **Accuracy of Model:**\
     visualise the predictive accuracy of our logistic regression model
