@@ -44,7 +44,7 @@ The aim of this project is the automated identification of RNA-dependent protein
     -   [Chi Squared test](#chi-squared-test)
 -   [VI. Literatur](#literature)
 
-# **I. Data Exploration** {#data-exploration}
+# **I. Data Exploration** 
 
 -   Examine the dimensions of our dataset and potential inconsistencies in the produced data. Also, investigate whether the experimental nature of the measurements is reproducible, and therefore applicable to our analysis. Large scale measurements carry the risk of introducing potential technical variability. By calculating the correlation between all replicates across the fractions for each treatment we can confirm the reliability and stability of the measurements.
 
@@ -62,14 +62,14 @@ The method used was the spearman correlation due to the sensitivity of the compa
 
 By receiving correlation values higher than 0.9, the control values showed very high correlation and are therefore reproducible. Our rnase measurements correlated less, especially in fractions 2, 21 and 23. We defined a threshold of reproducibility at 0.7, which the measurements of fraction 2 did not surpass. Nevertheless since the majority of the values are still highly correlating, we accept the sporadic variance in the second measurement in application to our analysis, however, we cannot conclude reproducibility for other measurements. ![image](https://github.com/user-attachments/assets/6848a870-60ce-4d15-b005-a6c71b5ead1d) ![image](https://github.com/user-attachments/assets/3b6af159-57b2-43b3-94dd-f329f34c09f4)
 
-# **🧼 II. Data Normalisation** {#data-normalisation}
+# **🧼 II. Data Normalisation** 
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and conditions (Control vs. RNase) by normalising and transforming the values with following steps:
 -   During data normalisation three main steps are executed. By pairwise normalising and smoothing the data comparability is established. Transformation and normalisation aligns the value ranges. Due to batch effect correction the systematic bias is removed.\
 
 ## **📃Steps:**
 
-### **📊Normalisation** {#normalisation}
+### **📊Normalisation** 
 
 ``` mermaid
 flowchart LR
@@ -118,7 +118,7 @@ flowchart LR
     **Normalized RNase Dataframe (first 6 rows)**\
     ![Mein Screenshot](images/screenshot_normalized_rnase.png)
 
-### **💥Batch Removal** {#batch-removal}
+### **💥Batch Removal**
 
 **Batch effect:** Disturbances are rooted in technical variances, such as different runs, and not in biological variations.\
 They can influence further observations, analysis, and interpretation\
@@ -172,8 +172,7 @@ They can influence further observations, analysis, and interpretation\
     → Log2 transformation makes the data less suitable for further analysis → Batch effect not overly significant\
     → Removal still could overcorrect biological variances
 
-# **✅ III. Shift Analysis** {#shift-analysis}
-
+# **✅ III. Shift Analysis** 
 ## ️**📃Steps**
 
 ``` mermaid
@@ -190,7 +189,7 @@ flowchart LR
     F --> G
 ```
 
-### **📝Tests** {#tests}
+### **📝Tests** 
 
 -   **Shift Distance:** By subtracting the position of the global maximum from the control sample from the position of the RNase maximum we can calculate the migration of the major protein components. Due to the distribution in the saccharose gradient that distance gives us an estimate of the change caused to the protein assembly after RNase treatment.
 
@@ -272,9 +271,9 @@ A logistic regression model is trained using reference proteins to predict the p
 
     ![](images/clipboard-3562156733.png)
 
-    -\> the predictive accuracy lies way above the "coincidence line"\
+    -\> the predictive accuracy lies way above the "coincidence line"
 
-# **📈 IV. Linear Regression** {#linear-regression}
+# **📈 IV. Linear Regression** 
 
 -   Investigate the influence of selected predictors (molecular weight and isoelectric point) on the probability of RNA dependence and assess their statistical significance
 -   for new data: predict RNA dependence based on experimentally accessible features
@@ -306,7 +305,7 @@ flowchart LR
     A significant association was found between higher isoelectric point (pI) and increased probability of RNA dependence.\
     On its own, mass is not a significant predictor of RNA-binding behavior. Mass becomes a significant predictor only when pI is accounted for, as demonstrated by the multiple regression analysis.
 
-# **V. Dimension reduction** {#dimension-reduction}
+# **V. Dimension reduction** 
 
 ## **🎯Objective:**
 
@@ -328,7 +327,7 @@ flowchart LR
     H --> J[Chi Squared testing] 
 ```
 
-### **Principal component analysis** {#pca}
+### **Principal component analysis** 
 
 To reduce dimensions, the **prcomp** command is used.
 
@@ -340,7 +339,7 @@ All data sets on which PCA was performed on, covered roughly 65 % of variance wi
 
 ![Eigenvalues RNAse](images/Eigenvalues_RNAse.jpeg)
 
-### **K-Means Clustering** {#k-means}
+### **K-Means Clustering**
 
 The ideal **Amount of clusters** is determined first with an **elbow plot**. The graph gives a suggestion of how many clusters should be used. For a more detailed determination the **silhouette scores** are calculated and plotted.
 
@@ -352,7 +351,7 @@ In the K-means plots **RNA binding proteins** are labeled in order to determine 
 |-------------------------------|------------------------------|
 | ![](images/Clusterrnase.jpeg) | ![](images/Clusterctrl.jpeg) |
 
-### **Chi Squared test** {#chi-square}
+### **Chi Squared test** 
 
 In order to check for a significant association between clusters and RBPs.\
 The data is turned into a contingency table and the test executed.
