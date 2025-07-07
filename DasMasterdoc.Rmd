@@ -2963,6 +2963,9 @@ df_all$amplitude_changes_z <- as.numeric(scale(df_all$amplitude_changes))
 df_all$Wilcoxon_statistic_Max_z <- as.numeric(scale(df_all$Wilcoxon_statistic_Max))
 
 # 2. Reduced logistic regression model with less correlated predictors
+pca_result <- prcomp(df_all[, c("amplitude_changes_z", "Wilcoxon_statistic_Max_z")], center = TRUE, scale. = TRUE)
+df_all$PC1 <- pca_result$x[, 1]
+
 clean_model <- glm(label ~ PC1 + amplitude_changes_z + Wilcoxon_statistic_Max_z,
                    data = df_all,
                    family = binomial)
@@ -3124,7 +3127,7 @@ anova_result <- anova(step_model, step_model_pca, test = "Chisq")
 print(anova_result)
 ```
 Output:
-Although PCA was used to reduce multicollinearity between highly correlated predictors (EMD and Center_of_Mass), the original logistic regression model without PCA components demonstrated a significantly better fit.
+Although PCA was used to reduce multicolinearity between highly correlated predictors (EMD and Center_of_Mass), the original logistic regression model without PCA components demonstrated a significantly better fit.
 -> lower residual deviance and AIC
 -> likelihood-ratio test confirmed that replacing the original variables with PC1 leads to a statistically     significant loss of explanatory power
 => the non-PCA model is preferred for capturing the biological signal.
