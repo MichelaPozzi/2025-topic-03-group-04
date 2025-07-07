@@ -2420,53 +2420,70 @@ print(fraktion_pos_rnase_df)
 ```
 
 ```{r}
-#paired Wilxocon test to compare the global maxima positions between control und rnase
 # Prepare vectors to store results
-p_values <- numeric(nrow(fraktion_pos_ctrl_df))       # p-values
-test_statistics <- numeric(nrow(fraktion_pos_ctrl_df))  # test statistic (W)
+p_values <- numeric(nrow(fraktion_pos_ctrl_df))         # p-values
+wilcoxon_stats <- numeric(nrow(fraktion_pos_ctrl_df))   # custom test statistic (W = min(W+, W-))
 
 # Loop through each protein (each row)
 for (i in 1:nrow(fraktion_pos_ctrl_df)) {
-  # Extract numeric values from columns 2 to 4 for both conditions
+  # Extract numeric values
   ctrl_values <- as.numeric(fraktion_pos_ctrl_df[i, 2:4])
   rnase_values <- as.numeric(fraktion_pos_rnase_df[i, 2:4])
   
-  # Check if all paired values are identical
-  if (all(ctrl_values == rnase_values)) {
-    # No difference → Wilcoxon test not defined
+  # Calculate paired differences
+  diffs <- ctrl_values - rnase_values
+  
+  # Remove zero differences (they don't get ranked)
+  non_zero_diffs <- diffs[diffs != 0]
+  
+  if (length(non_zero_diffs) == 0) {
+    # All differences are 0 → test nicht definiert
     p_values[i] <- 1
-    test_statistics[i] <- 21  # explanation below
+    wilcoxon_stats[i] <- 3
   } else {
-    # Run paired Wilcoxon test
+    # Ränge der absoluten Differenzen berechnen
+    ranks <- rank(abs(non_zero_diffs))
+    
+    # W+ = Summe der Ränge für positive Differenzen
+    W_plus <- sum(ranks[non_zero_diffs > 0])
+    
+    # W- = Summe der Ränge für negative Differenzen
+    W_minus <- sum(ranks[non_zero_diffs < 0])
+    
+    # Teststatistik: das Minimum der beiden
+    W_stat <- min(W_plus, W_minus)
+    
+    # Berechne den p-Wert mit wilcox.test (nur für p-Wert, nicht für Statistik)
     test_result <- wilcox.test(ctrl_values, rnase_values, paired = TRUE, exact = FALSE)
     
-    # Store results
+    # Speichere Ergebnisse
     p_values[i] <- test_result$p.value
-    test_statistics[i] <- test_result$statistic
+    wilcoxon_stats[i] <- W_stat
   }
 }
 
-# Combine results into a dataframe with protein names
-Wilcoxon_Pos_Max <- data.frame(
+# Kombiniere die Ergebnisse
+Wilcoxon_Pos_Max_Manual <- data.frame(
   Protein = fraktion_pos_ctrl_df[[1]],
   P_value = p_values,
-  Wilcoxon_statistic = test_statistics
+  Wilcoxon_statistic = wilcoxon_stats
 )
 
-# View first few results
-head(Wilcoxon_Pos_Max)
+# Ergebnisse anzeigen
+head(Wilcoxon_Pos_Max_Manual)
+
 ```
 output:
 When all paired differences are zero, the test is undefined, so the statistic is NA.
 Using zero or small values for NAs would imply a strong difference (since small W indicates significance), which is incorrect for equal paired samples.
-To include these cases in a combined test score where lower W indicates stronger effect, assigning the maximum possible W (e.g., 21 for n=6 pairs) to NAs can be a practical way to treat “no difference” cases as neutral or non-significant.
+To include these cases in a combined test score where lower W indicates stronger effect, assigning the maximum possible W (e.g., 6 for n=3 pairs) to NAs can be a practical way to treat “no difference” cases as neutral or non-significant.
 This avoids interpreting NAs as missing and ensures consistency in scoring, especially if your analysis assumes numeric values for all proteins.
 However, this is a heuristic, not a statistical rule, since max W usually indicates a strong positive shift, not equality.
 #### skewness of Wilcoxon-statistic
 ```{r}
 #skewness of Wilcoxon-statistic Position of maxima
 # extract values
-x <- Wilcoxon_Pos_Max$Wilcoxon_statistic
+x <- Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic
 
 # calculate skewness (Fisher-Pearson Skewness)
 n <- length(x)
@@ -2484,17 +2501,17 @@ text(mean(x, na.rm = TRUE), par("usr")[4]*0.9,
      col = "violet", pos = 4)
 ```
 output:
-- skewness -1 < -0,0508 < 1 -> robust scaling cannot be applied
+- skewness -1 < -0.0867 < 1 -> robust scaling cannot be applied
 -> error in Wilcoxon test was recognized too late -> there was no time to find a better suited scaling method for all tests -> for consistency robust scaling was applied nonetheless
 
 #### scaling
 ```{r}
 #robust scaling
-Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled<- robust_scale(Wilcoxon_Pos_Max$Wilcoxon_statistic)
+Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic_scaled<- robust_scale(Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic)
 
-#scale to 100%: maximum wilcoxon statistic is sum of ranks (1+2+3+4+5+6 = 21)
-Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled/21)*100
-head(Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100)
+#scale to 100%: maximum wilcoxon statistic is sum of ranks (1+2+3 = 6)
+Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic_scaled_100 <- (Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic_scaled/6)*100
+head(Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic_scaled_100)
 ```
 
 ### test score dataframe
@@ -2508,7 +2525,7 @@ test_scores_combined_df <- data.frame(
   amplitude_changes = amplitude_changes$changes_scaled_100,
   EMD = normalized_ctrl_df$EMD_scaled_100,
   Center_of_Mass = center_of_mass_df$COM_scaled_100,
-  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max$Wilcoxon_statistic_scaled_100
+  Wilcoxon_statistic_Max = Wilcoxon_Pos_Max_Manual$Wilcoxon_statistic_scaled_100
 )
 #depict result
   head(test_scores_combined_df)
@@ -2831,9 +2848,10 @@ boxplot(weighted_score ~ label, data = df_all,
 
 ```
 output: 
-- step()functionn did not remove any predictors -> no redundancy problems
+- step()functionn did remove Shift Distance -> redundant
 - The regression estimate represents the influence of a given predictor on the log-odds of RNA binding. A higher estimate increases the predicted probability.
 - The Pr(>|z|) value indicates whether a test is statistically significant, the lower values (e.g. p<0.05), the more significant the predictor’s contribution to the model (+ the less likely is the relation coincidental)
+-> Wilcoxon statistic is does not contribute significantly to the model
 
 ## visulaization of the tests' influence on the final probability score
 ```{r}
@@ -3184,8 +3202,6 @@ legend("topright",
        fill = colors3,
        bty = "n")
 ```
-
-
 ### visualization of shift direction
 ```{r}
 # Join dataframes including global maxima and calculate their differences
@@ -3250,8 +3266,76 @@ legend("center",
        text.col = "black",
        cex = 0.7       
 )
+```
 
-print(highlight)
+
+### visualization of shift direction of novel proteins
+```{r}
+# Filter the data to only include proteins in novel_shifted_proteins
+selected_indices <- center_of_mass_df[[1]] %in% novel_shifted_proteins$Protein
+
+# Subset relevant data
+df_diff_peaks <- center_of_mass_df[selected_indices, 2:6]
+df_diff_peaks$diff <- center_of_mass_df$Delta_COM[selected_indices]
+
+# Subset probability values
+probabilities <- test_scores_combined_df$probability[selected_indices]
+
+# calculate limits for axes
+max_val <- max(
+  df_diff_peaks$COM_Control,
+  df_diff_peaks$COM_RNase_Control,
+  na.rm = TRUE
+) * 1.1
+
+# assign colors based on diff direction and probability
+colors <- ifelse(df_diff_peaks$diff > 0 & probabilities > optimal_threshold, "#c9a0dc",      # right shift 
+                 ifelse(df_diff_peaks$diff < 0 & probabilities > optimal_threshold, "#A9C1A6", # left shift
+                        "#F5E1A4"))   # no shift
+
+# Set layout for plot and separate legend area
+layout(matrix(1:2, nrow = 1), widths = c(4, 1))
+
+# Plot margins
+par(mar = c(5, 4, 4, 1))  # Bottom, left, top, right
+
+# Plot the scatterplot
+plot(
+  df_diff_peaks$COM_RNase,
+  df_diff_peaks$COM_Control,
+  xlim = c(0, max_val),
+  ylim = c(0, max_val),
+  xlab = "Center of Mass RNase",
+  ylab = "Center of Mass Control",
+  main = "Shift Direction (novel shifted proteins)",
+  pch = 19,
+  col = colors
+)
+
+# Reference line y = x
+abline(a = 0, b = 1, col = "grey", lty = 2)
+
+# Switch to legend area (right panel)
+par(mar = c(0, 0, 4, 0))  # No axis, top margin for title
+
+# Draw an empty plot for the legend
+plot.new()
+
+# Draw legend
+legend("center",
+       legend = c(
+         expression("Right shift ("*Delta*"COM > 0)"),
+         expression("Left shift ("*Delta*"COM < 0)"),
+         expression("No shift ("*Delta*"COM = 0)")
+       ),
+       col = c("#c9a0dc", "#A9C1A6", "#F5E1A4"),
+       pch = 19,
+       title = "Shift Direction",
+       bty = "n",
+       pt.cex = 1,
+       text.col = "black",
+       cex = 0.7
+)
 
 ```
 
