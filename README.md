@@ -342,9 +342,10 @@ flowchart LR
 
 # **V. Dimension reduction** {#dimension-reduction}
 
-## **🎯Objective:** - Reduce dimension for better exploratory analysis
+## **🎯Objective:**   
 
--   Cluster results to find underlying relations
+- Reduce dimension for better exploratory analysis
+- Cluster results to find underlying relations
 
 ## **📃Steps**
 
