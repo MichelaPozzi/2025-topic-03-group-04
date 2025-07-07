@@ -4992,8 +4992,8 @@ p=2.2e-16 < 0.05 -> significant: there is a connection between clusters found th
 #rnase
 ```{r}
 #1. convert PCA ctrl data into dataframe 
-test_rnase_data <- as.data.frame(test_rnase_pca$x)
-test_rnase_data$cluster <- as.factor(TR_kmeans_result$cluster)
+test_rnase_data <- as.data.frame(rnase_pca$x)
+test_rnase_data$cluster <- as.factor(R_kmeans_result$cluster)
 
 #2. isolate protein names
 test_rnase_data$protein_name <- c(percent_rnase_df$Protein)
@@ -5027,8 +5027,8 @@ ggplot(test_rnase_data,aes(x = PC1, y = PC2, color = cluster)) +
 
 ```{r}
 #1. convert PCA ctrl data into dataframe 
-test_ctrl_data <- as.data.frame(test_ctrl_pca$x)
-test_ctrl_data$cluster <- as.factor(TC_kmeans_result$cluster)
+test_ctrl_data <- as.data.frame(ctrl_pca$x)
+test_ctrl_data$cluster <- as.factor(C_kmeans_result$cluster)
 
 #2. isolate protein names
 test_ctrl_data$protein_name <- c(percent_ctrl_df$Protein)
