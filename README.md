@@ -386,11 +386,9 @@ The data is turned into a contingency table and the test executed.
 For Ctrl we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
 
 ### **VI. Literature**
-Caudron-Herger, Maiwen et al.:R-DeeP: Proteome-wide and Quantitative Identification of RNA-Dependent Proteins by Density Gradient Ultracentrifugation, Molecular Cell, Volume 75, Issue 1, 184 - 199 (2019).
-Caudron-Herger, M., Wassmer, E., Nasa, I. et al. Identification, quantification and bioinformatic analysis of RNA-dependent proteins by RNase treatment and density gradient ultracentrifugation using R-DeeP. Nat Protoc 15, 1338–1370 (2020).
-Rajagopal, V., et al.:Proteome-Wide Identification of RNA-Dependent Proteins in Lung Cancer Cells. Cancers (2022).
-Hwang, H., Jeon, H., Yeo, N. et al. Big data and deep learning for RNA biology. Exp Mol Med 56, 1293–1321 (2024).
-Castello, Alfredo et al.: Insights into RNA Biology from an Atlas of Mammalian mRNA-Binding Proteins, Cell, Volume 149, Issue 6, 1393 – 1406 (2012)
-Hartmann, K., Krois, J., Rudolph, A. (2023): Statistics and Geodata Analysis using R (SOGA-R). Department of Earth Sciences, Freie Universitaet Berlin
-![image](https://github.com/user-attachments/assets/964601e8-72af-4087-ba0a-3810d3ee5f4c)
-
+- Caudron-Herger, Maiwen et al.:R-DeeP: Proteome-wide and Quantitative Identification of RNA-Dependent Proteins by Density Gradient Ultracentrifugation, Molecular Cell, Volume 75, Issue 1, 184 - 199 (2019).
+- Caudron-Herger, M., Wassmer, E., Nasa, I. et al. Identification, quantification and bioinformatic analysis of RNA-dependent proteins by RNase treatment and density gradient ultracentrifugation using R-DeeP. Nat Protoc 15, 1338–1370 (2020).
+- Rajagopal, V., et al.:Proteome-Wide Identification of RNA-Dependent Proteins in Lung Cancer Cells. Cancers (2022).
+- Hwang, H., Jeon, H., Yeo, N. et al. Big data and deep learning for RNA biology. Exp Mol Med 56, 1293–1321 (2024).
+- Castello, Alfredo et al.: Insights into RNA Biology from an Atlas of Mammalian mRNA-Binding Proteins, Cell, Volume 149, Issue 6, 1393 – 1406 (2012)
+- Hartmann, K., Krois, J., Rudolph, A. (2023): Statistics and Geodata Analysis using R (SOGA-R). Department of Earth Sciences, Freie Universitaet Berlin
