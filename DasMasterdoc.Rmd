@@ -4718,7 +4718,7 @@ chisq.test(r_tbl)
 
 ```
 #Interpretation:
-p=4.237e-09 < 0.05 -> significant
+p=0.08043 > 0.05 -> non-significant
 
 ##ctrl
 ```{r}
