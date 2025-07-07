@@ -1,7 +1,5 @@
 # 🧬2025-topic-03-group-04
 
-Link Poster: <https://1drv.ms/p/c/337a8934cc5b3155/ETyOdkKQGRpCqyr-7-2QN2QBiw53JFm50umwSPKrppZBrg?e=mEley3>
-
 # Compatibility test: From 0 - 1, how interacting are you?​
 
 ## Protein features as predictors of RNA interactions
