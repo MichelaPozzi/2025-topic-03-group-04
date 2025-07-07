@@ -4988,10 +4988,3 @@ chisq.test(c_tbl)
 #Interpretation'
 p=2.2e-16 < 0.05 -> significant: there is a connection between clusters found through PCA and classification of proteins as RBPs
 
-
-
-
-
-
-
-

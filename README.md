@@ -67,6 +67,7 @@ The aim of this project is the automated identification of RNA-dependent protein
     -   [PCA](#pca)
     -   [k-means](#k--means)
     -   [Chi Squared test](#chi-squared-test)
+-   [VI. Literatur](#literature)
 
 # **I. Data Exploration** {#data-exploration}
 
@@ -288,8 +289,8 @@ A logistic regression model is trained using reference proteins to predict the p
 
 </p>
 
-       Altogether, 740 proteins were classified as RNA-binding, of which 141 exhibited a right shift.\
-       Excluding the proteins used for model training, 320 novel RBPs were identified.
+       Altogether, 730 proteins were classified as RNA-binding, of which 140 exhibited a right shift.\
+       Excluding the proteins used for model training, 311 novel RBPs were identified.
 
 4.  **Accuracy of Model:**\
     visualise the predictive accuracy of our logistic regression model
@@ -381,4 +382,13 @@ In the K-means plots **RNA binding proteins** are labeled in order to determine 
 In order to check for a significant association between clusters and RBPs.\
 The data is turned into a contingency table and the test executed.
 
-**Output:** For Ctrl we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
+**Output:** 
+For Ctrl we could determine a significant p-value. This indicates there is a relation between clusters and RNA binding proteins.
+
+# **VI. Literature**
+- Caudron-Herger, Maiwen et al.:R-DeeP: Proteome-wide and Quantitative Identification of RNA-Dependent Proteins by Density Gradient Ultracentrifugation, Molecular Cell, Volume 75, Issue 1, 184 - 199 (2019).
+- Caudron-Herger, M., Wassmer, E., Nasa, I. et al. Identification, quantification and bioinformatic analysis of RNA-dependent proteins by RNase treatment and density gradient ultracentrifugation using R-DeeP. Nat Protoc 15, 1338–1370 (2020).
+- Rajagopal, V., et al.:Proteome-Wide Identification of RNA-Dependent Proteins in Lung Cancer Cells. Cancers (2022).
+- Hwang, H., Jeon, H., Yeo, N. et al. Big data and deep learning for RNA biology. Exp Mol Med 56, 1293–1321 (2024).
+- Castello, Alfredo et al.: Insights into RNA Biology from an Atlas of Mammalian mRNA-Binding Proteins, Cell, Volume 149, Issue 6, 1393 – 1406 (2012)
+- Hartmann, K., Krois, J., Rudolph, A. (2023): Statistics and Geodata Analysis using R (SOGA-R). Department of Earth Sciences, Freie Universitaet Berlin
