@@ -65,7 +65,7 @@ By receiving correlation values higher than 0.9, the control values showed very 
 # **🧼 II. Data Normalisation** 
 
 -   Ensure comparability and interpretability of protein intensity profiles across replicates and conditions (Control vs. RNase) by normalising and transforming the values with following steps:
--   During data normalisation three main steps are executed. By pairwise normalising and smoothing the data comparability is established. Transformation and normalisation aligns the value ranges. Due to batch effect correction the systematic bias is removed.\
+-   During data normalisation three main steps are executed. By pairwise normalising and smoothing the data comparability is established. Transformation and normalisation aligns the value ranges. Due to batch effect correction the systematic bias is removed.
 
 ## **📃Steps:**
 
@@ -130,7 +130,7 @@ They can influence further observations, analysis, and interpretation\
     → Steps:
 
     1.  **log2 - transformation:**\
-        → stabilizes variance, improves interpretability, reduces outlier effects\
+        → stabilizes variance, improves interpretability, reduces outlier effects
     2.  **apply function**
 
     **PCA visualization**\
@@ -146,18 +146,18 @@ They can influence further observations, analysis, and interpretation\
     -   Steps:
 
         1.  **Model preparations**\
-            → create a design matrix with a model matrix filled with known factors (replicates and fractions) and a null model matrix filled with no descriptive factors but an intercept\
+            → create a design matrix with a model matrix filled with known factors (replicates and fractions) and a null model matrix filled with no descriptive factors but an intercept
         2.  **Apply SVA**\
-            → Apply function on data and models\
+            → Apply function on data and models
         3.  **Determine the number of surrogate variables**\
             → SVA estimates how many Svs are needed to model hidden batch effects\
             → by searching for combinations not explainable by known variables\
-            → extend the matrix by SVs\
+            → extend the matrix by SVs
         4.  **Data correction**\
             → using linear regression\
-            → SVs are used to calculate unwanted effects and remove those\
+            → SVs are used to calculate unwanted effects and remove those
         5.  **Residues extraction**\
-            → expression data - modeled effects (fraction + replicates + SVs )\
+            → expression data - modeled effects (fraction + replicates + SVs )
 
         6.Visualizations
 
@@ -168,7 +168,7 @@ They can influence further observations, analysis, and interpretation\
     With SVA there is a batch effect visible. It is shown in the circular structure beforehand which does not directly hint at a batch effect between replicates but other more hidden possible effects. Afterwards the point are more centered and there is no structure visible, overall they seem more homogeneous .
 
 3.  **Interpretation and results:**\
-    → SVA better fit due to unknown batch effects ( not known when measurements are taken, or on which machines)\
+    → SVA better fit due to unknown batch effects (not known when measurements are taken, or on which machines)\
     → Log2 transformation makes the data less suitable for further analysis → Batch effect not overly significant\
     → Removal still could overcorrect biological variances
 
@@ -215,7 +215,7 @@ flowchart LR
 -   **Wilcoxon Statistic:** The Wilcoxon signed-rank test (specifically the paired version) is a non-parametric statistical method used to compare two related samples. In this context, it is used to assess whether the global maximum of the same protein differs between two treatments (Control an RNase), using matched replicates.
 
     **Output:**\
-    **The p-value indicates how likely the observed shift of the global maxima occurred by chance.** A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.\
+    **The p-value indicates how likely the observed shift of the global maxima occurred by chance.** A small p-value (e.g., \< 0.05) suggests that the shift is statistically significant.
 
     The test statistic W measures how consistently one condition tends to produce higher or lower values than the other.
 
